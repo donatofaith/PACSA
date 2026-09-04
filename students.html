@@ -1,192 +1,378 @@
-<!-- STUDENT MANAGEMENT -->
-
-<section class="management-card">
-
-<div class="section-header">
-
-<h2>
-👨‍🎓 Students Management
-</h2>
-
-<button class="add-student-btn">
-+ Add Student
-</button>
-
-</div>
-
-<div class="student-tools">
-
-<input
-type="text"
-placeholder="Search Student..."
-class="search-box">
-
-<select class="filter-box">
-
-<option>
-All Classes
-</option>
-
-<option>
-JSS1
-</option>
-
-<option>
-JSS2
-</option>
-
-<option>
-JSS3
-</option>
-
-<option>
-SS1
-</option>
-
-<option>
-SS2
-</option>
-
-<option>
-SS3
-</option>
-
-</select>
-
-</div>
-
-<div class="table-container">
-
-<table class="students-table">
-
-<thead>
-
-<tr>
-
-<th>
-Photo
-</th>
-
-<th>
-Student ID
-</th>
-
-<th>
-Name
-</th>
-
-<th>
-Class
-</th>
-
-<th>
-Status
-</th>
-
-<th>
-Action
-</th>
-
-</tr>
-
-</thead>
-
-<tbody>
-
-<tr>
-
-<td>
-
-<img
-src="images/Donato.jpg"
-class="student-photo"
-alt="Student">
-
-</td>
-
-<td>
-PACSA-001
-</td>
-
-<td>
-John Doe
-</td>
-
-<td>
-JSS1
-</td>
-
-<td>
-
-<span class="active-status">
-Active
-</span>
-
-</td>
-
-<td>
-
-<button class="edit-btn">
-Edit
-</button>
-
-<button class="delete-btn">
-Delete
-</button>
-
-</td>
-
-</tr>
-
-<tr>
-
-<td>
-
-<img
-src="images/Donato.jpg"
-class="student-photo"
-alt="Student">
-
-</td>
-
-<td>
-PACSA-002
-</td>
-
-<td>
-Mary James
-</td>
-
-<td>
-SS1
-</td>
-
-<td>
-
-<span class="active-status">
-Active
-</span>
-
-</td>
-
-<td>
-
-<button class="edit-btn">
-Edit
-</button>
-
-<button class="delete-btn">
-Delete
-</button>
-
-</td>
-
-</tr>
-
-</tbody>
-
-</table>
-
-</div>
-
-</section>
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>PACSA | Students Management</title>
+
+    <link rel="stylesheet"
+        href="https://fonts.googleapis.com/css2?family=Outfit:wght@300;400;500;600;700;800&display=swap">
+    <link rel="stylesheet" href="admin-dashboard.css">
+</head>
+
+<body>
+
+    <!-- MOBILE MENU -->
+    <button class="menu-btn" id="menuBtn" aria-label="Open navigation">☰</button>
+
+    <!-- ================= SIDEBAR ================= -->
+    <aside class="sidebar" id="sidebar">
+        <div class="brand">
+            <img src="images/PACSA LOGO.png" alt="PACSA Logo">
+            <div class="brand-text">
+                <h2>PACSA</h2>
+                <p>Admin Portal</p>
+            </div>
+        </div>
+
+        <nav class="sidebar-nav">
+            <p class="nav-label">MAIN MENU</p>
+            <a href="admin-dashboard.html" class="nav-link">
+                <span class="nav-icon">⌂</span>
+                Dashboard
+            </a>
+
+            <p class="nav-label">STUDENT MANAGEMENT</p>
+            <a href="students.html" class="nav-link active">
+                <span class="nav-icon">🎓</span>
+                Students
+            </a>
+
+            <p class="nav-label">ACADEMIC MANAGEMENT</p>
+            <a href="teachers.html" class="nav-link">
+                <span class="nav-icon">👨‍🏫</span>
+                Teachers
+            </a>
+            <a href="subjects.html" class="nav-link">
+                <span class="nav-icon">📚</span>
+                Subjects
+            </a>
+            <a href="classes.html" class="nav-link">
+                <span class="nav-icon">🏫</span>
+                Classes
+            </a>
+            <a href="sessions.html" class="nav-link">
+                <span class="nav-icon">📅</span>
+                Sessions & Terms
+            </a>
+
+            <p class="nav-label">RESULT MANAGEMENT</p>
+            <a href="results.html" class="nav-link">
+                <span class="nav-icon">📑</span>
+                Results
+            </a>
+            <a href="reports.html" class="nav-link">
+                <span class="nav-icon">📊</span>
+                Reports & Analytics
+            </a>
+
+            <p class="nav-label">ADMINISTRATION</p>
+            <a href="applications.html" class="nav-link">
+                <span class="nav-icon">📝</span>
+                Applications
+            </a>
+            <a href="settings.html" class="nav-link">
+                <span class="nav-icon">⚙</span>
+                Settings
+            </a>
+        </nav>
+
+        <div class="sidebar-footer">
+            <a href="#" class="logout-link" id="logoutBtn">
+                <span>🚪</span>
+                Logout
+            </a>
+        </div>
+    </aside>
+
+    <!-- ================= MAIN CONTENT ================= -->
+    <main class="main-content">
+
+        <!-- TOPBAR -->
+        <header class="topbar">
+            <div class="page-title">
+                <p class="breadcrumb">
+                    Administration / Student Management / Students
+                </p>
+                <h1>Students Management</h1>
+            </div>
+
+            <div class="topbar-right">
+                <button class="notification-btn" aria-label="Notifications">
+                    🔔
+                    <span class="notification-dot"></span>
+                </button>
+
+                <div class="admin-profile">
+                    <img src="images/Faith.jpg" alt="Administrator">
+                    <div class="admin-info">
+                        <strong>Administrator</strong>
+                        <span>System Administrator</span>
+                    </div>
+                </div>
+            </div>
+        </header>
+
+        <!-- ================= PAGE INTRO ================= -->
+        <section class="management-hero">
+            <div>
+                <p class="section-subtitle">STUDENT RECORDS</p>
+                <h2>Manage Your Students</h2>
+                <p>
+                    View, manage and monitor all students registered in the PACSA School Management System.
+                </p>
+            </div>
+
+            <button class="btn btn-primary" id="addStudentBtn">
+                <span>+</span>
+                Add New Student
+            </button>
+        </section>
+
+        <!-- ================= STUDENT STATISTICS ================= -->
+        <section class="teacher-stats-grid">
+            <div class="mini-stat-card">
+                <div class="mini-stat-icon">🎓</div>
+                <div>
+                    <p>Total Students</p>
+                    <h3 id="totalStudents">0</h3>
+                </div>
+            </div>
+
+            <div class="mini-stat-card">
+                <div class="mini-stat-icon green-icon">✓</div>
+                <div>
+                    <p>Active Students</p>
+                    <h3 id="activeStudents">0</h3>
+                </div>
+            </div>
+
+            <div class="mini-stat-card">
+                <div class="mini-stat-icon orange-icon">🏫</div>
+                <div>
+                    <p>Classes</p>
+                    <h3 id="totalClasses">0</h3>
+                </div>
+            </div>
+
+            <div class="mini-stat-card">
+                <div class="mini-stat-icon blue-icon">👥</div>
+                <div>
+                    <p>New Students</p>
+                    <h3 id="newStudents">0</h3>
+                </div>
+            </div>
+        </section>
+
+        <!-- ================= STUDENT MANAGEMENT CARD ================= -->
+        <section class="management-page-card">
+            <div class="management-card-header">
+                <div>
+                    <h2>All Students</h2>
+                    <p>Manage student accounts and academic information.</p>
+                </div>
+                <div class="teacher-count">
+                    <span id="studentCount">0</span>
+                    Students
+                </div>
+            </div>
+
+            <!-- FILTERS -->
+            <div class="teacher-controls">
+                <div class="search-wrapper">
+                    <span class="search-icon">🔍</span>
+                    <input type="text" id="studentSearch" placeholder="Search by name, ID or email...">
+                </div>
+
+                <select id="classFilter" class="filter-select">
+                    <option value="">All Classes</option>
+                </select>
+
+                <select id="statusFilter" class="filter-select">
+                    <option value="">All Status</option>
+                    <option value="active">Active</option>
+                    <option value="inactive">Inactive</option>
+                </select>
+
+                <button class="btn btn-light" id="clearFiltersBtn">Clear</button>
+            </div>
+
+            <!-- STUDENTS TABLE -->
+            <div class="table-wrapper">
+                <table class="professional-table" id="studentsTable">
+                    <thead>
+                        <tr>
+                            <th>Student</th>
+                            <th>Student ID</th>
+                            <th>Class</th>
+                            <th>Gender</th>
+                            <th>Phone</th>
+                            <th>Status</th>
+                            <th class="action-column">Action</th>
+                        </tr>
+                    </thead>
+                    <tbody id="studentsTableBody"></tbody>
+                </table>
+            </div>
+
+            <!-- EMPTY STATE -->
+            <div class="empty-state" id="emptyStudentState">
+                <div class="empty-icon">🎓</div>
+                <h3>No Students Found</h3>
+                <p>Students from your PACSA database will appear here.</p>
+                <button class="btn btn-primary" id="emptyAddStudentBtn">+ Add First Student</button>
+            </div>
+
+            <!-- LOADING STATE -->
+            <div class="loading-state" id="studentsLoading">
+                <div class="loader"></div>
+                <p>Loading students...</p>
+            </div>
+        </section>
+
+        <!-- ================= STUDENT MANAGEMENT INFO ================= -->
+        <section class="teacher-management-info">
+            <div class="info-card">
+                <div class="info-icon purple-info">👤</div>
+                <div>
+                    <h3>Student Profiles</h3>
+                    <p>View and update student personal and academic information.</p>
+                </div>
+            </div>
+
+            <div class="info-card">
+                <div class="info-icon green-info">🏫</div>
+                <div>
+                    <h3>Class Assignment</h3>
+                    <p>Keep students assigned to the correct class and academic level.</p>
+                </div>
+            </div>
+
+            <div class="info-card">
+                <div class="info-icon orange-info">🔐</div>
+                <div>
+                    <h3>Student Records</h3>
+                    <p>Activate, deactivate or manage student records when necessary.</p>
+                </div>
+            </div>
+        </section>
+
+        <!-- ================= ADD / EDIT STUDENT MODAL ================= -->
+        <div class="modal-overlay" id="studentModal">
+            <div class="modal-box large-modal">
+                <div class="modal-header">
+                    <div>
+                        <p class="section-subtitle">STUDENT INFORMATION</p>
+                        <h2 id="studentModalTitle">Add New Student</h2>
+                    </div>
+                    <button class="modal-close" id="closeStudentModal">×</button>
+                </div>
+
+                <form id="studentForm">
+                    <input type="hidden" id="studentRecordId">
+
+                    <div class="form-grid">
+                        <div class="form-group">
+                            <label for="studentFirstName">First Name</label>
+                            <input type="text" id="studentFirstName" required>
+                        </div>
+
+                        <div class="form-group">
+                            <label for="studentLastName">Last Name</label>
+                            <input type="text" id="studentLastName" required>
+                        </div>
+
+                        <div class="form-group">
+                            <label for="studentId">Student ID</label>
+                            <input type="text" id="studentId" placeholder="e.g. PACSA-003">
+                        </div>
+
+                        <div class="form-group">
+                            <label for="studentEmail">Email Address</label>
+                            <input type="email" id="studentEmail">
+                        </div>
+
+                        <div class="form-group">
+                            <label for="studentPhone">Phone Number</label>
+                            <input type="tel" id="studentPhone">
+                        </div>
+
+                        <div class="form-group">
+                            <label for="studentClass">Class</label>
+                            <select id="studentClass" required>
+                                <option value="">Select Class</option>
+                                <option value="JSS1">JSS1</option>
+                                <option value="JSS2">JSS2</option>
+                                <option value="JSS3">JSS3</option>
+                                <option value="SS1">SS1</option>
+                                <option value="SS2">SS2</option>
+                                <option value="SS3">SS3</option>
+                            </select>
+                        </div>
+
+                        <div class="form-group">
+                            <label for="studentGender">Gender</label>
+                            <select id="studentGender">
+                                <option value="Male">Male</option>
+                                <option value="Female">Female</option>
+                            </select>
+                        </div>
+
+                        <div class="form-group">
+                            <label for="studentStatus">Account Status</label>
+                            <select id="studentStatus">
+                                <option value="active">Active</option>
+                                <option value="inactive">Inactive</option>
+                            </select>
+                        </div>
+                    </div>
+
+                    <div class="modal-actions">
+                        <button type="button" class="btn btn-light" id="cancelStudentBtn">Cancel</button>
+                        <button type="submit" class="btn btn-primary" id="saveStudentBtn">Save Student</button>
+                    </div>
+                </form>
+            </div>
+        </div>
+
+        <!-- ================= VIEW STUDENT MODAL ================= -->
+        <div class="modal-overlay" id="viewStudentModal">
+            <div class="modal-box">
+                <div class="modal-header">
+                    <div>
+                        <p class="section-subtitle">STUDENT PROFILE</p>
+                        <h2>Student Details</h2>
+                    </div>
+                    <button class="modal-close" id="closeViewStudentModal">×</button>
+                </div>
+
+                <div class="teacher-profile-view">
+                    <div class="profile-avatar-large" id="viewStudentAvatar">ST</div>
+                    <div class="profile-main-info">
+                        <h3 id="viewStudentName">Student Name</h3>
+                        <p id="viewStudentId">PACSA-000</p>
+                        <span class="status-badge active-status" id="viewStudentStatus">Active</span>
+                    </div>
+                </div>
+
+                <div class="profile-details-grid">
+                    <div><span>Class</span><strong id="viewStudentClass">—</strong></div>
+                    <div><span>Gender</span><strong id="viewStudentGender">—</strong></div>
+                    <div><span>Email</span><strong id="viewStudentEmail">—</strong></div>
+                    <div><span>Phone</span><strong id="viewStudentPhone">—</strong></div>
+                </div>
+
+                <div class="modal-actions">
+                    <button type="button" class="btn btn-light" id="closeViewStudentBtn">Close</button>
+                </div>
+            </div>
+        </div>
+
+        <footer class="footer">
+            <p>© 2026 PACSA School Management System. All rights reserved.</p>
+        </footer>
+    </main>
+
+    <script src="students.js"></script>
+</body>
+</html>
