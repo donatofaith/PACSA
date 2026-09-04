@@ -1,0 +1,516 @@
+/* =========================================
+PACSA CLASSES PAGE
+========================================= */
+
+.classes-hero {
+
+```
+background:
+    linear-gradient(
+        135deg,
+        var(--primary),
+        #7C3AED
+    );
+
+border-radius: 20px;
+
+padding: 28px 30px;
+
+color: white;
+
+margin-bottom: 25px;
+
+display: flex;
+
+align-items: center;
+
+justify-content: space-between;
+
+gap: 20px;
+
+box-shadow:
+    0 15px 35px rgba(91,33,182,0.18);
+```
+
+}
+
+.classes-hero .section-subtitle {
+
+```
+color: #E9D5FF;
+```
+
+}
+
+.classes-hero h2 {
+
+```
+font-size: 26px;
+
+margin-bottom: 7px;
+```
+
+}
+
+.classes-hero p:last-child {
+
+```
+font-size: 13px;
+
+opacity: 0.85;
+```
+
+}
+
+/* BUTTONS */
+
+.primary-btn {
+
+```
+border: none;
+
+background: white;
+
+color: var(--primary);
+
+padding: 12px 18px;
+
+border-radius: 10px;
+
+font-family: inherit;
+
+font-size: 12px;
+
+font-weight: 700;
+
+cursor: pointer;
+
+transition: 0.25s;
+```
+
+}
+
+.primary-btn:hover {
+
+```
+transform: translateY(-2px);
+
+box-shadow: 0 8px 20px rgba(0,0,0,0.15);
+```
+
+}
+
+/* STATS */
+
+.classes-stats {
+
+```
+margin-bottom: 25px;
+```
+
+}
+
+/* MANAGEMENT CARD */
+
+.class-management-card {
+
+```
+margin-bottom: 25px;
+```
+
+}
+
+/* CONTROLS */
+
+.class-controls {
+
+```
+display: grid;
+
+grid-template-columns: 1fr 180px 180px;
+
+gap: 12px;
+
+margin-bottom: 22px;
+```
+
+}
+
+.search-box {
+
+```
+display: flex;
+
+align-items: center;
+
+gap: 9px;
+
+border: 1px solid var(--border);
+
+background: white;
+
+border-radius: 10px;
+
+padding: 0 13px;
+```
+
+}
+
+.search-box input {
+
+```
+width: 100%;
+
+border: none;
+
+outline: none;
+
+padding: 12px 0;
+
+font-family: inherit;
+
+font-size: 12px;
+```
+
+}
+
+.class-controls select,
+.form-group input,
+.form-group select {
+
+```
+border: 1px solid var(--border);
+
+background: white;
+
+border-radius: 10px;
+
+padding: 12px;
+
+outline: none;
+
+font-family: inherit;
+
+font-size: 12px;
+
+color: var(--text-dark);
+```
+
+}
+
+.class-controls select:focus,
+.form-group input:focus,
+.form-group select:focus {
+
+```
+border-color: var(--primary);
+```
+
+}
+
+/* CLASS TABLE */
+
+.classes-table th:last-child,
+.classes-table td:last-child {
+
+```
+text-align: right;
+```
+
+}
+
+.class-name {
+
+```
+font-weight: 700;
+```
+
+}
+
+.class-level {
+
+```
+color: var(--text-muted);
+```
+
+}
+
+.student-count {
+
+```
+font-weight: 600;
+```
+
+}
+
+.teacher-name {
+
+```
+color: var(--text-muted);
+```
+
+}
+
+.action-buttons {
+
+```
+display: flex;
+
+justify-content: flex-end;
+
+gap: 7px;
+```
+
+}
+
+.table-action {
+
+```
+border: 1px solid var(--border);
+
+background: white;
+
+color: var(--primary);
+
+padding: 7px 10px;
+
+border-radius: 8px;
+
+font-family: inherit;
+
+font-size: 10px;
+
+font-weight: 600;
+
+cursor: pointer;
+
+transition: 0.2s;
+```
+
+}
+
+.table-action:hover {
+
+```
+background: var(--primary-light);
+```
+
+}
+
+/* SECONDARY BUTTON */
+
+.secondary-btn {
+
+```
+border: 1px solid var(--border);
+
+background: white;
+
+color: var(--text-dark);
+
+padding: 12px 18px;
+
+border-radius: 10px;
+
+font-family: inherit;
+
+font-size: 12px;
+
+font-weight: 600;
+
+cursor: pointer;
+```
+
+}
+
+/* MODAL */
+
+.modal-overlay {
+
+```
+position: fixed;
+
+inset: 0;
+
+background: rgba(17,24,39,0.55);
+
+display: none;
+
+align-items: center;
+
+justify-content: center;
+
+padding: 20px;
+
+z-index: 2000;
+```
+
+}
+
+.modal-overlay.show {
+
+```
+display: flex;
+```
+
+}
+
+.class-modal {
+
+```
+width: 100%;
+
+max-width: 520px;
+
+background: white;
+
+border-radius: 18px;
+
+padding: 25px;
+
+box-shadow: 0 25px 60px rgba(0,0,0,0.2);
+```
+
+}
+
+.modal-header {
+
+```
+display: flex;
+
+align-items: flex-start;
+
+justify-content: space-between;
+
+margin-bottom: 22px;
+```
+
+}
+
+.modal-header h2 {
+
+```
+font-size: 20px;
+```
+
+}
+
+.modal-close {
+
+```
+width: 34px;
+
+height: 34px;
+
+border: none;
+
+background: #F3F4F6;
+
+border-radius: 8px;
+
+font-size: 22px;
+
+cursor: pointer;
+
+color: var(--text-muted);
+```
+
+}
+
+.form-group {
+
+```
+display: flex;
+
+flex-direction: column;
+
+gap: 7px;
+
+margin-bottom: 16px;
+```
+
+}
+
+.form-group label {
+
+```
+font-size: 11px;
+
+font-weight: 600;
+
+color: var(--text-dark);
+```
+
+}
+
+.form-row {
+
+```
+display: grid;
+
+grid-template-columns: 1fr 1fr;
+
+gap: 14px;
+```
+
+}
+
+.modal-actions {
+
+```
+display: flex;
+
+justify-content: flex-end;
+
+gap: 10px;
+
+margin-top: 22px;
+```
+
+}
+
+/* RESPONSIVE */
+
+@media (max-width: 900px) {
+
+```
+.classes-hero {
+
+    align-items: flex-start;
+
+    flex-direction: column;
+
+}
+
+.class-controls {
+
+    grid-template-columns: 1fr;
+
+}
+```
+
+}
+
+@media (max-width: 600px) {
+
+```
+.classes-stats {
+
+    grid-template-columns: 1fr;
+
+}
+
+.form-row {
+
+    grid-template-columns: 1fr;
+
+}
+
+.class-modal {
+
+    padding: 20px;
+
+}
+```
+
+}
