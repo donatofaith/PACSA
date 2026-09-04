@@ -1,0 +1,72 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>PACSA Admin Portal</title>
+
+<link href="https://fonts.googleapis.com/css2?family=Outfit:wght@300;400;500;600;700;800&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="admin-login.css">
+</head>
+
+<body>
+
+<div class="overlay"></div>
+
+<div class="container">
+
+<div class="login-card">
+
+<img src="images/PACSA LOGO.png" alt="PACSA Logo" class="logo">
+
+<h1>PACSA</h1>
+
+<p class="subtitle">
+School Management Portal
+</p>
+
+<form id="loginForm">
+
+<div class="input-box">
+<label>Username</label>
+<input type="text" id="username" placeholder="Enter Username" required>
+</div>
+
+<div class="input-box">
+<label>Password</label>
+
+<div class="password-wrapper">
+
+<input type="password" id="password" placeholder="Enter Password" required>
+
+<span id="togglePassword">👁</span>
+
+</div>
+
+</div>
+
+<div class="options">
+
+<label>
+<input type="checkbox">
+Remember Me
+</label>
+
+<a href="#">Forgot Password?</a>
+
+</div>
+
+<button type="submit" class="login-btn">
+Login
+</button>
+
+</form>
+
+</div>
+
+</div>
+
+<script src="admin-login.js"></script>
+
+</body>
+</html>

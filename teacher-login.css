@@ -1,0 +1,428 @@
+*{
+margin:0;
+padding:0;
+box-sizing:border-box;
+font-family:'Outfit',sans-serif;
+}
+
+body{
+
+background:url("images/Staffs.jpg")
+center/cover no-repeat;
+
+min-height:100vh;
+
+display:flex;
+justify-content:center;
+align-items:center;
+
+position:relative;
+}
+
+.overlay{
+
+position:absolute;
+
+width:100%;
+height:100%;
+
+background:
+linear-gradient(
+135deg,
+rgba(91,33,182,.55),
+rgba(76,29,149,.45)
+);
+
+}
+
+.login-container{
+
+position:relative;
+z-index:2;
+
+width:100%;
+padding:20px;
+
+display:flex;
+justify-content:center;
+}
+
+.login-card{
+
+width:100%;
+max-width:450px;
+
+padding:40px;
+
+border-radius:25px;
+
+backdrop-filter:blur(12px);
+
+background:
+rgba(255,255,255,.12);
+
+border:
+1px solid rgba(255,255,255,.25);
+
+color:white;
+
+box-shadow:
+0 20px 40px rgba(0,0,0,.25);
+
+animation:
+fadeUp .8s ease,
+floating 4s ease-in-out infinite;
+transform:
+translateY(-5px);
+
+transition:.4s;
+}
+
+.logo{
+
+width:100px;
+display:block;
+
+margin:auto;
+margin-bottom:15px;
+}
+
+.login-card h1{
+
+text-align:center;
+
+margin-bottom:10px;
+}
+
+.motto{
+
+text-align:center;
+
+margin-bottom:25px;
+
+color:#f1f1f1;
+}
+
+.input-group{
+
+margin-bottom:20px;
+}
+
+.input-group label{
+
+display:block;
+
+margin-bottom:8px;
+}
+
+.input-group input{
+
+width:100%;
+
+padding:14px;
+
+border:none;
+
+border-radius:12px;
+
+outline:none;
+}
+
+.password-box{
+
+position:relative;
+}
+
+.password-box span{
+
+position:absolute;
+
+right:15px;
+
+top:50%;
+
+transform:
+translateY(-50%);
+
+cursor:pointer;
+
+color:#333;
+}
+
+.extras{
+
+display:flex;
+
+justify-content:space-between;
+
+margin-bottom:20px;
+
+font-size:.9rem;
+}
+
+.extras a{
+
+color:#fff;
+
+text-decoration:none;
+}
+
+.login-btn{
+
+width:100%;
+
+padding:15px;
+
+border:none;
+
+border-radius:12px;
+
+background:#5B21B6;
+
+color:white;
+
+font-weight:700;
+
+cursor:pointer;
+
+transition:.3s;
+}
+
+.login-btn:hover{
+
+transform:translateY(-2px);
+}
+
+@keyframes fadeUp{
+
+from{
+
+opacity:0;
+transform:translateY(30px);
+
+}
+
+to{
+
+opacity:1;
+transform:translateY(0);
+
+}
+
+}
+@keyframes floating{
+
+0%{
+
+transform:
+translateY(0px);
+
+}
+
+50%{
+
+transform:
+translateY(-10px);
+
+}
+
+100%{
+
+transform:
+translateY(0px);
+
+}
+
+}
+
+@media(max-width:600px){
+
+.login-card{
+
+padding:25px;
+}
+
+}
+*{
+    box-sizing:border-box;
+}
+
+body{
+    margin:0;
+    min-height:100vh;
+    font-family:'Outfit',sans-serif;
+
+    background:
+    linear-gradient(
+        rgba(91,33,182,.75),
+        rgba(124,58,237,.75)
+    ),
+    url("images/PACSA LOGO.png");
+
+    background-size:cover;
+    background-position:center;
+
+    display:flex;
+    justify-content:center;
+    align-items:center;
+}
+
+.overlay{
+    position:fixed;
+    inset:0;
+    background:rgba(0,0,0,.25);
+    z-index:0;
+}
+
+.login-container{
+    width:100%;
+    padding:20px;
+    position:relative;
+    z-index:1;
+}
+
+.login-card{
+    width:100%;
+    max-width:430px;
+    margin:auto;
+
+    background:white;
+
+    padding:35px;
+
+    border-radius:22px;
+
+    box-shadow:
+    0 20px 50px rgba(0,0,0,.25);
+
+    text-align:center;
+}
+
+.logo{
+    width:90px;
+    height:90px;
+    object-fit:contain;
+    margin-bottom:10px;
+}
+
+h1{
+    margin:0;
+    color:#5B21B6;
+    font-size:32px;
+}
+
+.portal-title{
+    margin:5px 0;
+    font-size:20px;
+    font-weight:700;
+    color:#7C3AED;
+}
+
+.motto{
+    margin:5px 0 25px;
+    color:#666;
+    font-size:14px;
+}
+
+.input-group{
+    text-align:left;
+    margin-bottom:18px;
+}
+
+.input-group label{
+    display:block;
+    margin-bottom:7px;
+    font-weight:600;
+    color:#333;
+}
+
+.input-group input{
+    width:100%;
+    padding:14px;
+
+    border:1px solid #ddd;
+    border-radius:10px;
+
+    font-size:15px;
+    outline:none;
+}
+
+.input-group input:focus{
+    border-color:#7C3AED;
+}
+
+.password-box{
+    position:relative;
+}
+
+.password-box input{
+    padding-right:45px;
+}
+
+#togglePassword{
+    position:absolute;
+    right:14px;
+    top:50%;
+    transform:translateY(-50%);
+
+    cursor:pointer;
+    font-size:18px;
+}
+
+.extras{
+    display:flex;
+    justify-content:space-between;
+    align-items:center;
+
+    margin-bottom:20px;
+
+    font-size:13px;
+}
+
+.extras a{
+    color:#7C3AED;
+    text-decoration:none;
+}
+
+.login-btn{
+    width:100%;
+
+    border:none;
+    border-radius:10px;
+
+    padding:14px;
+
+    background:#5B21B6;
+    color:white;
+
+    font-size:16px;
+    font-weight:600;
+
+    cursor:pointer;
+}
+
+.login-btn:hover{
+    background:#7C3AED;
+}
+
+.back-link{
+    display:inline-block;
+    margin-top:20px;
+
+    color:#5B21B6;
+    text-decoration:none;
+
+    font-size:14px;
+}
+
+.back-link:hover{
+    text-decoration:underline;
+}
+
+@media(max-width:500px){
+
+    .login-card{
+        padding:25px 20px;
+    }
+
+}

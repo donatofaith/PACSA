@@ -1,0 +1,1095 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+
+<meta charset="UTF-8">
+
+<meta
+name="viewport"
+content="width=device-width, initial-scale=1.0">
+
+<title>PACSA Student Dashboard</title>
+
+<style>
+
+/* =========================
+   GENERAL
+========================= */
+
+body{
+    margin:0;
+    font-family:Arial,sans-serif;
+    background:#f5f3ff;
+    color:#222;
+}
+
+.header{
+    background:linear-gradient(135deg,#5B21B6,#7C3AED);
+    color:#fff;
+    padding:20px;
+}
+
+.container{
+    padding:20px;
+}
+
+.card{
+    background:#fff;
+    border-radius:16px;
+    padding:20px;
+    margin-bottom:20px;
+    box-shadow:0 4px 12px rgba(0,0,0,.08);
+}
+
+
+/* =========================
+   PROFILE
+========================= */
+
+.profile{
+    display:flex;
+    gap:20px;
+    align-items:center;
+    flex-wrap:wrap;
+}
+
+.profile img{
+    width:100px;
+    height:100px;
+    border-radius:50%;
+    object-fit:cover;
+}
+
+
+/* =========================
+   STATISTICS
+========================= */
+
+.stats{
+    display:grid;
+    grid-template-columns:
+    repeat(auto-fit,minmax(180px,1fr));
+    gap:15px;
+}
+
+.stat{
+    background:#fff;
+    border-radius:16px;
+    padding:15px;
+    box-shadow:0 4px 12px rgba(0,0,0,.08);
+}
+
+
+/* =========================
+   RESULTS TABLE
+========================= */
+
+table{
+    width:100%;
+    border-collapse:collapse;
+}
+
+th,
+td{
+    padding:10px;
+    border:1px solid #ddd;
+    text-align:center;
+}
+
+th{
+    background:#5B21B6;
+    color:#fff;
+}
+
+
+/* =========================
+   PASS / FAIL
+========================= */
+
+.fail{
+    color:#dc2626;
+    font-weight:bold;
+}
+
+.pass{
+    color:#16a34a;
+    font-weight:bold;
+}
+
+
+/* =========================
+   BUTTON
+========================= */
+
+.btn{
+    display:inline-block;
+    background:#F59E0B;
+    color:#fff;
+    text-decoration:none;
+    padding:12px 18px;
+    border-radius:10px;
+}
+
+
+/* =========================
+   REPORT CARD
+========================= */
+
+.report-card{
+    background:white;
+    padding:25px;
+    border-radius:20px;
+    box-shadow:0 5px 20px rgba(0,0,0,.08);
+    margin-top:20px;
+}
+
+.report-header{
+    text-align:center;
+    margin-bottom:20px;
+}
+
+.school-logo{
+    width:80px;
+    margin-bottom:10px;
+}
+
+.student-info{
+    display:grid;
+    grid-template-columns:
+    repeat(auto-fit,minmax(200px,1fr));
+    gap:10px;
+    margin-bottom:20px;
+}
+
+.report-table{
+    width:100%;
+    border-collapse:collapse;
+}
+
+.report-table th{
+    background:#5B21B6;
+    color:white;
+    padding:12px;
+}
+
+.report-table td{
+    padding:12px;
+    border-bottom:1px solid #eee;
+}
+
+
+/* =========================
+   REPORT SUMMARY
+========================= */
+
+.result-summary{
+    margin-top:20px;
+    font-weight:600;
+}
+
+
+/* =========================
+   REPORT BUTTONS
+========================= */
+
+.report-actions{
+    margin-top:20px;
+    display:flex;
+    gap:10px;
+    flex-wrap:wrap;
+}
+
+.report-actions button{
+    background:#5B21B6;
+    color:white;
+    border:none;
+    padding:12px 18px;
+    border-radius:10px;
+    cursor:pointer;
+}
+
+.report-actions button:hover{
+    opacity:.9;
+}
+
+
+/* =========================
+   MOBILE
+========================= */
+
+@media(max-width:600px){
+
+    .container{
+        padding:10px;
+    }
+
+    .card{
+        padding:15px;
+    }
+
+    table{
+        font-size:14px;
+    }
+
+    th,
+    td{
+        padding:8px 5px;
+    }
+
+}
+
+
+/* =========================
+   PRINTING
+========================= */
+
+@media print{
+
+    body{
+        background:white;
+        margin:0;
+    }
+
+    .header,
+    .container > .profile,
+    .container > .stats,
+    .container > .card:not(.report-wrapper){
+        display:none !important;
+    }
+
+    .report-wrapper{
+        display:block !important;
+        margin:0 !important;
+        padding:0 !important;
+        box-shadow:none !important;
+        background:white !important;
+    }
+
+    .report-card{
+        display:block !important;
+        box-shadow:none !important;
+        margin:0 !important;
+        padding:20px !important;
+        border-radius:0 !important;
+    }
+
+    .report-actions{
+        display:none !important;
+    }
+
+    .report-table th{
+        background:#5B21B6 !important;
+        color:white !important;
+        -webkit-print-color-adjust:exact;
+        print-color-adjust:exact;
+    }
+
+    .pass{
+        color:#16a34a !important;
+        -webkit-print-color-adjust:exact;
+        print-color-adjust:exact;
+    }
+
+    .fail{
+        color:#dc2626 !important;
+        -webkit-print-color-adjust:exact;
+        print-color-adjust:exact;
+    }
+
+}
+
+
+/* =========================
+   REPORT WRAPPER
+========================= */
+
+.report-wrapper{
+    background:#fff;
+}
+
+</style>
+
+</head>
+
+
+<body>
+
+
+<!-- =========================
+     HEADER
+========================= -->
+
+<div class="header">
+
+    <h1>
+        PACSA Student Dashboard
+    </h1>
+
+    <p>
+        Becoming Leaders Through Righteousness
+    </p>
+
+</div>
+
+
+<div class="container">
+
+
+<!-- =========================
+     STUDENT PROFILE
+========================= -->
+
+<div class="card profile">
+
+    <img
+    src="images/Faith.jpg"
+    alt="Student">
+
+    <div>
+
+        <h2 id="studentName">
+            Student Name
+        </h2>
+
+        <p>
+
+            ID:
+            <span id="studentId"></span>
+
+            |
+
+            Class:
+            <span id="studentClass"></span>
+
+            |
+
+            First Term
+
+        </p>
+
+    </div>
+
+</div>
+
+
+<!-- =========================
+     STATISTICS
+========================= -->
+
+<div class="stats">
+
+
+    <div class="stat">
+
+        <h3>
+            Average
+        </h3>
+
+        <h2 id="average">
+            0%
+        </h2>
+
+    </div>
+
+
+    <div class="stat">
+
+        <h3>
+            Position
+        </h3>
+
+        <h2 id="position">
+            --
+        </h2>
+
+    </div>
+
+
+    <div class="stat">
+
+        <h3>
+            Subjects
+        </h3>
+
+        <h2 id="subjects">
+            0
+        </h2>
+
+    </div>
+
+
+</div>
+
+
+<!-- =========================
+     RESULTS
+========================= -->
+
+<div class="card">
+
+    <h2>
+        Results
+    </h2>
+
+
+    <table>
+
+        <thead>
+
+            <tr>
+
+                <th>
+                    Subject
+                </th>
+
+                <th>
+                    CA
+                </th>
+
+                <th>
+                    Exam
+                </th>
+
+                <th>
+                    Total
+                </th>
+
+                <th>
+                    Grade
+                </th>
+
+            </tr>
+
+        </thead>
+
+
+        <tbody id="resultsTable">
+
+        </tbody>
+
+    </table>
+
+
+    <br>
+
+
+</div>
+
+
+<!-- =========================
+     REPORT CARD
+========================= -->
+
+<div class="card report-wrapper">
+
+
+<section class="report-card">
+
+
+    <!-- REPORT HEADER -->
+
+    <div class="report-header">
+
+        <img
+        src="images/PACSA LOGO.png"
+        class="school-logo"
+        alt="School Logo">
+
+
+        <h2>
+            PACSA REPORT CARD
+        </h2>
+
+        <p>
+            Becoming Leaders Through Righteousness
+        </p>
+
+    </div>
+
+
+    <!-- STUDENT INFORMATION -->
+
+    <div class="student-info">
+
+
+        <p>
+
+            <strong>
+                Name:
+            </strong>
+
+            <span id="reportStudentName">
+            </span>
+
+        </p>
+
+
+        <p>
+
+            <strong>
+                Class:
+            </strong>
+
+            <span id="reportStudentClass">
+            </span>
+
+        </p>
+
+
+        <p>
+
+            <strong>
+                Session:
+            </strong>
+
+            2025/2026
+
+        </p>
+
+
+        <p>
+
+            <strong>
+                Term:
+            </strong>
+
+            First Term
+
+        </p>
+
+
+    </div>
+
+
+    <!-- REPORT TABLE -->
+
+    <table class="report-table">
+
+
+        <thead>
+
+            <tr>
+
+                <th>
+                    Subject
+                </th>
+
+                <th>
+                    CA
+                </th>
+
+                <th>
+                    Exam
+                </th>
+
+                <th>
+                    Total
+                </th>
+
+                <th>
+                    Grade
+                </th>
+
+            </tr>
+
+        </thead>
+
+
+        <tbody id="reportResultsTable">
+
+        </tbody>
+
+
+    </table>
+
+
+    <!-- RESULT SUMMARY -->
+
+    <div class="result-summary">
+
+
+        <p>
+
+            <strong>
+                Average:
+            </strong>
+
+            <span id="reportAverage">
+            </span>
+
+        </p>
+
+
+        <p>
+
+            <strong>
+                Position:
+            </strong>
+
+            <span id="reportPosition">
+                N/A
+            </span>
+
+        </p>
+
+
+        <p>
+
+            <strong>
+                Remark:
+            </strong>
+
+            <span id="reportRemark">
+            </span>
+
+        </p>
+
+
+    </div>
+
+
+    <!-- REPORT ACTIONS -->
+
+    <div class="report-actions">
+
+
+        <button id="printResultBtn">
+
+            🖨 Print Result
+
+        </button>
+
+    </div>
+
+
+</section>
+
+</div>
+
+
+<!-- =========================
+     ANNOUNCEMENTS
+========================= -->
+
+<div class="card">
+
+    <h2>
+        Announcements
+    </h2>
+
+    <p>
+        School resumes September 15th.
+        Come with complete learning materials.
+    </p>
+
+</div>
+
+
+</div>
+
+
+<!-- =========================
+     SUPABASE
+========================= -->
+
+<script
+src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2">
+</script>
+
+
+<script src="supabase.js"></script>
+
+
+<!-- =========================
+     DASHBOARD SCRIPT
+========================= -->
+
+<script>
+
+
+async function loadStudentData(){
+
+
+    /* =========================
+       GET LOGGED-IN STUDENT
+    ========================= */
+
+    const student =
+    JSON.parse(
+        localStorage.getItem("student")
+    );
+
+
+    if(!student){
+
+        window.location.href =
+        "student-login.html";
+
+        return;
+
+    }
+
+
+    /* =========================
+       STUDENT INFORMATION
+    ========================= */
+
+    document.getElementById(
+        "studentName"
+    ).textContent =
+    student.fullname;
+
+
+    document.getElementById(
+        "studentId"
+    ).textContent =
+    student.student_id;
+
+
+    document.getElementById(
+        "studentClass"
+    ).textContent =
+    student.class;
+
+
+    document.getElementById(
+        "reportStudentName"
+    ).textContent =
+    student.fullname;
+
+
+    document.getElementById(
+        "reportStudentClass"
+    ).textContent =
+    student.class;
+
+
+    /* =========================
+       FETCH RESULTS
+    ========================= */
+
+    const { data, error } =
+    await supabaseClient
+
+    .from("results")
+
+    .select("*")
+
+    .eq(
+        "student_id",
+        student.student_id
+    );
+
+
+    console.log(
+        "Results:",
+        data
+    );
+
+
+    console.log(
+        "Error:",
+        error
+    );
+
+
+    /* =========================
+       MAIN RESULTS TABLE
+    ========================= */
+
+    const table =
+    document.getElementById(
+        "resultsTable"
+    );
+
+
+    table.innerHTML = "";
+
+
+    if(error){
+
+        table.innerHTML = `
+
+        <tr>
+
+            <td colspan="5">
+
+                Error Loading Results
+
+            </td>
+
+        </tr>
+
+        `;
+
+        return;
+
+    }
+
+
+    if(!data || data.length === 0){
+
+        table.innerHTML = `
+
+        <tr>
+
+            <td colspan="5">
+
+                No Results Found
+
+            </td>
+
+        </tr>
+
+        `;
+
+        return;
+
+    }
+
+
+    /* =========================
+       DISPLAY MAIN RESULTS
+    ========================= */
+
+    data.forEach(result => {
+
+
+        const gradeClass =
+
+        result.total >= 40
+
+        ? "pass"
+
+        : "fail";
+
+
+        table.innerHTML += `
+
+        <tr>
+
+            <td>
+                ${result.subject}
+            </td>
+
+            <td>
+                ${result.ca}
+            </td>
+
+            <td>
+                ${result.exam}
+            </td>
+
+            <td class="${gradeClass}">
+                ${result.total}
+            </td>
+
+            <td class="${gradeClass}">
+                ${result.grade}
+            </td>
+
+        </tr>
+
+        `;
+
+    });
+
+
+    /* =========================
+       CALCULATE AVERAGE
+    ========================= */
+
+    let totalScore = 0;
+
+
+    data.forEach(result => {
+
+        totalScore +=
+        Number(result.total) || 0;
+
+    });
+
+
+    const average =
+
+    Math.round(
+        totalScore / data.length
+    );
+
+
+    document.getElementById(
+        "average"
+    ).textContent =
+
+    average + "%";
+
+
+    document.getElementById(
+        "subjects"
+    ).textContent =
+
+    data.length;
+
+
+    document.getElementById(
+        "position"
+    ).textContent =
+
+    "N/A";
+
+
+    /* =========================
+       REPORT CARD TABLE
+    ========================= */
+
+    const reportTable =
+    document.getElementById(
+        "reportResultsTable"
+    );
+
+
+    reportTable.innerHTML = "";
+
+
+    data.forEach(result => {
+
+
+        const gradeClass =
+
+        result.total >= 40
+
+        ? "pass"
+
+        : "fail";
+
+
+        reportTable.innerHTML += `
+
+        <tr>
+
+            <td>
+                ${result.subject}
+            </td>
+
+            <td>
+                ${result.ca}
+            </td>
+
+            <td>
+                ${result.exam}
+            </td>
+
+            <td class="${gradeClass}">
+                ${result.total}
+            </td>
+
+            <td class="${gradeClass}">
+                ${result.grade}
+            </td>
+
+        </tr>
+
+        `;
+
+    });
+
+
+    /* =========================
+       REPORT AVERAGE
+    ========================= */
+
+    const reportAverage =
+    document.getElementById(
+        "reportAverage"
+    );
+
+
+    reportAverage.textContent =
+
+    average + "%";
+
+
+    /* =========================
+       REPORT POSITION
+    ========================= */
+
+    document.getElementById(
+        "reportPosition"
+    ).textContent =
+
+    "N/A";
+
+
+    /* =========================
+       REPORT REMARK
+    ========================= */
+
+    const reportRemark =
+    document.getElementById(
+        "reportRemark"
+    );
+
+
+    let remark =
+    "Needs Improvement";
+
+
+    if(average >= 70){
+
+        remark =
+        "Excellent Performance";
+
+    }
+
+    else if(average >= 50){
+
+        remark =
+        "Good Performance";
+
+    }
+
+    else if(average >= 40){
+
+        remark =
+        "Fair Performance";
+
+    }
+
+
+    reportRemark.textContent =
+    remark;
+
+
+}
+
+
+/* =========================
+   PRINT RESULT
+========================= */
+
+document
+.getElementById("printResultBtn")
+.addEventListener(
+    "click",
+    function(){
+
+        window.print();
+
+    }
+);
+
+
+/* =========================
+   LOAD DASHBOARD
+========================= */
+
+loadStudentData();
+
+
+</script>
+
+
+</body>
+
+</html>

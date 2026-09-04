@@ -1,0 +1,256 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+
+    <title>PACSA Teacher Dashboard</title>
+
+    <link rel="stylesheet" href="teacher-dashboard.css">
+</head>
+
+<body>
+
+<header class="header">
+
+    <div>
+        <h1>PACSA Teacher Dashboard</h1>
+        <p>Becoming Leaders Through Righteousness</p>
+    </div>
+
+    <button id="logoutBtn" class="logout">
+        Logout
+    </button>
+
+</header>
+
+
+<main class="container">
+
+    <!-- TEACHER PROFILE -->
+
+    <section class="profile-card">
+
+        <img
+            src="images/Faith.jpg"
+            alt="Teacher"
+            class="teacher-photo"
+        >
+
+        <div class="profile-info">
+
+            <h2 id="teacherName">Loading...</h2>
+
+            <p>
+                <strong>Teacher ID:</strong>
+                <span id="teacherId">--</span>
+            </p>
+
+            <p>
+                <strong>Subject:</strong>
+                <span id="teacherSubject">--</span>
+            </p>
+
+            <p>
+                <strong>Class:</strong>
+                <span id="teacherClass">--</span>
+            </p>
+
+        </div>
+
+    </section>
+
+
+    <!-- INFORMATION CARDS -->
+
+    <section class="info-grid">
+
+        <div class="info-card">
+            <h3>Teacher</h3>
+            <p id="teacherCardName">--</p>
+        </div>
+
+        <div class="info-card">
+            <h3>Subject</h3>
+            <p id="subjectCard">--</p>
+        </div>
+
+        <div class="info-card">
+            <h3>Class</h3>
+            <p id="classCard">--</p>
+        </div>
+
+    </section>
+
+
+    <!-- RESULTS -->
+
+    <section class="results-card">
+
+        <h2>Student Results</h2>
+
+        <div class="table-wrapper">
+
+            <table>
+
+                <thead>
+                    <tr>
+                        <th>Student ID</th>
+                        <th>Student Name</th>
+                        <th>CA</th>
+                        <th>Exam</th>
+                        <th>Total</th>
+                        <th>Grade</th>
+                        <th>Action</th>
+                    </tr>
+                </thead>
+
+                <tbody id="resultsTable">
+
+                    <tr>
+                        <td colspan="7">
+                            Loading results...
+                        </td>
+                    </tr>
+
+                </tbody>
+
+            </table>
+
+        </div>
+
+
+        <!-- EDIT PANEL -->
+
+        <div id="editPanel" class="edit-panel">
+
+            <h3>Edit Student Result</h3>
+
+            <div class="edit-info">
+
+                <p>
+                    <strong>Student:</strong>
+                    <span id="editStudentName">--</span>
+                </p>
+
+                <p>
+                    <strong>Student ID:</strong>
+                    <span id="editStudentId">--</span>
+                </p>
+
+                <p>
+                    <strong>Subject:</strong>
+                    <span id="editSubject">--</span>
+                </p>
+
+            </div>
+
+
+            <div class="form-grid">
+
+                <div class="form-group">
+
+                    <label for="editCA">
+                        CA Mark (0–40)
+                    </label>
+
+                    <input
+                        type="number"
+                        id="editCA"
+                        min="0"
+                        max="40"
+                    >
+
+                </div>
+
+
+                <div class="form-group">
+
+                    <label for="editExam">
+                        Exam Mark (0–60)
+                    </label>
+
+                    <input
+                        type="number"
+                        id="editExam"
+                        min="0"
+                        max="60"
+                    >
+
+                </div>
+
+
+                <div class="form-group">
+
+                    <label for="editTotal">
+                        Total
+                    </label>
+
+                    <input
+                        type="number"
+                        id="editTotal"
+                        class="calculated"
+                        readonly
+                    >
+
+                </div>
+
+
+                <div class="form-group">
+
+                    <label for="editGrade">
+                        Grade
+                    </label>
+
+                    <input
+                        type="text"
+                        id="editGrade"
+                        class="calculated"
+                        readonly
+                    >
+
+                </div>
+
+            </div>
+
+
+            <p id="editMessage" class="edit-message"></p>
+
+
+            <div class="edit-buttons">
+
+                <button
+                    type="button"
+                    id="saveBtn"
+                    class="save-btn"
+                >
+                    Save Changes
+                </button>
+
+                <button
+                    type="button"
+                    id="cancelBtn"
+                    class="cancel-btn"
+                >
+                    Cancel
+                </button>
+
+            </div>
+
+        </div>
+
+    </section>
+
+</main>
+
+
+<!-- SUPABASE -->
+
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+
+<script src="supabase.js"></script>
+
+<script src="teacher-dashboard.js"></script>
+
+</body>
+</html>

@@ -1,0 +1,876 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+
+    <title>PACSA | Admin Dashboard</title>
+
+    <link rel="stylesheet"
+        href="https://fonts.googleapis.com/css2?family=Outfit:wght@300;400;500;600;700;800&display=swap">
+
+    <link rel="stylesheet" href="admin-dashboard.css">
+</head>
+
+<body>
+
+    <!-- MOBILE MENU BUTTON -->
+    <button class="menu-btn" id="menuBtn" aria-label="Open Menu">
+        ☰
+    </button>
+
+
+    <!-- ================= SIDEBAR ================= -->
+
+    <aside class="sidebar" id="sidebar">
+
+        <!-- BRAND -->
+        <div class="brand">
+
+            <img src="images/PACSA LOGO.png" alt="PACSA Logo">
+
+            <div class="brand-text">
+                <h2>PACSA</h2>
+                <p>Admin Portal</p>
+            </div>
+
+        </div>
+
+
+        <!-- NAVIGATION -->
+        <nav class="sidebar-nav">
+
+            <p class="nav-label">MAIN MENU</p>
+
+            <a href="admin-dashboard.html" class="nav-link active">
+                <span class="nav-icon">⌂</span>
+                Dashboard
+            </a>
+
+
+            <p class="nav-label">STUDENT MANAGEMENT</p>
+
+            <a href="students.html" class="nav-link">
+                <span class="nav-icon">🎓</span>
+                Students
+            </a>
+
+
+            <p class="nav-label">ACADEMIC MANAGEMENT</p>
+
+            <a href="teachers.html" class="nav-link">
+                <span class="nav-icon">👨‍🏫</span>
+                Teachers
+            </a>
+
+            <a href="subjects.html" class="nav-link">
+                <span class="nav-icon">📚</span>
+                Subjects
+            </a>
+
+            <a href="classes.html" class="nav-link">
+                <span class="nav-icon">🏫</span>
+                Classes
+            </a>
+
+            <a href="sessions.html" class="nav-link">
+                <span class="nav-icon">📅</span>
+                Sessions & Terms
+            </a>
+
+
+            <p class="nav-label">RESULT MANAGEMENT</p>
+
+            <a href="results.html" class="nav-link">
+                <span class="nav-icon">📑</span>
+                Results
+            </a>
+
+            <a href="reports.html" class="nav-link">
+                <span class="nav-icon">📊</span>
+                Reports & Analytics
+            </a>
+
+
+            <p class="nav-label">ADMINISTRATION</p>
+
+            <a href="applications.html" class="nav-link">
+                <span class="nav-icon">📝</span>
+                Applications
+            </a>
+
+            <a href="settings.html" class="nav-link">
+                <span class="nav-icon">⚙</span>
+                Settings
+            </a>
+
+        </nav>
+
+
+        <!-- SIDEBAR FOOTER -->
+        <div class="sidebar-footer">
+
+            <a href="#" class="logout-link" id="logoutBtn">
+                <span>🚪</span>
+                Logout
+            </a>
+
+        </div>
+
+    </aside>
+
+
+
+    <!-- ================= MAIN CONTENT ================= -->
+
+    <main class="main-content">
+
+
+        <!-- TOPBAR -->
+
+        <header class="topbar">
+
+            <div class="page-title">
+
+                <p class="breadcrumb">
+                    Administration / Dashboard
+                </p>
+
+                <h1>Admin Dashboard</h1>
+
+            </div>
+
+
+            <div class="topbar-right">
+
+                <button class="notification-btn" aria-label="Notifications">
+                    🔔
+                    <span class="notification-dot"></span>
+                </button>
+
+
+                <div class="admin-profile">
+
+                    <img
+                        src="images/Faith.jpg"
+                        alt="Administrator">
+
+                    <div class="admin-info">
+
+                        <strong>Administrator</strong>
+
+                        <span>System Administrator</span>
+
+                    </div>
+
+                </div>
+
+            </div>
+
+        </header>
+
+
+
+        <!-- ================= WELCOME SECTION ================= -->
+
+        <section class="welcome-banner">
+
+            <div class="welcome-content">
+
+                <div>
+
+                    <p class="welcome-small">
+                        PACSA SCHOOL MANAGEMENT SYSTEM
+                    </p>
+
+                    <h2>
+                        Welcome back, Administrator
+                    </h2>
+
+                    <p>
+                        Here's what's happening across your school today.
+                    </p>
+
+                </div>
+
+                <div class="welcome-date">
+
+                    <span id="currentDate"></span>
+
+                </div>
+
+            </div>
+
+        </section>
+
+
+
+        <!-- ================= STATISTICS ================= -->
+
+        <section class="stats-section">
+
+            <div class="section-heading">
+
+                <div>
+
+                    <p class="section-subtitle">
+                        SCHOOL OVERVIEW
+                    </p>
+
+                    <h2>System Statistics</h2>
+
+                </div>
+
+            </div>
+
+
+            <div class="stats-grid">
+
+
+                <div class="stat-card">
+
+                    <div class="stat-icon students-icon">
+                        🎓
+                    </div>
+
+                    <div class="stat-info">
+
+                        <p>Total Students</p>
+
+                        <h2 class="counter" data-target="1250">
+                            0
+                        </h2>
+
+                        <span class="stat-change positive">
+                            ↑ Active students
+                        </span>
+
+                    </div>
+
+                </div>
+
+
+
+                <div class="stat-card">
+
+                    <div class="stat-icon teachers-icon">
+                        👨‍🏫
+                    </div>
+
+                    <div class="stat-info">
+
+                        <p>Total Teachers</p>
+
+                        <h2 class="counter" data-target="45">
+                            0
+                        </h2>
+
+                        <span class="stat-change">
+                            Teaching staff
+                        </span>
+
+                    </div>
+
+                </div>
+
+
+
+                <div class="stat-card">
+
+                    <div class="stat-icon subjects-icon">
+                        📚
+                    </div>
+
+                    <div class="stat-info">
+
+                        <p>Total Subjects</p>
+
+                        <h2 class="counter" data-target="18">
+                            0
+                        </h2>
+
+                        <span class="stat-change">
+                            Academic subjects
+                        </span>
+
+                    </div>
+
+                </div>
+
+
+
+                <div class="stat-card">
+
+                    <div class="stat-icon classes-icon">
+                        🏫
+                    </div>
+
+                    <div class="stat-info">
+
+                        <p>Total Classes</p>
+
+                        <h2 class="counter" data-target="12">
+                            0
+                        </h2>
+
+                        <span class="stat-change">
+                            Active classes
+                        </span>
+
+                    </div>
+
+                </div>
+
+
+            </div>
+
+        </section>
+
+
+
+        <!-- ================= DASHBOARD GRID ================= -->
+
+        <section class="dashboard-grid">
+
+
+            <!-- RECENT ACTIVITIES -->
+
+            <div class="dashboard-card recent-activity-card">
+
+                <div class="card-header">
+
+                    <div>
+
+                        <p class="section-subtitle">
+                            ACTIVITY
+                        </p>
+
+                        <h2>Recent Activities</h2>
+
+                    </div>
+
+                    <a href="#" class="view-all">
+                        View All
+                    </a>
+
+                </div>
+
+
+                <div class="activity-list">
+
+
+                    <div class="activity-item">
+
+                        <div class="activity-icon purple">
+                            👨‍🎓
+                        </div>
+
+                        <div class="activity-details">
+
+                            <strong>
+                                New student registered
+                            </strong>
+
+                            <p>
+                                A new student was added to JSS1A
+                            </p>
+
+                        </div>
+
+                        <span class="activity-time">
+                            10 min ago
+                        </span>
+
+                    </div>
+
+
+
+                    <div class="activity-item">
+
+                        <div class="activity-icon green">
+                            👨‍🏫
+                        </div>
+
+                        <div class="activity-details">
+
+                            <strong>
+                                Teacher profile updated
+                            </strong>
+
+                            <p>
+                                Mathematics teacher information updated
+                            </p>
+
+                        </div>
+
+                        <span class="activity-time">
+                            1 hour ago
+                        </span>
+
+                    </div>
+
+
+
+                    <div class="activity-item">
+
+                        <div class="activity-icon orange">
+                            📑
+                        </div>
+
+                        <div class="activity-details">
+
+                            <strong>
+                                Results submitted
+                            </strong>
+
+                            <p>
+                                JSS2 Mathematics results submitted
+                            </p>
+
+                        </div>
+
+                        <span class="activity-time">
+                            2 hours ago
+                        </span>
+
+                    </div>
+
+
+
+                    <div class="activity-item">
+
+                        <div class="activity-icon blue">
+                            📝
+                        </div>
+
+                        <div class="activity-details">
+
+                            <strong>
+                                New admission application
+                            </strong>
+
+                            <p>
+                                A parent submitted an admission application
+                            </p>
+
+                        </div>
+
+                        <span class="activity-time">
+                            Today
+                        </span>
+
+                    </div>
+
+
+                </div>
+
+            </div>
+
+
+
+            <!-- SCHOOL STATUS -->
+
+            <div class="dashboard-card school-status-card">
+
+                <div class="card-header">
+
+                    <div>
+
+                        <p class="section-subtitle">
+                            CURRENT ACADEMIC PERIOD
+                        </p>
+
+                        <h2>School Status</h2>
+
+                    </div>
+
+                </div>
+
+
+                <div class="academic-info">
+
+                    <div class="academic-row">
+
+                        <span>Academic Session</span>
+
+                        <strong>2025/2026</strong>
+
+                    </div>
+
+
+                    <div class="academic-row">
+
+                        <span>Current Term</span>
+
+                        <strong>First Term</strong>
+
+                    </div>
+
+
+                    <div class="academic-row">
+
+                        <span>Results Status</span>
+
+                        <span class="status-badge pending">
+                            Pending
+                        </span>
+
+                    </div>
+
+
+                    <div class="academic-row">
+
+                        <span>System Status</span>
+
+                        <span class="status-badge active-status">
+                            ● Operational
+                        </span>
+
+                    </div>
+
+                </div>
+
+
+                <a href="sessions.html" class="card-action-btn">
+                    Manage Session & Term →
+                </a>
+
+            </div>
+
+
+        </section>
+
+
+
+        <!-- ================= LOWER GRID ================= -->
+
+        <section class="dashboard-grid lower-grid">
+
+
+            <!-- RECENT APPLICATIONS -->
+
+            <div class="dashboard-card applications-card">
+
+                <div class="card-header">
+
+                    <div>
+
+                        <p class="section-subtitle">
+                            ADMISSIONS
+                        </p>
+
+                        <h2>Recent Applications</h2>
+
+                    </div>
+
+                    <a href="applications.html" class="view-all">
+                        View All
+                    </a>
+
+                </div>
+
+
+                <div class="table-wrapper">
+
+                    <table class="data-table">
+
+                        <thead>
+
+                            <tr>
+
+                                <th>Applicant</th>
+
+                                <th>Class</th>
+
+                                <th>Status</th>
+
+                            </tr>
+
+                        </thead>
+
+
+                        <tbody>
+
+                            <tr>
+
+                                <td>
+
+                                    <div class="table-person">
+
+                                        <div class="avatar">
+                                            DJ
+                                        </div>
+
+                                        David Johnson
+
+                                    </div>
+
+                                </td>
+
+                                <td>JSS1</td>
+
+                                <td>
+
+                                    <span class="status-badge pending">
+                                        Pending
+                                    </span>
+
+                                </td>
+
+                            </tr>
+
+
+                            <tr>
+
+                                <td>
+
+                                    <div class="table-person">
+
+                                        <div class="avatar">
+                                            MW
+                                        </div>
+
+                                        Mary Williams
+
+                                    </div>
+
+                                </td>
+
+                                <td>SS1</td>
+
+                                <td>
+
+                                    <span class="status-badge pending">
+                                        Pending
+                                    </span>
+
+                                </td>
+
+                            </tr>
+
+                        </tbody>
+
+                    </table>
+
+                </div>
+
+            </div>
+
+
+
+            <!-- STUDENTS REQUIRING ATTENTION -->
+
+            <div class="dashboard-card attention-card">
+
+                <div class="card-header">
+
+                    <div>
+
+                        <p class="section-subtitle">
+                            PERFORMANCE MONITORING
+                        </p>
+
+                        <h2>Students Requiring Attention</h2>
+
+                    </div>
+
+                    <a href="reports.html" class="view-all">
+                        View Report
+                    </a>
+
+                </div>
+
+
+                <div class="attention-list">
+
+
+                    <div class="attention-item">
+
+                        <div class="student-mini-avatar">
+                            MJ
+                        </div>
+
+
+                        <div class="attention-details">
+
+                            <strong>Mary James</strong>
+
+                            <span>SS1A</span>
+
+                        </div>
+
+
+                        <div class="performance-score low">
+
+                            38%
+
+                        </div>
+
+                    </div>
+
+
+                    <div class="attention-item">
+
+                        <div class="student-mini-avatar">
+                            PO
+                        </div>
+
+
+                        <div class="attention-details">
+
+                            <strong>Peter Okafor</strong>
+
+                            <span>JSS2B</span>
+
+                        </div>
+
+
+                        <div class="performance-score low">
+
+                            42%
+
+                        </div>
+
+                    </div>
+
+
+                    <div class="attention-item">
+
+                        <div class="student-mini-avatar">
+                            AK
+                        </div>
+
+
+                        <div class="attention-details">
+
+                            <strong>Amaka Kingsley</strong>
+
+                            <span>SS2A</span>
+
+                        </div>
+
+
+                        <div class="performance-score warning">
+
+                            48%
+
+                        </div>
+
+                    </div>
+
+
+                </div>
+
+            </div>
+
+
+        </section>
+
+
+
+        <!-- ================= PERFORMANCE OVERVIEW ================= -->
+
+        <section class="performance-section">
+
+            <div class="dashboard-card performance-card">
+
+                <div class="card-header">
+
+                    <div>
+
+                        <p class="section-subtitle">
+                            ACADEMIC PERFORMANCE
+                        </p>
+
+                        <h2>School Performance Overview</h2>
+
+                    </div>
+
+                    <a href="reports.html" class="view-all">
+                        Full Analytics →
+                    </a>
+
+                </div>
+
+
+                <div class="performance-grid">
+
+
+                    <div class="performance-box">
+
+                        <span class="performance-label">
+                            School Average
+                        </span>
+
+                        <strong class="performance-number">
+                            74%
+                        </strong>
+
+                    </div>
+
+
+                    <div class="performance-box">
+
+                        <span class="performance-label">
+                            Pass Rate
+                        </span>
+
+                        <strong class="performance-number">
+                            92%
+                        </strong>
+
+                    </div>
+
+
+                    <div class="performance-box">
+
+                        <span class="performance-label">
+                            Best Performing Class
+                        </span>
+
+                        <strong class="performance-text">
+                            JSS1A
+                        </strong>
+
+                    </div>
+
+
+                    <div class="performance-box">
+
+                        <span class="performance-label">
+                            Top Student
+                        </span>
+
+                        <strong class="performance-text">
+                            David Paul
+                        </strong>
+
+                    </div>
+
+
+                </div>
+
+            </div>
+
+        </section>
+
+
+        <!-- FOOTER -->
+
+        <footer class="dashboard-footer">
+
+            <p>
+                © 2026 PACSA School Management System.
+                All rights reserved.
+            </p>
+
+        </footer>
+
+
+    </main>
+
+
+    <script src="admin-dashboard.js"></script>
+
+</body>
+</html>

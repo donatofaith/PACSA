@@ -1,0 +1,1241 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+
+    <meta charset="UTF-8">
+
+    <meta name="viewport"
+        content="width=device-width, initial-scale=1.0">
+
+    <title>PACSA | Teachers Management</title>
+
+    <link rel="stylesheet"
+        href="https://fonts.googleapis.com/css2?family=Outfit:wght@300;400;500;600;700;800&display=swap">
+
+    <link rel="stylesheet"
+        href="admin-dashboard.css">
+
+</head>
+
+
+<body>
+
+
+    <!-- MOBILE MENU -->
+
+    <button class="menu-btn"
+        id="menuBtn"
+        aria-label="Open navigation">
+
+        ☰
+
+    </button>
+
+
+    <!-- ================= SIDEBAR ================= -->
+
+    <aside class="sidebar"
+        id="sidebar">
+
+
+        <div class="brand">
+
+            <img src="images/PACSA LOGO.png"
+                alt="PACSA Logo">
+
+            <div class="brand-text">
+
+                <h2>PACSA</h2>
+
+                <p>Admin Portal</p>
+
+            </div>
+
+        </div>
+
+
+        <nav class="sidebar-nav">
+
+
+            <p class="nav-label">
+                MAIN MENU
+            </p>
+
+
+            <a href="admin-dashboard.html"
+                class="nav-link">
+
+                <span class="nav-icon">⌂</span>
+
+                Dashboard
+
+            </a>
+
+
+
+            <p class="nav-label">
+                STUDENT MANAGEMENT
+            </p>
+
+
+            <a href="students.html"
+                class="nav-link">
+
+                <span class="nav-icon">🎓</span>
+
+                Students
+
+            </a>
+
+
+
+            <p class="nav-label">
+                ACADEMIC MANAGEMENT
+            </p>
+
+
+            <a href="teachers.html"
+                class="nav-link active">
+
+                <span class="nav-icon">👨‍🏫</span>
+
+                Teachers
+
+            </a>
+
+
+            <a href="subjects.html"
+                class="nav-link">
+
+                <span class="nav-icon">📚</span>
+
+                Subjects
+
+            </a>
+
+
+            <a href="classes.html"
+                class="nav-link">
+
+                <span class="nav-icon">🏫</span>
+
+                Classes
+
+            </a>
+
+
+            <a href="sessions.html"
+                class="nav-link">
+
+                <span class="nav-icon">📅</span>
+
+                Sessions & Terms
+
+            </a>
+
+
+
+            <p class="nav-label">
+                RESULT MANAGEMENT
+            </p>
+
+
+            <a href="results.html"
+                class="nav-link">
+
+                <span class="nav-icon">📑</span>
+
+                Results
+
+            </a>
+
+
+            <a href="reports.html"
+                class="nav-link">
+
+                <span class="nav-icon">📊</span>
+
+                Reports & Analytics
+
+            </a>
+
+
+
+            <p class="nav-label">
+                ADMINISTRATION
+            </p>
+
+
+            <a href="applications.html"
+                class="nav-link">
+
+                <span class="nav-icon">📝</span>
+
+                Applications
+
+            </a>
+
+
+            <a href="settings.html"
+                class="nav-link">
+
+                <span class="nav-icon">⚙</span>
+
+                Settings
+
+            </a>
+
+
+        </nav>
+
+
+        <div class="sidebar-footer">
+
+            <a href="#"
+                class="logout-link"
+                id="logoutBtn">
+
+                <span>🚪</span>
+
+                Logout
+
+            </a>
+
+        </div>
+
+
+    </aside>
+
+
+
+    <!-- ================= MAIN CONTENT ================= -->
+
+    <main class="main-content">
+
+
+        <!-- TOPBAR -->
+
+        <header class="topbar">
+
+
+            <div class="page-title">
+
+                <p class="breadcrumb">
+
+                    Administration / Academic Management / Teachers
+
+                </p>
+
+
+                <h1>
+
+                    Teachers Management
+
+                </h1>
+
+
+            </div>
+
+
+
+            <div class="topbar-right">
+
+
+                <button class="notification-btn"
+                    aria-label="Notifications">
+
+                    🔔
+
+                    <span class="notification-dot"></span>
+
+                </button>
+
+
+
+                <div class="admin-profile">
+
+                    <img src="images/Faith.jpg"
+                        alt="Administrator">
+
+
+                    <div class="admin-info">
+
+                        <strong>Administrator</strong>
+
+                        <span>System Administrator</span>
+
+                    </div>
+
+
+                </div>
+
+
+            </div>
+
+
+        </header>
+
+
+
+        <!-- ================= PAGE INTRO ================= -->
+
+        <section class="management-hero">
+
+
+            <div>
+
+
+                <p class="section-subtitle">
+
+                    ACADEMIC STAFF
+
+                </p>
+
+
+                <h2>
+
+                    Manage Your Teaching Staff
+
+                </h2>
+
+
+                <p>
+
+                    View, manage and monitor all teachers
+                    registered in the PACSA School Management System.
+
+                </p>
+
+
+            </div>
+
+
+            <button class="btn btn-primary"
+                id="addTeacherBtn">
+
+                <span>+</span>
+
+                Add New Teacher
+
+            </button>
+
+
+        </section>
+
+
+
+        <!-- ================= TEACHER STATISTICS ================= -->
+
+        <section class="teacher-stats-grid">
+
+
+            <div class="mini-stat-card">
+
+
+                <div class="mini-stat-icon">
+
+                    👨‍🏫
+
+                </div>
+
+
+                <div>
+
+                    <p>Total Teachers</p>
+
+                    <h3 id="totalTeachers">
+
+                        0
+
+                    </h3>
+
+                </div>
+
+
+            </div>
+
+
+
+            <div class="mini-stat-card">
+
+
+                <div class="mini-stat-icon green-icon">
+
+                    ✓
+
+                </div>
+
+
+                <div>
+
+                    <p>Active Teachers</p>
+
+                    <h3 id="activeTeachers">
+
+                        0
+
+                    </h3>
+
+                </div>
+
+
+            </div>
+
+
+
+            <div class="mini-stat-card">
+
+
+                <div class="mini-stat-icon orange-icon">
+
+                    📚
+
+                </div>
+
+
+                <div>
+
+                    <p>Departments</p>
+
+                    <h3 id="totalDepartments">
+
+                        0
+
+                    </h3>
+
+                </div>
+
+
+            </div>
+
+
+
+            <div class="mini-stat-card">
+
+
+                <div class="mini-stat-icon blue-icon">
+
+                    🏫
+
+                </div>
+
+
+                <div>
+
+                    <p>Class Teachers</p>
+
+                    <h3 id="classTeachers">
+
+                        0
+
+                    </h3>
+
+                </div>
+
+
+            </div>
+
+
+        </section>
+
+
+
+        <!-- ================= TEACHER MANAGEMENT CARD ================= -->
+
+        <section class="management-page-card">
+
+
+            <!-- CARD HEADER -->
+
+            <div class="management-card-header">
+
+
+                <div>
+
+                    <h2>
+
+                        All Teachers
+
+                    </h2>
+
+
+                    <p>
+
+                        Manage teacher accounts and information.
+
+                    </p>
+
+
+                </div>
+
+
+                <div class="teacher-count">
+
+                    <span id="teacherCount">
+
+                        0
+
+                    </span>
+
+                    Teachers
+
+                </div>
+
+
+            </div>
+
+
+
+            <!-- ================= FILTERS ================= -->
+
+            <div class="teacher-controls">
+
+
+                <!-- SEARCH -->
+
+                <div class="search-wrapper">
+
+                    <span class="search-icon">
+
+                        🔍
+
+                    </span>
+
+
+                    <input type="text"
+                        id="teacherSearch"
+                        placeholder="Search by name, ID or email...">
+
+                </div>
+
+
+
+                <!-- DEPARTMENT FILTER -->
+
+                <select id="departmentFilter"
+                    class="filter-select">
+
+                    <option value="">
+
+                        All Departments
+
+                    </option>
+
+                </select>
+
+
+
+                <!-- STATUS FILTER -->
+
+                <select id="statusFilter"
+                    class="filter-select">
+
+                    <option value="">
+
+                        All Status
+
+                    </option>
+
+
+                    <option value="active">
+
+                        Active
+
+                    </option>
+
+
+                    <option value="inactive">
+
+                        Inactive
+
+                    </option>
+
+
+                </select>
+
+
+
+                <!-- CLEAR FILTER -->
+
+                <button class="btn btn-light"
+                    id="clearFiltersBtn">
+
+                    Clear
+
+                </button>
+
+
+            </div>
+
+
+
+            <!-- ================= TEACHERS TABLE ================= -->
+
+            <div class="table-wrapper">
+
+
+                <table class="professional-table"
+                    id="teachersTable">
+
+
+                    <thead>
+
+                        <tr>
+
+                            <th>
+
+                                Teacher
+
+                            </th>
+
+
+                            <th>
+
+                                Teacher ID
+
+                            </th>
+
+
+                            <th>
+
+                                Department
+
+                            </th>
+
+
+                            <th>
+
+                                Subjects
+
+                            </th>
+
+
+                            <th>
+
+                                Phone
+
+                            </th>
+
+
+                            <th>
+
+                                Status
+
+                            </th>
+
+
+                            <th class="action-column">
+
+                                Action
+
+                            </th>
+
+
+                        </tr>
+
+                    </thead>
+
+
+
+                    <tbody id="teachersTableBody">
+
+
+                        <!-- TEACHERS WILL LOAD HERE -->
+
+
+                    </tbody>
+
+
+                </table>
+
+
+            </div>
+
+
+
+            <!-- ================= EMPTY STATE ================= -->
+
+            <div class="empty-state"
+                id="emptyTeacherState">
+
+
+                <div class="empty-icon">
+
+                    👨‍🏫
+
+                </div>
+
+
+                <h3>
+
+                    No Teachers Found
+
+                </h3>
+
+
+                <p>
+
+                    Teachers from your PACSA database
+                    will appear here.
+
+                </p>
+
+
+                <button class="btn btn-primary"
+                    id="emptyAddTeacherBtn">
+
+                    + Add First Teacher
+
+                </button>
+
+
+            </div>
+
+
+
+            <!-- ================= LOADING STATE ================= -->
+
+            <div class="loading-state"
+                id="teachersLoading">
+
+
+                <div class="loader"></div>
+
+
+                <p>
+
+                    Loading teachers...
+
+                </p>
+
+
+            </div>
+
+
+        </section>
+
+
+
+        <!-- ================= TEACHER MANAGEMENT INFO ================= -->
+
+        <section class="teacher-management-info">
+
+
+            <div class="info-card">
+
+
+                <div class="info-icon purple-info">
+
+                    👤
+
+                </div>
+
+
+                <div>
+
+                    <h3>
+
+                        Teacher Profiles
+
+                    </h3>
+
+
+                    <p>
+
+                        View and update teacher personal
+                        and professional information.
+
+                    </p>
+
+
+                </div>
+
+
+            </div>
+
+
+
+            <div class="info-card">
+
+
+                <div class="info-icon green-info">
+
+                    📚
+
+                </div>
+
+
+                <div>
+
+                    <h3>
+
+                        Subject Assignment
+
+                    </h3>
+
+
+                    <p>
+
+                        Assign teachers to subjects
+                        and academic classes.
+
+                    </p>
+
+
+                </div>
+
+
+            </div>
+
+
+
+            <div class="info-card">
+
+
+                <div class="info-icon orange-info">
+
+                    🔐
+
+                </div>
+
+
+                <div>
+
+                    <h3>
+
+                        Account Control
+
+                    </h3>
+
+
+                    <p>
+
+                        Activate, deactivate or manage
+                        teacher system access.
+
+                    </p>
+
+
+                </div>
+
+
+            </div>
+
+
+        </section>
+
+
+
+        <!-- ================= ADD / EDIT TEACHER MODAL ================= -->
+
+        <div class="modal-overlay"
+            id="teacherModal">
+
+
+            <div class="modal-box large-modal">
+
+
+                <!-- MODAL HEADER -->
+
+                <div class="modal-header">
+
+
+                    <div>
+
+                        <p class="section-subtitle">
+
+                            TEACHER INFORMATION
+
+                        </p>
+
+
+                        <h2 id="teacherModalTitle">
+
+                            Add New Teacher
+
+                        </h2>
+
+
+                    </div>
+
+
+                    <button class="modal-close"
+                        id="closeTeacherModal">
+
+                        ×
+
+                    </button>
+
+
+                </div>
+
+
+
+                <!-- TEACHER FORM -->
+
+                <form id="teacherForm">
+
+
+                    <input type="hidden"
+                        id="teacherRecordId">
+
+
+                    <div class="form-grid">
+
+
+                        <!-- FIRST NAME -->
+
+                        <div class="form-group">
+
+                            <label>
+
+                                First Name
+
+                            </label>
+
+
+                            <input type="text"
+                                id="teacherFirstName"
+                                required>
+
+                        </div>
+
+
+
+                        <!-- LAST NAME -->
+
+                        <div class="form-group">
+
+                            <label>
+
+                                Last Name
+
+                            </label>
+
+
+                            <input type="text"
+                                id="teacherLastName"
+                                required>
+
+                        </div>
+
+
+
+                        <!-- TEACHER ID -->
+
+                        <div class="form-group">
+
+                            <label>
+
+                                Teacher ID
+
+                            </label>
+
+
+                            <input type="text"
+                                id="teacherId">
+
+                        </div>
+
+
+
+                        <!-- EMAIL -->
+
+                        <div class="form-group">
+
+                            <label>
+
+                                Email Address
+
+                            </label>
+
+
+                            <input type="email"
+                                id="teacherEmail">
+
+                        </div>
+
+
+
+                        <!-- PHONE -->
+
+                        <div class="form-group">
+
+                            <label>
+
+                                Phone Number
+
+                            </label>
+
+
+                            <input type="tel"
+                                id="teacherPhone">
+
+                        </div>
+
+
+
+                        <!-- DEPARTMENT -->
+
+                        <div class="form-group">
+
+                            <label>
+
+                                Department
+
+                            </label>
+
+
+                            <input type="text"
+                                id="teacherDepartment"
+                                placeholder="e.g. Science Department">
+
+                        </div>
+
+
+
+                        <!-- SUBJECT -->
+
+                        <div class="form-group">
+
+                            <label>
+
+                                Primary Subject
+
+                            </label>
+
+
+                            <input type="text"
+                                id="teacherSubject">
+
+                        </div>
+
+
+
+                        <!-- STATUS -->
+
+                        <div class="form-group">
+
+                            <label>
+
+                                Account Status
+
+                            </label>
+
+
+                            <select id="teacherStatus">
+
+                                <option value="active">
+
+                                    Active
+
+                                </option>
+
+
+                                <option value="inactive">
+
+                                    Inactive
+
+                                </option>
+
+                            </select>
+
+
+                        </div>
+
+
+                    </div>
+
+
+
+                    <!-- MODAL ACTIONS -->
+
+                    <div class="modal-actions">
+
+
+                        <button type="button"
+                            class="btn btn-light"
+                            id="cancelTeacherBtn">
+
+                            Cancel
+
+                        </button>
+
+
+                        <button type="submit"
+                            class="btn btn-primary"
+                            id="saveTeacherBtn">
+
+                            Save Teacher
+
+                        </button>
+
+
+                    </div>
+
+
+                </form>
+
+
+            </div>
+
+
+        </div>
+
+
+
+        <!-- ================= VIEW TEACHER MODAL ================= -->
+
+        <div class="modal-overlay"
+            id="viewTeacherModal">
+
+
+            <div class="modal-box">
+
+
+                <div class="modal-header">
+
+
+                    <div>
+
+                        <p class="section-subtitle">
+
+                            TEACHER PROFILE
+
+                        </p>
+
+
+                        <h2>
+
+                            Teacher Details
+
+                        </h2>
+
+
+                    </div>
+
+
+                    <button class="modal-close"
+                        id="closeViewTeacherModal">
+
+                        ×
+
+                    </button>
+
+
+                </div>
+
+
+
+                <div class="teacher-profile-view">
+
+
+                    <div class="teacher-profile-avatar"
+                        id="viewTeacherAvatar">
+
+                        T
+
+                    </div>
+
+
+                    <h2 id="viewTeacherName">
+
+                        Teacher Name
+
+                    </h2>
+
+
+                    <p id="viewTeacherDepartment">
+
+                        Department
+
+                    </p>
+
+
+
+                    <div class="teacher-detail-grid">
+
+
+                        <div>
+
+                            <span>Teacher ID</span>
+
+                            <strong id="viewTeacherId">-</strong>
+
+                        </div>
+
+
+                        <div>
+
+                            <span>Email</span>
+
+                            <strong id="viewTeacherEmail">-</strong>
+
+                        </div>
+
+
+                        <div>
+
+                            <span>Phone</span>
+
+                            <strong id="viewTeacherPhone">-</strong>
+
+                        </div>
+
+
+                        <div>
+
+                            <span>Subject</span>
+
+                            <strong id="viewTeacherSubject">-</strong>
+
+                        </div>
+
+
+                        <div>
+
+                            <span>Status</span>
+
+                            <strong id="viewTeacherStatus">-</strong>
+
+                        </div>
+
+
+                    </div>
+
+
+                </div>
+
+
+            </div>
+
+
+        </div>
+
+
+
+        <!-- ================= FOOTER ================= -->
+
+        <footer class="dashboard-footer">
+
+            <p>
+
+                © 2026 PACSA School Management System.
+                All rights reserved.
+
+            </p>
+
+        </footer>
+
+
+    </main>
+
+
+
+    <script src="teachers.js"></script>
+
+
+</body>
+
+</html>
