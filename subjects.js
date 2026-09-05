@@ -1,15 +1,7 @@
 let subjects = [];
 
-const table = document.getElementById("subjectsTableBody");
-const search = document.getElementById("subjectSearch");
-const category = document.getElementById("categoryFilter");
-const status = document.getElementById("statusFilter");
-const modal = document.getElementById("subjectModal");
-const loading = document.getElementById("subjectsLoading");
-const emptyState = document.getElementById("emptySubjectState");
-
-function showLoading(show) {
-    loading.style.display = show ? "block" : "none";
+function $(id) {
+    return document.getElementById(id);
 }
 
 function escapeHtml(value) {
@@ -22,13 +14,16 @@ function escapeHtml(value) {
 }
 
 function renderSubjects() {
-    const text = search.value.trim().toLowerCase();
+    const table = $("subjectsTableBody");
+    const search = $("subjectSearch").value.trim().toLowerCase();
+    const category = $("categoryFilter").value;
+    const status = $("statusFilter").value;
 
     const filtered = subjects.filter(subject =>
-        (String(subject.name || "").toLowerCase().includes(text) ||
-         String(subject.code || "").toLowerCase().includes(text)) &&
-        (!category.value || subject.category === category.value) &&
-        (!status.value || subject.status === status.value)
+        (String(subject.name || "").toLowerCase().includes(search) ||
+         String(subject.code || "").toLowerCase().includes(search)) &&
+        (!category || subject.category === category) &&
+        (!status || subject.status === status)
     );
 
     table.innerHTML = filtered.map(subject => `
@@ -36,65 +31,69 @@ function renderSubjects() {
             <td><strong>${escapeHtml(subject.name)}</strong></td>
             <td>${escapeHtml(subject.code)}</td>
             <td>${escapeHtml(subject.category)}</td>
-            <td>${Number(subject.classes || 0)}</td>
-            <td><span class="status-badge ${escapeHtml(subject.status)}">${escapeHtml(subject.status)}</span></td>
+            <td>0</td>
+            <td><span class="status-badge ${subject.status === "active" ? "active-status" : "pending"}">${escapeHtml(subject.status)}</span></td>
             <td class="action-column">
-                <button class="btn btn-light" onclick="editSubject('${subject.id}')">Edit</button>
+                <button type="button" class="btn btn-light" onclick="editSubject('${subject.id}')">Edit</button>
             </td>
         </tr>
     `).join("");
 
-    emptyState.style.display = filtered.length ? "none" : "block";
-
-    document.getElementById("totalSubjects").textContent = subjects.length;
-    document.getElementById("activeSubjects").textContent = subjects.filter(s => s.status === "active").length;
-    document.getElementById("coreSubjects").textContent = subjects.filter(s => s.category === "Core").length;
-    document.getElementById("classesCovered").textContent = subjects.reduce((total, s) => total + Number(s.classes || 0), 0);
-    document.getElementById("subjectCount").textContent = subjects.length;
+    $("emptySubjectState").style.display = filtered.length ? "none" : "block";
+    $("totalSubjects").textContent = subjects.length;
+    $("activeSubjects").textContent = subjects.filter(s => s.status === "active").length;
+    $("coreSubjects").textContent = subjects.filter(s => s.category === "Core").length;
+    $("classesCovered").textContent = "0";
+    $("subjectCount").textContent = subjects.length;
 }
 
 async function loadSubjects() {
-    showLoading(true);
-    emptyState.style.display = "none";
+    $("subjectsLoading").style.display = "block";
+    $("emptySubjectState").style.display = "none";
 
     const { data, error } = await supabaseClient
         .from("subjects")
         .select("id, name, code, category, status")
         .order("name", { ascending: true });
 
-    showLoading(false);
+    $("subjectsLoading").style.display = "none";
 
     if (error) {
-        console.error("Supabase subjects error:", error);
-        table.innerHTML = "";
-        emptyState.style.display = "block";
-        emptyState.querySelector("h3").textContent = "Unable to Load Subjects";
-        emptyState.querySelector("p").textContent = error.message;
+        console.error(error);
+        $("emptySubjectState").style.display = "block";
+        $("emptySubjectState").querySelector("h3").textContent = "Unable to Load Subjects";
+        $("emptySubjectState").querySelector("p").textContent = error.message;
         return;
     }
 
-    subjects = (data || []).map(subject => ({
-        ...subject,
-        classes: 0
-    }));
-
+    subjects = data || [];
     renderSubjects();
 }
 
 function openSubjectModal(subject = null) {
-    modal.classList.add("show");
-    document.getElementById("subjectForm").reset();
+    const modal = $("subjectModal");
+    const form = $("subjectForm");
 
-    document.getElementById("subjectModalTitle").textContent = subject ? "Edit Subject" : "Add New Subject";
-    document.getElementById("subjectRecordId").value = subject?.id || "";
-    document.getElementById("subjectName").value = subject?.name || "";
-    document.getElementById("subjectCode").value = subject?.code || "";
-    document.getElementById("subjectCategory").value = subject?.category || "Core";
-    document.getElementById("subjectStatus").value = subject?.status || "active";
+    form.reset();
+    $("subjectModalTitle").textContent = subject ? "Edit Subject" : "Add New Subject";
+    $("subjectRecordId").value = subject?.id || "";
+    $("subjectName").value = subject?.name || "";
+    $("subjectCode").value = subject?.code || "";
+    $("subjectCategory").value = subject?.category || "Core";
+    $("subjectStatus").value = subject?.status || "active";
+
+    modal.style.display = "flex";
+    modal.style.position = "fixed";
+    modal.style.inset = "0";
+    modal.style.zIndex = "9999";
+    modal.style.background = "rgba(15, 23, 42, 0.55)";
+    modal.style.alignItems = "center";
+    modal.style.justifyContent = "center";
+    modal.style.padding = "20px";
 }
 
 function closeSubjectModal() {
-    modal.classList.remove("show");
+    $("subjectModal").style.display = "none";
 }
 
 window.editSubject = function(id) {
@@ -102,78 +101,81 @@ window.editSubject = function(id) {
     if (subject) openSubjectModal(subject);
 };
 
-document.getElementById("subjectForm").addEventListener("submit", async function(e) {
-    e.preventDefault();
+document.addEventListener("DOMContentLoaded", () => {
+    $("subjectForm").addEventListener("submit", async e => {
+        e.preventDefault();
 
-    const saveButton = document.getElementById("saveSubjectBtn");
-    const id = document.getElementById("subjectRecordId").value;
+        const saveButton = $("saveSubjectBtn");
+        const id = $("subjectRecordId").value;
+        const data = {
+            name: $("subjectName").value.trim(),
+            code: $("subjectCode").value.trim().toUpperCase(),
+            category: $("subjectCategory").value,
+            status: $("subjectStatus").value
+        };
 
-    const data = {
-        name: document.getElementById("subjectName").value.trim(),
-        code: document.getElementById("subjectCode").value.trim().toUpperCase(),
-        category: document.getElementById("subjectCategory").value,
-        status: document.getElementById("subjectStatus").value
-    };
+        if (!data.name || !data.code) {
+            alert("Please enter the subject name and subject code.");
+            return;
+        }
 
-    if (!data.name || !data.code) {
-        alert("Please enter the subject name and subject code.");
-        return;
-    }
+        saveButton.disabled = true;
+        saveButton.textContent = "Saving...";
 
-    saveButton.disabled = true;
-    saveButton.textContent = "Saving...";
+        const result = id
+            ? await supabaseClient.from("subjects").update(data).eq("id", id)
+            : await supabaseClient.from("subjects").insert([data]);
 
-    let error;
+        saveButton.disabled = false;
+        saveButton.textContent = "Save Subject";
 
-    if (id) {
-        ({ error } = await supabaseClient
-            .from("subjects")
-            .update(data)
-            .eq("id", id));
-    } else {
-        ({ error } = await supabaseClient
-            .from("subjects")
-            .insert([data]));
-    }
+        if (result.error) {
+            alert(`Could not save subject: ${result.error.message}`);
+            return;
+        }
 
-    saveButton.disabled = false;
-    saveButton.textContent = "Save Subject";
+        closeSubjectModal();
+        loadSubjects();
+    });
 
-    if (error) {
-        console.error("Supabase save subject error:", error);
-        alert(`Could not save subject: ${error.message}`);
-        return;
-    }
+    $("addSubjectBtn").addEventListener("click", e => {
+        e.preventDefault();
+        openSubjectModal();
+    });
 
-    closeSubjectModal();
-    await loadSubjects();
+    $("emptyAddSubjectBtn").addEventListener("click", e => {
+        e.preventDefault();
+        openSubjectModal();
+    });
+
+    $("closeSubjectModal").addEventListener("click", closeSubjectModal);
+    $("cancelSubjectBtn").addEventListener("click", closeSubjectModal);
+
+    $("subjectModal").addEventListener("click", e => {
+        if (e.target === $("subjectModal")) closeSubjectModal();
+    });
+
+    $("subjectSearch").addEventListener("input", renderSubjects);
+    $("categoryFilter").addEventListener("change", renderSubjects);
+    $("statusFilter").addEventListener("change", renderSubjects);
+
+    $("clearFiltersBtn").addEventListener("click", () => {
+        $("subjectSearch").value = "";
+        $("categoryFilter").value = "";
+        $("statusFilter").value = "";
+        renderSubjects();
+    });
+
+    $("menuBtn").addEventListener("click", () => {
+        $("sidebar").classList.toggle("active");
+    });
+
+    $("logoutBtn").addEventListener("click", e => {
+        e.preventDefault();
+        if (confirm("Are you sure you want to logout?")) {
+            window.location.href = "login.html";
+        }
+    });
+
+    loadSubjects();
 });
-
-document.getElementById("addSubjectBtn").addEventListener("click", () => openSubjectModal());
-document.getElementById("emptyAddSubjectBtn").addEventListener("click", () => openSubjectModal());
-document.getElementById("closeSubjectModal").addEventListener("click", closeSubjectModal);
-document.getElementById("cancelSubjectBtn").addEventListener("click", closeSubjectModal);
-
-search.addEventListener("input", renderSubjects);
-category.addEventListener("change", renderSubjects);
-status.addEventListener("change", renderSubjects);
-
-document.getElementById("clearFiltersBtn").addEventListener("click", () => {
-    search.value = "";
-    category.value = "";
-    status.value = "";
-    renderSubjects();
-});
-
-document.getElementById("menuBtn").addEventListener("click", () => {
-    document.getElementById("sidebar").classList.toggle("open");
-});
-
-document.getElementById("logoutBtn").addEventListener("click", e => {
-    e.preventDefault();
-    if (confirm("Are you sure you want to logout?")) {
-        window.location.href = "login.html";
-    }
-});
-
-loadSubjects();
