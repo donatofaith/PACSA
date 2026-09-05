@@ -1,12 +1,17 @@
+// ============================================
+// PACSA TEACHER LOGIN
+// ============================================
+
+
 // ===============================
 // PASSWORD SHOW / HIDE
 // ===============================
 
 const togglePassword =
-document.getElementById("togglePassword");
+    document.getElementById("togglePassword");
 
 const passwordInput =
-document.getElementById("password");
+    document.getElementById("password");
 
 if (togglePassword && passwordInput) {
 
@@ -33,162 +38,218 @@ if (togglePassword && passwordInput) {
 // TEACHER LOGIN
 // ===============================
 
-document
-.getElementById("teacherLoginForm")
-.addEventListener("submit", async function(e) {
+const loginForm =
+    document.getElementById("teacherLoginForm");
 
-    e.preventDefault();
+if (loginForm) {
 
-    const teacherId =
-    document.getElementById("teacherId")
-    .value
-    .trim();
+    loginForm.addEventListener("submit", async function (e) {
 
-    const password =
-    document.getElementById("password")
-    .value
-    .trim();
+        e.preventDefault();
 
 
-    if (!teacherId || !password) {
+        const teacherId =
+            document.getElementById("teacherId")
+                .value
+                .trim();
 
-        alert("Please enter Teacher ID and Password.");
-
-        return;
-    }
-
-
-    try {
-
-        console.log("Searching for teacher:", teacherId);
+        const password =
+            document.getElementById("password")
+                .value
+                .trim();
 
 
-        // GET ALL TEACHERS
-        const { data, error } =
-        await supabaseClient
-        .from("Teachers")
-        .select("*");
-
-
-        console.log("ALL TEACHERS:", data);
-        console.log("SUPABASE ERROR:", error);
-
-
-        // CHECK FOR SUPABASE ERROR
-
-        if (error) {
-
-            console.error(error);
+        if (!teacherId || !password) {
 
             alert(
-                "Supabase Error:\n\n" +
+                "Please enter Teacher ID and Password."
+            );
+
+            return;
+        }
+
+
+        const loginButton =
+            loginForm.querySelector(".login-btn");
+
+
+        if (loginButton) {
+
+            loginButton.disabled = true;
+            loginButton.textContent = "Logging in...";
+
+        }
+
+
+        try {
+
+            // ============================================
+            // FIND TEACHER
+            // ============================================
+
+            const { data: teachers, error: teacherError } =
+                await supabaseClient
+                    .from("Teachers")
+                    .select("*");
+
+
+            if (teacherError) {
+
+                console.error(
+                    "Teacher lookup error:",
+                    teacherError
+                );
+
+                alert(
+                    "Could not connect to the teacher records.\n\n" +
+                    teacherError.message
+                );
+
+                return;
+            }
+
+
+            const teacher =
+                (teachers || []).find(row => {
+
+                    return String(row.teacher_id || "")
+                        .trim()
+                        .toUpperCase()
+                        ===
+                        teacherId.toUpperCase();
+
+                });
+
+
+            if (!teacher) {
+
+                alert(
+                    "Teacher ID was not found."
+                );
+
+                return;
+            }
+
+
+            // ============================================
+            // CHECK PASSWORD
+            // ============================================
+
+            if (
+                String(teacher.password || "").trim()
+                !==
+                password
+            ) {
+
+                alert(
+                    "Password is incorrect."
+                );
+
+                return;
+            }
+
+
+            // ============================================
+            // LOAD TEACHER ASSIGNMENTS
+            // ============================================
+
+            const { data: assignments, error: assignmentError } =
+                await supabaseClient
+                    .from("teacher_assignments")
+                    .select("*")
+                    .eq("teacher_id", teacher.teacher_id);
+
+
+            if (assignmentError) {
+
+                console.error(
+                    "Assignment lookup error:",
+                    assignmentError
+                );
+
+                alert(
+                    "Teacher account found, but assignments could not be loaded.\n\n" +
+                    assignmentError.message
+                );
+
+                return;
+            }
+
+
+            // ============================================
+            // REQUIRE AT LEAST ONE ASSIGNMENT
+            // ============================================
+
+            if (!assignments || assignments.length === 0) {
+
+                alert(
+                    "Your teacher account has no class or subject assignment yet.\n\n" +
+                    "Please contact the school administrator."
+                );
+
+                return;
+            }
+
+
+            // ============================================
+            // SAVE LOGIN DATA
+            // ============================================
+
+            localStorage.setItem(
+                "teacher",
+                JSON.stringify(teacher)
+            );
+
+
+            localStorage.setItem(
+                "teacherAssignments",
+                JSON.stringify(assignments)
+            );
+
+
+            console.log(
+                "Teacher login successful:",
+                teacher
+            );
+
+
+            console.log(
+                "Teacher assignments:",
+                assignments
+            );
+
+
+            // ============================================
+            // GO TO DASHBOARD
+            // ============================================
+
+            window.location.href =
+                "teacher-dashboard.html";
+
+
+        } catch (error) {
+
+            console.error(
+                "LOGIN ERROR:",
+                error
+            );
+
+            alert(
+                "Connection Error:\n\n" +
                 error.message
             );
 
-            return;
+        } finally {
+
+            if (loginButton) {
+
+                loginButton.disabled = false;
+                loginButton.textContent = "Login";
+
+            }
+
         }
 
+    });
 
-        // CHECK IF TABLE IS EMPTY
-
-        if (!data || data.length === 0) {
-
-            alert(
-                "The Teachers table returned no records."
-            );
-
-            return;
-        }
-
-
-        // FIND TEACHER
-        // Ignore spaces and capital/lowercase differences
-
-        const teacher =
-        data.find(function(row) {
-
-            return String(row.teacher_id)
-            .trim()
-            .toUpperCase()
-            ===
-            teacherId.toUpperCase();
-
-        });
-
-
-        console.log("FOUND TEACHER:", teacher);
-
-
-        // TEACHER NOT FOUND
-
-        if (!teacher) {
-
-            alert(
-                "Teacher ID was not found.\n\n" +
-                "You entered: " +
-                teacherId +
-                "\n\n" +
-                "Teacher IDs found in Supabase:\n" +
-                data.map(row => row.teacher_id).join(", ")
-            );
-
-            return;
-        }
-
-
-        // CHECK PASSWORD
-
-        if (
-            String(teacher.password).trim()
-            !==
-            password
-        ) {
-
-            alert("Password is incorrect.");
-
-            return;
-        }
-
-
-        // ===============================
-        // LOGIN SUCCESSFUL
-        // ===============================
-
-        localStorage.setItem(
-            "teacher",
-            JSON.stringify(teacher)
-        );
-
-
-        console.log(
-            "Teacher login successful:",
-            teacher
-        );
-
-
-        alert(
-            "Teacher Login Successful!"
-        );
-
-
-        // GO TO TEACHER DASHBOARD
-
-        window.location.href =
-        "teacher-dashboard.html";
-
-
-    } catch (err) {
-
-        console.error(
-            "LOGIN ERROR:",
-            err
-        );
-
-        alert(
-            "Connection Error:\n\n" +
-            err.message
-        );
-
-    }
-
-});
+}

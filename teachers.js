@@ -1,1295 +1,1223 @@
-/* =========================================
-   PACSA TEACHERS MANAGEMENT
-========================================= */
+let teachers = [];
+let teacherAssignments = [];
 
+const $ = id => document.getElementById(id);
 
-/* =========================================
-   MOBILE SIDEBAR
-========================================= */
+document.addEventListener("DOMContentLoaded", () => {
 
-const menuBtn =
-    document.getElementById("menuBtn");
-
-const sidebar =
-    document.getElementById("sidebar");
-
-
-if (menuBtn && sidebar) {
-
-    menuBtn.addEventListener("click", () => {
-
-        sidebar.classList.toggle("active");
-
+    $("menuBtn")?.addEventListener("click", () => {
+        $("sidebar")?.classList.toggle("active");
     });
 
-}
+    $("logoutBtn")?.addEventListener("click", e => {
+        e.preventDefault();
 
-
-/* =========================================
-   LOGOUT
-========================================= */
-
-const logoutBtn =
-    document.getElementById("logoutBtn");
-
-
-if (logoutBtn) {
-
-    logoutBtn.addEventListener("click", (event) => {
-
-        event.preventDefault();
-
-
-        const confirmLogout =
-            confirm("Are you sure you want to logout?");
-
-
-        if (confirmLogout) {
-
-            /*
-            FUTURE:
-
-            await supabase.auth.signOut();
-
+        if (confirm("Are you sure you want to logout?")) {
             window.location.href = "login.html";
-            */
-
-
-            alert(
-                "Supabase logout will be connected here."
-            );
-
         }
-
     });
 
-}
+    $("teacherSearch")?.addEventListener("input", renderTeachers);
+    $("departmentFilter")?.addEventListener("change", renderTeachers);
 
+    $("clearFiltersBtn")?.addEventListener("click", () => {
+        $("teacherSearch").value = "";
+        $("departmentFilter").value = "";
+        renderTeachers();
+    });
 
-/* =========================================
-   DOM ELEMENTS
-========================================= */
+    $("addTeacherBtn")?.addEventListener("click", () => {
+        openTeacherModal();
+    });
 
-const teachersTableBody =
-    document.getElementById(
-        "teachersTableBody"
+    $("emptyAddTeacherBtn")?.addEventListener("click", () => {
+        openTeacherModal();
+    });
+
+    $("addAssignmentBtn")?.addEventListener("click", () => {
+        addAssignmentRow();
+    });
+
+    $("closeTeacherModal")?.addEventListener(
+        "click",
+        closeTeacherModal
     );
 
-const teachersLoading =
-    document.getElementById(
-        "teachersLoading"
+    $("cancelTeacherBtn")?.addEventListener(
+        "click",
+        closeTeacherModal
     );
 
-const emptyTeacherState =
-    document.getElementById(
-        "emptyTeacherState"
+    $("closeViewTeacherModal")?.addEventListener(
+        "click",
+        closeViewTeacherModal
     );
 
-const teacherSearch =
-    document.getElementById(
-        "teacherSearch"
+    $("teacherForm")?.addEventListener(
+        "submit",
+        saveTeacher
     );
 
-const departmentFilter =
-    document.getElementById(
-        "departmentFilter"
-    );
-
-const statusFilter =
-    document.getElementById(
-        "statusFilter"
-    );
-
-const clearFiltersBtn =
-    document.getElementById(
-        "clearFiltersBtn"
-    );
-
-
-/* =========================================
-   MODALS
-========================================= */
-
-const teacherModal =
-    document.getElementById(
-        "teacherModal"
-    );
-
-const viewTeacherModal =
-    document.getElementById(
-        "viewTeacherModal"
-    );
-
-const addTeacherBtn =
-    document.getElementById(
-        "addTeacherBtn"
-    );
-
-const emptyAddTeacherBtn =
-    document.getElementById(
-        "emptyAddTeacherBtn"
-    );
-
-const closeTeacherModal =
-    document.getElementById(
-        "closeTeacherModal"
-    );
-
-const closeViewTeacherModal =
-    document.getElementById(
-        "closeViewTeacherModal"
-    );
-
-const cancelTeacherBtn =
-    document.getElementById(
-        "cancelTeacherBtn"
-    );
-
-
-/* =========================================
-   FORM
-========================================= */
-
-const teacherForm =
-    document.getElementById(
-        "teacherForm"
-    );
-
-const teacherModalTitle =
-    document.getElementById(
-        "teacherModalTitle"
-    );
-
-
-/* =========================================
-   TEACHER DATA
-   TEMPORARY DATA ONLY
-
-   THIS WILL BE REPLACED
-   WITH SUPABASE DATA
-========================================= */
-
-let teachers = [
-
-    {
-        id: "1",
-
-        teacher_id: "PAC-T001",
-
-        first_name: "Adewale",
-
-        last_name: "Johnson",
-
-        email:
-            "adewale@pacsa.edu.ng",
-
-        phone:
-            "08012345678",
-
-        department:
-            "Science",
-
-        subject:
-            "Mathematics",
-
-        status:
-            "active"
-    },
-
-
-    {
-        id: "2",
-
-        teacher_id: "PAC-T002",
-
-        first_name: "Grace",
-
-        last_name: "Williams",
-
-        email:
-            "grace@pacsa.edu.ng",
-
-        phone:
-            "08087654321",
-
-        department:
-            "Languages",
-
-        subject:
-            "English Language",
-
-        status:
-            "active"
-    },
-
-
-    {
-        id: "3",
-
-        teacher_id: "PAC-T003",
-
-        first_name: "Samuel",
-
-        last_name: "Okafor",
-
-        email:
-            "samuel@pacsa.edu.ng",
-
-        phone:
-            "08056781234",
-
-        department:
-            "Science",
-
-        subject:
-            "Physics",
-
-        status:
-            "active"
-    },
-
-
-    {
-        id: "4",
-
-        teacher_id: "PAC-T004",
-
-        first_name: "Blessing",
-
-        last_name: "Adeyemi",
-
-        email:
-            "blessing@pacsa.edu.ng",
-
-        phone:
-            "08099887766",
-
-        department:
-            "Arts",
-
-        subject:
-            "Government",
-
-        status:
-            "inactive"
-    }
-
-];
-
-
-/* =========================================
-   INITIALIZE PAGE
-========================================= */
-
-document.addEventListener(
-    "DOMContentLoaded",
-    () => {
-
-        loadTeachers();
-
-        populateDepartments();
-
-        updateStatistics();
-
-    }
-);
+    loadTeachers();
+});
 
 
 /* =========================================
    LOAD TEACHERS
 ========================================= */
 
-function loadTeachers() {
+async function loadTeachers() {
 
-    showLoading(true);
+    $("teachersLoading").style.display = "block";
+    $("emptyTeacherState").style.display = "none";
 
+    const { data, error } = await supabaseClient
+        .from("Teachers")
+        .select(`
+            id,
+            teacher_id,
+            first_name,
+            last_name,
+            email,
+            phone,
+            class,
+            subject
+        `)
+        .order("first_name", {
+            ascending: true
+        });
 
-    setTimeout(() => {
+    if (error) {
 
-        renderTeachers(teachers);
+        $("teachersLoading").style.display = "none";
 
-        showLoading(false);
+        console.error(error);
 
-    }, 300);
-
-}
-
-
-/* =========================================
-   RENDER TEACHERS
-========================================= */
-
-function renderTeachers(teacherList) {
-
-
-    teachersTableBody.innerHTML = "";
-
-
-    if (teacherList.length === 0) {
-
-        emptyTeacherState.style.display =
-            "block";
-
-
-        document.querySelector(
-            ".table-wrapper"
-        ).style.display =
-            "none";
-
+        alert(
+            "Could not load teachers: " +
+            error.message
+        );
 
         return;
-
     }
 
+    teachers = data || [];
 
-    emptyTeacherState.style.display =
-        "none";
+    await loadTeacherAssignments();
 
+    $("teachersLoading").style.display = "none";
 
-    document.querySelector(
-        ".table-wrapper"
-    ).style.display =
-        "block";
-
-
-    teacherList.forEach(teacher => {
-
-
-        const fullName =
-            `${teacher.first_name} ${teacher.last_name}`;
-
-
-        const initials =
-            getInitials(fullName);
-
-
-        const statusClass =
-            teacher.status === "active"
-                ? "active-status"
-                : "pending";
-
-
-        const statusText =
-            teacher.status === "active"
-                ? "Active"
-                : "Inactive";
-
-
-        const row =
-            document.createElement("tr");
-
-
-        row.innerHTML = `
-
-            <td>
-
-                <div class="teacher-cell">
-
-                    <div class="teacher-table-avatar">
-
-                        ${initials}
-
-                    </div>
-
-
-                    <div class="teacher-name-info">
-
-                        <strong>
-
-                            ${fullName}
-
-                        </strong>
-
-
-                        <span>
-
-                            ${teacher.email || "-"}
-
-                        </span>
-
-                    </div>
-
-                </div>
-
-            </td>
-
-
-            <td>
-
-                ${teacher.teacher_id || "-"}
-
-            </td>
-
-
-            <td>
-
-                ${teacher.department || "-"}
-
-            </td>
-
-
-            <td>
-
-                ${teacher.subject || "-"}
-
-            </td>
-
-
-            <td>
-
-                ${teacher.phone || "-"}
-
-            </td>
-
-
-            <td>
-
-                <span class="status-badge ${statusClass}">
-
-                    ${statusText}
-
-                </span>
-
-            </td>
-
-
-            <td>
-
-                <div class="table-action-buttons">
-
-
-                    <button
-                        class="table-btn view-table-btn"
-                        onclick="viewTeacher('${teacher.id}')"
-                        title="View Teacher">
-
-                        👁
-
-                    </button>
-
-
-                    <button
-                        class="table-btn edit-table-btn"
-                        onclick="editTeacher('${teacher.id}')"
-                        title="Edit Teacher">
-
-                        ✏
-
-                    </button>
-
-
-                    <button
-                        class="table-btn delete-table-btn"
-                        onclick="deleteTeacher('${teacher.id}')"
-                        title="Delete Teacher">
-
-                        🗑
-
-                    </button>
-
-
-                </div>
-
-            </td>
-
-        `;
-
-
-        teachersTableBody.appendChild(row);
-
-    });
-
-
-    updateTeacherCount(teacherList.length);
-
+    populateClasses();
+    renderTeachers();
+    updateStatistics();
 }
 
 
 /* =========================================
-   GET INITIALS
+   LOAD ASSIGNMENTS
 ========================================= */
 
-function getInitials(name) {
+async function loadTeacherAssignments() {
 
-    return name
+    const { data, error } = await supabaseClient
+        .from("teacher_assignments")
+        .select(`
+            id,
+            teacher_id,
+            class,
+            subject,
+            created_at
+        `)
+        .order("created_at", {
+            ascending: true
+        });
 
-        .split(" ")
+    if (error) {
 
-        .map(word => word.charAt(0))
+        console.error(
+            "Could not load teacher assignments:",
+            error
+        );
 
-        .join("")
+        teacherAssignments = [];
 
-        .substring(0, 2)
+        return;
+    }
 
-        .toUpperCase();
-
+    teacherAssignments = data || [];
 }
 
 
 /* =========================================
-   LOADING STATE
+   GET TEACHER ASSIGNMENTS
 ========================================= */
 
-function showLoading(show) {
+function getTeacherAssignments(teacherId) {
 
-    teachersLoading.style.display =
-        show ? "block" : "none";
-
-
-    document.querySelector(
-        ".table-wrapper"
-    ).style.display =
-        show ? "none" : "block";
-
+    return teacherAssignments.filter(
+        assignment =>
+            String(assignment.teacher_id) ===
+            String(teacherId)
+    );
 }
 
 
 /* =========================================
-   POPULATE DEPARTMENTS
+   RENDER
 ========================================= */
 
-function populateDepartments() {
+function renderTeachers() {
 
-
-    const departments =
-        [...new Set(
-
-            teachers.map(
-                teacher =>
-                    teacher.department
-            )
-
-        )];
-
-
-    departmentFilter.innerHTML =
-        `<option value="">All Departments</option>`;
-
-
-    departments.forEach(department => {
-
-        if (department) {
-
-            const option =
-                document.createElement("option");
-
-
-            option.value =
-                department;
-
-
-            option.textContent =
-                department;
-
-
-            departmentFilter.appendChild(
-                option
-            );
-
-        }
-
-    });
-
-}
-
-
-/* =========================================
-   SEARCH & FILTER
-========================================= */
-
-function filterTeachers() {
-
-
-    const searchValue =
-        teacherSearch.value
+    const search =
+        $("teacherSearch").value
             .toLowerCase()
             .trim();
 
+    const selectedClass =
+        $("departmentFilter").value;
 
-    const departmentValue =
-        departmentFilter.value;
+    const filtered = teachers.filter(teacher => {
 
+        const name =
+            `${teacher.first_name || ""} ${teacher.last_name || ""}`
+                .toLowerCase();
 
-    const statusValue =
-        statusFilter.value;
+        const assignments =
+            getTeacherAssignments(teacher.teacher_id);
 
+        const assignmentClasses =
+            assignments
+                .map(item => item.class)
+                .filter(Boolean);
 
-    const filteredTeachers =
-        teachers.filter(teacher => {
+        const matchesClass =
+            !selectedClass ||
+            teacher.class === selectedClass ||
+            assignmentClasses.includes(selectedClass);
 
+        const matchesSearch =
+            name.includes(search) ||
+            String(
+                teacher.teacher_id || ""
+            )
+                .toLowerCase()
+                .includes(search) ||
+            String(
+                teacher.email || ""
+            )
+                .toLowerCase()
+                .includes(search);
 
-            const fullName =
-                `${teacher.first_name} ${teacher.last_name}`
-                    .toLowerCase();
+        return matchesSearch && matchesClass;
+    });
 
+    $("teachersTableBody").innerHTML =
+        filtered.map(teacher => {
 
-            const matchesSearch =
+            const name =
+                `${teacher.first_name || ""} ${teacher.last_name || ""}`
+                    .trim();
 
-                fullName.includes(
-                    searchValue
-                )
+            const assignments =
+                getTeacherAssignments(
+                    teacher.teacher_id
+                );
 
-                ||
+            let classHtml = "";
+            let subjectHtml = "";
 
-                (teacher.teacher_id || "")
-                    .toLowerCase()
-                    .includes(searchValue)
+            if (assignments.length) {
 
-                ||
+                const uniqueClasses = [
+                    ...new Set(
+                        assignments
+                            .map(item => item.class)
+                            .filter(Boolean)
+                    )
+                ];
 
-                (teacher.email || "")
-                    .toLowerCase()
-                    .includes(searchValue);
+                const uniqueSubjects = [
+                    ...new Set(
+                        assignments
+                            .map(item => item.subject)
+                            .filter(Boolean)
+                    )
+                ];
 
+                classHtml =
+                    uniqueClasses.map(className => `
+                        <span class="assignment-badge">
+                            ${escapeHtml(className)}
+                        </span>
+                    `).join("");
 
-            const matchesDepartment =
+                subjectHtml =
+                    uniqueSubjects.map(subject => `
+                        <span class="assignment-badge">
+                            ${escapeHtml(subject)}
+                        </span>
+                    `).join("");
 
-                !departmentValue
+            } else {
 
-                ||
+                classHtml =
+                    teacher.class
+                        ? `
+                            <span class="assignment-badge">
+                                ${escapeHtml(teacher.class)}
+                            </span>
+                        `
+                        : `<span class="no-assignment">Not assigned</span>`;
 
-                teacher.department ===
-                    departmentValue;
+                subjectHtml =
+                    teacher.subject
+                        ? `
+                            <span class="assignment-badge">
+                                ${escapeHtml(teacher.subject)}
+                            </span>
+                        `
+                        : `<span class="no-assignment">Not assigned</span>`;
+            }
 
+            return `
+                <tr>
 
-            const matchesStatus =
+                    <td>
+                        <div class="teacher-cell">
 
-                !statusValue
+                            <div class="teacher-table-avatar">
+                                ${getInitials(name)}
+                            </div>
 
-                ||
+                            <div class="teacher-name-info">
+                                <strong>
+                                    ${escapeHtml(name)}
+                                </strong>
 
-                teacher.status ===
-                    statusValue;
+                                <span>
+                                    ${escapeHtml(
+                                        teacher.email || "-"
+                                    )}
+                                </span>
+                            </div>
 
+                        </div>
+                    </td>
 
-            return
+                    <td>
+                        ${escapeHtml(
+                            teacher.teacher_id || "-"
+                        )}
+                    </td>
 
-                matchesSearch
+                    <td>
+                        <div class="assignment-summary">
+                            ${classHtml}
+                        </div>
+                    </td>
 
-                &&
+                    <td>
+                        <div class="assignment-summary">
+                            ${subjectHtml}
+                        </div>
+                    </td>
 
-                matchesDepartment
+                    <td>
+                        ${escapeHtml(
+                            teacher.phone || "-"
+                        )}
+                    </td>
 
-                &&
+                    <td>
+                        <div class="table-action-buttons">
 
-                matchesStatus;
+                            <button
+                                class="table-btn view-table-btn"
+                                onclick="viewTeacher('${teacher.id}')"
+                                title="View Teacher">
+                                👁
+                            </button>
 
-        });
+                            <button
+                                class="table-btn edit-table-btn"
+                                onclick="editTeacher('${teacher.id}')"
+                                title="Edit Teacher">
+                                ✏
+                            </button>
 
+                            <button
+                                class="table-btn delete-table-btn"
+                                onclick="deleteTeacher('${teacher.id}')"
+                                title="Delete Teacher">
+                                🗑
+                            </button>
 
-    renderTeachers(filteredTeachers);
+                        </div>
+                    </td>
 
+                </tr>
+            `;
+
+        }).join("");
+
+    $("emptyTeacherState").style.display =
+        filtered.length
+            ? "none"
+            : "block";
+
+    $("teacherCount").textContent =
+        filtered.length;
 }
 
 
-/* SEARCH EVENTS */
-
-teacherSearch.addEventListener(
-    "input",
-    filterTeachers
-);
-
-
-departmentFilter.addEventListener(
-    "change",
-    filterTeachers
-);
-
-
-statusFilter.addEventListener(
-    "change",
-    filterTeachers
-);
-
-
 /* =========================================
-   CLEAR FILTERS
+   CLASSES FILTER
 ========================================= */
 
-clearFiltersBtn.addEventListener(
-    "click",
-    () => {
+function populateClasses() {
 
-        teacherSearch.value = "";
+    const filter =
+        $("departmentFilter");
 
-        departmentFilter.value = "";
+    const classes = [
+        ...new Set(
+            teachers
+                .map(teacher => teacher.class)
+                .filter(Boolean)
+        )
+    ];
 
-        statusFilter.value = "";
+    teacherAssignments.forEach(
+        assignment => {
 
+            if (assignment.class) {
+                classes.push(
+                    assignment.class
+                );
+            }
 
-        renderTeachers(teachers);
+        }
+    );
 
-    }
-);
+    const uniqueClasses = [
+        ...new Set(classes)
+    ];
+
+    filter.innerHTML =
+        `<option value="">All Classes</option>`;
+
+    uniqueClasses.forEach(className => {
+
+        const option =
+            document.createElement("option");
+
+        option.value = className;
+        option.textContent = className;
+
+        filter.appendChild(option);
+
+    });
+}
 
 
 /* =========================================
-   UPDATE STATISTICS
+   STATISTICS
 ========================================= */
 
 function updateStatistics() {
 
-
-    const total =
+    $("totalTeachers").textContent =
         teachers.length;
 
+    $("activeTeachers").textContent =
+        teachers.length;
 
-    const active =
-        teachers.filter(
-            teacher =>
-                teacher.status === "active"
-        ).length;
+    const classes = new Set();
 
+    teachers.forEach(teacher => {
 
-    const departments =
-        new Set(
-            teachers
-                .map(
-                    teacher =>
-                        teacher.department
-                )
-                .filter(Boolean)
-        ).size;
+        if (teacher.class) {
+            classes.add(teacher.class);
+        }
 
+        getTeacherAssignments(
+            teacher.teacher_id
+        ).forEach(assignment => {
 
-    document.getElementById(
-        "totalTeachers"
-    ).textContent =
-        total;
+            if (assignment.class) {
+                classes.add(
+                    assignment.class
+                );
+            }
 
+        });
 
-    document.getElementById(
-        "activeTeachers"
-    ).textContent =
-        active;
+    });
 
-
-    document.getElementById(
-        "totalDepartments"
-    ).textContent =
-        departments;
-
+    $("totalDepartments").textContent =
+        classes.size;
 
     /*
-    CLASS TEACHERS WILL BE
-    CALCULATED FROM SUPABASE
-    LATER
+       For now, a teacher with at least one
+       class assignment is counted as a class teacher.
     */
 
+    const classTeacherCount =
+        teachers.filter(teacher => {
 
-    document.getElementById(
-        "classTeachers"
-    ).textContent =
-        "0";
+            const assignments =
+                getTeacherAssignments(
+                    teacher.teacher_id
+                );
 
+            return (
+                teacher.class ||
+                assignments.length > 0
+            );
 
-    document.getElementById(
-        "teacherCount"
-    ).textContent =
-        total;
+        }).length;
 
+    $("classTeachers").textContent =
+        classTeacherCount;
+
+    $("teacherCount").textContent =
+        teachers.length;
 }
 
 
 /* =========================================
-   OPEN ADD TEACHER MODAL
+   OPEN ADD / EDIT MODAL
 ========================================= */
 
-function openAddTeacherModal() {
+async function openTeacherModal(
+    teacher = null
+) {
 
+    $("teacherForm").reset();
 
-    teacherForm.reset();
+    $("teacherRecordId").value =
+        teacher?.id || "";
 
+    $("teacherModalTitle").textContent =
+        teacher
+            ? "Edit Teacher"
+            : "Add New Teacher";
 
-    document.getElementById(
-        "teacherRecordId"
-    ).value =
-        "";
+    $("teacherFirstName").value =
+        teacher?.first_name || "";
 
+    $("teacherLastName").value =
+        teacher?.last_name || "";
 
-    teacherModalTitle.textContent =
-        "Add New Teacher";
+    $("teacherId").value =
+        teacher?.teacher_id || "";
 
+    $("teacherEmail").value =
+        teacher?.email || "";
 
-    teacherModal.classList.add(
-        "active"
-    );
+    $("teacherPhone").value =
+        teacher?.phone || "";
 
-}
+    $("assignmentList").innerHTML = "";
 
+    if (teacher) {
 
-addTeacherBtn.addEventListener(
-    "click",
-    openAddTeacherModal
-);
+        const assignments =
+            getTeacherAssignments(
+                teacher.teacher_id
+            );
 
+        if (assignments.length) {
 
-emptyAddTeacherBtn.addEventListener(
-    "click",
-    openAddTeacherModal
-);
+            assignments.forEach(
+                assignment => {
 
+                    addAssignmentRow(
+                        assignment.class,
+                        assignment.subject
+                    );
 
-/* =========================================
-   CLOSE MODALS
-========================================= */
+                }
+            );
 
-function closeTeacherFormModal() {
+        } else {
 
-    teacherModal.classList.remove(
-        "active"
-    );
-
-}
-
-
-function closeTeacherViewModal() {
-
-    viewTeacherModal.classList.remove(
-        "active"
-    );
-
-}
-
-
-closeTeacherModal.addEventListener(
-    "click",
-    closeTeacherFormModal
-);
-
-
-cancelTeacherBtn.addEventListener(
-    "click",
-    closeTeacherFormModal
-);
-
-
-closeViewTeacherModal.addEventListener(
-    "click",
-    closeTeacherViewModal
-);
-
-
-/* =========================================
-   CLOSE MODAL OUTSIDE CLICK
-========================================= */
-
-window.addEventListener(
-    "click",
-    event => {
-
-        if (
-            event.target === teacherModal
-        ) {
-
-            closeTeacherFormModal();
+            addAssignmentRow(
+                teacher.class || "",
+                teacher.subject || ""
+            );
 
         }
 
+    } else {
 
-        if (
-            event.target === viewTeacherModal
-        ) {
-
-            closeTeacherViewModal();
-
-        }
+        addAssignmentRow();
 
     }
-);
+
+    $("teacherModal").classList.add(
+        "active"
+    );
+}
+
+
+/* =========================================
+   ADD ASSIGNMENT ROW
+========================================= */
+
+function addAssignmentRow(
+    className = "",
+    subject = ""
+) {
+
+    const container =
+        $("assignmentList");
+
+    const row =
+        document.createElement("div");
+
+    row.className =
+        "assignment-row";
+
+    row.innerHTML = `
+
+        <div class="form-group">
+
+            <label>Class</label>
+
+            <input
+                type="text"
+                class="assignment-class"
+                placeholder="e.g. JSS 1"
+                value="${escapeHtml(className)}"
+                required
+            >
+
+        </div>
+
+        <div class="form-group">
+
+            <label>Subject</label>
+
+            <input
+                type="text"
+                class="assignment-subject"
+                placeholder="e.g. Mathematics"
+                value="${escapeHtml(subject)}"
+                required
+            >
+
+        </div>
+
+        <button
+            type="button"
+            class="remove-assignment-btn"
+            title="Remove Assignment">
+            🗑
+        </button>
+
+    `;
+
+    row
+        .querySelector(
+            ".remove-assignment-btn"
+        )
+        .addEventListener(
+            "click",
+            () => {
+
+                const rows =
+                    document.querySelectorAll(
+                        ".assignment-row"
+                    );
+
+                if (rows.length <= 1) {
+
+                    alert(
+                        "A teacher must have at least one assignment."
+                    );
+
+                    return;
+                }
+
+                row.remove();
+            }
+        );
+
+    container.appendChild(row);
+}
+
+
+/* =========================================
+   GET ASSIGNMENTS FROM FORM
+========================================= */
+
+function getAssignmentsFromForm() {
+
+    const rows =
+        document.querySelectorAll(
+            ".assignment-row"
+        );
+
+    const assignments = [];
+
+    rows.forEach(row => {
+
+        const classInput =
+            row.querySelector(
+                ".assignment-class"
+            );
+
+        const subjectInput =
+            row.querySelector(
+                ".assignment-subject"
+            );
+
+        const className =
+            classInput.value.trim();
+
+        const subject =
+            subjectInput.value.trim();
+
+        if (className && subject) {
+
+            assignments.push({
+                class: className,
+                subject: subject
+            });
+
+        }
+
+    });
+
+    return assignments;
+}
+
+
+/* =========================================
+   CLOSE
+========================================= */
+
+function closeTeacherModal() {
+
+    $("teacherModal")
+        .classList.remove("active");
+}
+
+function closeViewTeacherModal() {
+
+    $("viewTeacherModal")
+        .classList.remove("active");
+}
 
 
 /* =========================================
    SAVE TEACHER
 ========================================= */
 
-teacherForm.addEventListener(
-    "submit",
-    event => {
+async function saveTeacher(event) {
 
-        event.preventDefault();
+    event.preventDefault();
 
+    const id =
+        $("teacherRecordId").value;
 
-        const recordId =
-            document.getElementById(
-                "teacherRecordId"
-            ).value;
+    const teacherData = {
 
+        first_name:
+            $("teacherFirstName")
+                .value
+                .trim(),
 
-        const teacherData = {
+        last_name:
+            $("teacherLastName")
+                .value
+                .trim(),
 
-            id:
-                recordId
-                ||
-                Date.now().toString(),
+        teacher_id:
+            $("teacherId")
+                .value
+                .trim(),
 
+        email:
+            $("teacherEmail")
+                .value
+                .trim(),
 
-            teacher_id:
-                document.getElementById(
-                    "teacherId"
-                ).value,
+        phone:
+            $("teacherPhone")
+                .value
+                .trim()
+    };
 
+    if (
+        !teacherData.first_name ||
+        !teacherData.last_name ||
+        !teacherData.teacher_id
+    ) {
 
-            first_name:
-                document.getElementById(
-                    "teacherFirstName"
-                ).value,
+        alert(
+            "Please enter First Name, Last Name and Teacher ID."
+        );
 
+        return;
+    }
 
-            last_name:
-                document.getElementById(
-                    "teacherLastName"
-                ).value,
+    const assignments =
+        getAssignmentsFromForm();
 
+    if (!assignments.length) {
 
-            email:
-                document.getElementById(
-                    "teacherEmail"
-                ).value,
+        alert(
+            "Please add at least one valid class and subject assignment."
+        );
 
+        return;
+    }
 
-            phone:
-                document.getElementById(
-                    "teacherPhone"
-                ).value,
+    const button =
+        $("saveTeacherBtn");
 
+    button.disabled = true;
+    button.textContent =
+        "Saving...";
 
-            department:
-                document.getElementById(
-                    "teacherDepartment"
-                ).value,
+    /*
+       Keep the first assignment in the
+       existing Teachers table for
+       compatibility with the current system.
+    */
 
+    teacherData.class =
+        assignments[0].class;
 
-            subject:
-                document.getElementById(
-                    "teacherSubject"
-                ).value,
+    teacherData.subject =
+        assignments[0].subject;
 
+    let teacherResult;
 
-            status:
-                document.getElementById(
-                    "teacherStatus"
-                ).value
+    /* =====================================
+       UPDATE EXISTING TEACHER
+    ===================================== */
 
-        };
+    if (id) {
 
-
-        if (recordId) {
-
-
-            const index =
-                teachers.findIndex(
-                    teacher =>
-                        teacher.id === recordId
-                );
-
-
-            teachers[index] =
-                teacherData;
-
-
-            alert(
-                "Teacher updated successfully."
-            );
-
-
-        } else {
-
-
-            teachers.push(
-                teacherData
-            );
-
-
-            alert(
-                "Teacher added successfully."
-            );
-
-        }
-
-
-        renderTeachers(teachers);
-
-        populateDepartments();
-
-        updateStatistics();
-
-        closeTeacherFormModal();
-
-
-        /*
-        ==================================
-
-        FUTURE SUPABASE INSERT / UPDATE
-
-        ADD:
-
-        await supabase
-        .from("teachers")
-        .insert([teacherData])
-
-
-        UPDATE:
-
-        await supabase
-        .from("teachers")
-        .update(teacherData)
-        .eq("id", recordId)
-
-        ==================================
-        */
+        teacherResult =
+            await supabaseClient
+                .from("Teachers")
+                .update(teacherData)
+                .eq("id", id);
 
     }
-);
+
+    /* =====================================
+       CREATE NEW TEACHER
+    ===================================== */
+
+    else {
+
+        teacherResult =
+            await supabaseClient
+                .from("Teachers")
+                .insert([
+                    teacherData
+                ])
+                .select()
+                .single();
+
+    }
+
+    if (teacherResult.error) {
+
+        console.error(
+            teacherResult.error
+        );
+
+        button.disabled = false;
+        button.textContent =
+            "Save Teacher";
+
+        alert(
+            "Could not save teacher: " +
+            teacherResult.error.message
+        );
+
+        return;
+    }
+
+    /*
+       Get the actual teacher ID used
+       by teacher_assignments.
+    */
+
+    let savedTeacher;
+
+    if (id) {
+
+        savedTeacher =
+            teachers.find(
+                teacher =>
+                    String(teacher.id) ===
+                    String(id)
+            );
+
+    } else {
+
+        savedTeacher =
+            teacherResult.data;
+
+    }
+
+    if (!savedTeacher) {
+
+        button.disabled = false;
+        button.textContent =
+            "Save Teacher";
+
+        alert(
+            "Teacher was saved, but the teacher record could not be identified."
+        );
+
+        return;
+    }
+
+    const teacherId =
+        teacherData.teacher_id;
+
+
+    /* =====================================
+       DELETE OLD ASSIGNMENTS
+    ===================================== */
+
+    const deleteResult =
+        await supabaseClient
+            .from("teacher_assignments")
+            .delete()
+            .eq(
+                "teacher_id",
+                teacherId
+            );
+
+    if (deleteResult.error) {
+
+        console.error(
+            deleteResult.error
+        );
+
+        button.disabled = false;
+        button.textContent =
+            "Save Teacher";
+
+        alert(
+            "Teacher saved, but old assignments could not be updated: " +
+            deleteResult.error.message
+        );
+
+        return;
+    }
+
+
+    /* =====================================
+       INSERT NEW ASSIGNMENTS
+    ===================================== */
+
+    const assignmentRows =
+        assignments.map(
+            assignment => ({
+
+                teacher_id:
+                    teacherId,
+
+                class:
+                    assignment.class,
+
+                subject:
+                    assignment.subject
+
+            })
+        );
+
+    const assignmentResult =
+        await supabaseClient
+            .from("teacher_assignments")
+            .insert(
+                assignmentRows
+            );
+
+    if (assignmentResult.error) {
+
+        console.error(
+            assignmentResult.error
+        );
+
+        button.disabled = false;
+        button.textContent =
+            "Save Teacher";
+
+        alert(
+            "Teacher saved, but assignments could not be saved: " +
+            assignmentResult.error.message
+        );
+
+        return;
+    }
+
+
+    /* =====================================
+       SUCCESS
+    ===================================== */
+
+    button.disabled = false;
+    button.textContent =
+        "Save Teacher";
+
+    closeTeacherModal();
+
+    await loadTeachers();
+
+    alert(
+        id
+            ? "Teacher and assignments updated successfully."
+            : "Teacher and assignments added successfully."
+    );
+}
 
 
 /* =========================================
    VIEW TEACHER
 ========================================= */
 
-function viewTeacher(id) {
+window.viewTeacher =
+    function(id) {
+
+        const teacher =
+            teachers.find(
+                item =>
+                    String(item.id) ===
+                    String(id)
+            );
+
+        if (!teacher) return;
+
+        const name =
+            `${teacher.first_name || ""} ${teacher.last_name || ""}`
+                .trim();
+
+        $("viewTeacherAvatar")
+            .textContent =
+            getInitials(name);
+
+        $("viewTeacherName")
+            .textContent =
+            name;
+
+        $("viewTeacherId")
+            .textContent =
+            teacher.teacher_id || "-";
+
+        $("viewTeacherEmail")
+            .textContent =
+            teacher.email || "-";
+
+        $("viewTeacherPhone")
+            .textContent =
+            teacher.phone || "-";
 
 
-    const teacher =
-        teachers.find(
-            teacher =>
-                teacher.id === id
-        );
+        const assignments =
+            getTeacherAssignments(
+                teacher.teacher_id
+            );
+
+        const assignmentContainer =
+            $("viewTeacherAssignments");
+
+        if (assignments.length) {
+
+            assignmentContainer.innerHTML =
+                assignments.map(
+                    assignment => `
+                        <span class="assignment-badge">
+                            🏫 ${escapeHtml(
+                                assignment.class
+                            )}
+                            —
+                            📚 ${escapeHtml(
+                                assignment.subject
+                            )}
+                        </span>
+                    `
+                ).join("");
+
+        } else {
+
+            assignmentContainer.innerHTML =
+                `<span class="no-assignment">
+                    No teaching assignments found.
+                </span>`;
+
+        }
 
 
-    if (!teacher) return;
+        const uniqueClasses = [
+            ...new Set(
+                assignments
+                    .map(
+                        assignment =>
+                            assignment.class
+                    )
+                    .filter(Boolean)
+            )
+        ];
+
+        $("viewTeacherDepartment")
+            .textContent =
+            uniqueClasses.length
+                ? uniqueClasses.join(", ")
+                : teacher.class || "-";
 
 
-    const fullName =
-        `${teacher.first_name} ${teacher.last_name}`;
-
-
-    document.getElementById(
-        "viewTeacherAvatar"
-    ).textContent =
-        getInitials(fullName);
-
-
-    document.getElementById(
-        "viewTeacherName"
-    ).textContent =
-        fullName;
-
-
-    document.getElementById(
-        "viewTeacherDepartment"
-    ).textContent =
-        teacher.department || "-";
-
-
-    document.getElementById(
-        "viewTeacherId"
-    ).textContent =
-        teacher.teacher_id || "-";
-
-
-    document.getElementById(
-        "viewTeacherEmail"
-    ).textContent =
-        teacher.email || "-";
-
-
-    document.getElementById(
-        "viewTeacherPhone"
-    ).textContent =
-        teacher.phone || "-";
-
-
-    document.getElementById(
-        "viewTeacherSubject"
-    ).textContent =
-        teacher.subject || "-";
-
-
-    document.getElementById(
-        "viewTeacherStatus"
-    ).textContent =
-        teacher.status || "-";
-
-
-    viewTeacherModal.classList.add(
-        "active"
-    );
-
-}
-
-
-/* =========================================
-   EDIT TEACHER
-========================================= */
-
-function editTeacher(id) {
-
-
-    const teacher =
-        teachers.find(
-            teacher =>
-                teacher.id === id
-        );
-
-
-    if (!teacher) return;
-
-
-    document.getElementById(
-        "teacherRecordId"
-    ).value =
-        teacher.id;
-
-
-    document.getElementById(
-        "teacherId"
-    ).value =
-        teacher.teacher_id || "";
-
-
-    document.getElementById(
-        "teacherFirstName"
-    ).value =
-        teacher.first_name || "";
-
-
-    document.getElementById(
-        "teacherLastName"
-    ).value =
-        teacher.last_name || "";
-
-
-    document.getElementById(
-        "teacherEmail"
-    ).value =
-        teacher.email || "";
-
-
-    document.getElementById(
-        "teacherPhone"
-    ).value =
-        teacher.phone || "";
-
-
-    document.getElementById(
-        "teacherDepartment"
-    ).value =
-        teacher.department || "";
-
-
-    document.getElementById(
-        "teacherSubject"
-    ).value =
-        teacher.subject || "";
-
-
-    document.getElementById(
-        "teacherStatus"
-    ).value =
-        teacher.status || "active";
-
-
-    teacherModalTitle.textContent =
-        "Edit Teacher";
-
-
-    teacherModal.classList.add(
-        "active"
-    );
-
-}
+        $("viewTeacherModal")
+            .classList.add("active");
+    };
 
 
 /* =========================================
-   DELETE TEACHER
+   EDIT
 ========================================= */
 
-function deleteTeacher(id) {
+window.editTeacher =
+    function(id) {
 
+        const teacher =
+            teachers.find(
+                item =>
+                    String(item.id) ===
+                    String(id)
+            );
 
-    const teacher =
-        teachers.find(
-            teacher =>
-                teacher.id === id
-        );
+        if (teacher) {
 
-
-    if (!teacher) return;
-
-
-    const fullName =
-        `${teacher.first_name} ${teacher.last_name}`;
-
-
-    const confirmDelete =
-        confirm(
-
-            `Are you sure you want to remove ${fullName}?`
-
-        );
-
-
-    if (!confirmDelete) return;
-
-
-    teachers =
-        teachers.filter(
-            teacher =>
-                teacher.id !== id
-        );
-
-
-    renderTeachers(teachers);
-
-    populateDepartments();
-
-    updateStatistics();
-
-
-    alert(
-        "Teacher removed successfully."
-    );
-
-
-    /*
-    FUTURE SUPABASE:
-
-    await supabase
-    .from("teachers")
-    .delete()
-    .eq("id", id)
-    */
-
-}
-
-
-/* =========================================
-   NOTIFICATION
-========================================= */
-
-const notificationBtn =
-    document.querySelector(
-        ".notification-btn"
-    );
-
-
-if (notificationBtn) {
-
-    notificationBtn.addEventListener(
-        "click",
-        () => {
-
-            alert(
-                "You have new system notifications."
+            openTeacherModal(
+                teacher
             );
 
         }
-    );
+    };
 
+
+/* =========================================
+   DELETE
+========================================= */
+
+window.deleteTeacher =
+    async function(id) {
+
+        const teacher =
+            teachers.find(
+                item =>
+                    String(item.id) ===
+                    String(id)
+            );
+
+        if (!teacher) return;
+
+        const name =
+            `${teacher.first_name || ""} ${teacher.last_name || ""}`
+                .trim();
+
+        if (
+            !confirm(
+                `Are you sure you want to delete ${name}?`
+            )
+        ) {
+            return;
+        }
+
+
+        /*
+           Delete assignments first.
+        */
+
+        const assignmentDelete =
+            await supabaseClient
+                .from("teacher_assignments")
+                .delete()
+                .eq(
+                    "teacher_id",
+                    teacher.teacher_id
+                );
+
+        if (assignmentDelete.error) {
+
+            console.error(
+                assignmentDelete.error
+            );
+
+            alert(
+                "Could not delete teacher assignments: " +
+                assignmentDelete.error.message
+            );
+
+            return;
+        }
+
+
+        /*
+           Delete teacher.
+        */
+
+        const teacherDelete =
+            await supabaseClient
+                .from("Teachers")
+                .delete()
+                .eq("id", id);
+
+        if (teacherDelete.error) {
+
+            console.error(
+                teacherDelete.error
+            );
+
+            alert(
+                "Could not delete teacher: " +
+                teacherDelete.error.message
+            );
+
+            return;
+        }
+
+
+        await loadTeachers();
+
+        alert(
+            "Teacher and all assignments deleted successfully."
+        );
+    };
+
+
+/* =========================================
+   HELPERS
+========================================= */
+
+function getInitials(name) {
+
+    return name
+        .split(" ")
+        .filter(Boolean)
+        .map(word => word[0])
+        .join("")
+        .substring(0, 2)
+        .toUpperCase();
 }
 
 
-console.log(
-    "PACSA Teachers Management Loaded"
-);
+function escapeHtml(value) {
+
+    return String(value ?? "")
+        .replaceAll("&", "&amp;")
+        .replaceAll("<", "&lt;")
+        .replaceAll(">", "&gt;")
+        .replaceAll('"', "&quot;")
+        .replaceAll("'", "&#039;");
+}

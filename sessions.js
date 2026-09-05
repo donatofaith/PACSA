@@ -1,185 +1,498 @@
-```javascript
-let sessions = [
-    {
-        id: 1,
-        name: "2025/2026",
-        start: "2025-09-08",
-        end: "2026-07-31",
-        term: "Third Term",
-        status: "completed"
-    },
-    {
-        id: 2,
-        name: "2026/2027",
-        start: "2026-09-14",
-        end: "2027-07-30",
-        term: "First Term",
-        status: "active"
-    }
-];
+let sessions = [];
 
-const table = document.getElementById("sessionsTableBody");
-const search = document.getElementById("sessionSearch");
-const filter = document.getElementById("statusFilter");
-const modal = document.getElementById("sessionModal");
+const $ = id => document.getElementById(id);
+
+document.addEventListener("DOMContentLoaded", () => {
+
+    $("menuBtn")?.addEventListener("click", () => {
+        $("sidebar")?.classList.toggle("active");
+    });
+
+    $("logoutBtn")?.addEventListener("click", e => {
+        e.preventDefault();
+
+        if (confirm("Are you sure you want to logout?")) {
+            window.location.href = "login.html";
+        }
+    });
+
+    $("sessionSearch")?.addEventListener("input", renderSessions);
+    $("statusFilter")?.addEventListener("change", renderSessions);
+
+    $("clearFiltersBtn")?.addEventListener("click", () => {
+        $("sessionSearch").value = "";
+        $("statusFilter").value = "";
+        renderSessions();
+    });
+
+    $("addSessionBtn")?.addEventListener(
+        "click",
+        () => openSessionModal()
+    );
+
+    $("emptyAddSessionBtn")?.addEventListener(
+        "click",
+        () => openSessionModal()
+    );
+
+    $("closeSessionModal")?.addEventListener(
+        "click",
+        closeSessionModal
+    );
+
+    $("cancelSessionBtn")?.addEventListener(
+        "click",
+        closeSessionModal
+    );
+
+    $("sessionForm")?.addEventListener(
+        "submit",
+        saveSession
+    );
+
+    loadSessions();
+});
+
+
+/* LOAD */
+
+async function loadSessions() {
+
+    const { data, error } = await supabaseClient
+        .from("sessions_terms")
+        .select(`
+            id,
+            session,
+            term,
+            start_date,
+            end_date,
+            status,
+            is_current
+        `)
+        .order("start_date", { ascending: false });
+
+    if (error) {
+        console.error(error);
+
+        alert(
+            "Could not load sessions: " +
+            error.message
+        );
+
+        return;
+    }
+
+    sessions = data || [];
+
+    renderSessions();
+    updateStatistics();
+}
+
+
+/* RENDER */
 
 function renderSessions() {
 
-    const text = search.value.toLowerCase();
+    const search =
+        $("sessionSearch").value
+            .toLowerCase()
+            .trim();
 
-    const data = sessions.filter(s =>
-        s.name.toLowerCase().includes(text) &&
-        (!filter.value || s.status === filter.value)
-    );
+    const selectedStatus =
+        $("statusFilter").value;
 
-    table.innerHTML = data.map(s => `
-        <tr>
-            <td><strong>${s.name}</strong></td>
-            <td>${s.start}</td>
-            <td>${s.end}</td>
-            <td>${s.term}</td>
-            <td>
-                <span class="status-badge ${s.status}">
-                    ${s.status}
-                </span>
-            </td>
-            <td class="action-column">
-                <button class="btn btn-light" onclick="editSession(${s.id})">
-                    Edit
-                </button>
-            </td>
-        </tr>
-    `).join("");
+    const filtered = sessions.filter(item => {
 
-    document.getElementById("emptySessionState").style.display =
-        data.length ? "none" : "block";
+        const sessionName =
+            String(item.session || "")
+                .toLowerCase();
 
-    document.getElementById("totalSessions").textContent = sessions.length;
+        return (
+            sessionName.includes(search) &&
+            (
+                !selectedStatus ||
+                item.status === selectedStatus
+            )
+        );
+    });
 
-    const active = sessions.find(s => s.status === "active");
+    $("sessionsTableBody").innerHTML =
+        filtered.map(item => {
 
-    document.getElementById("activeSession").textContent =
-        active ? active.name : "-";
+            const status =
+                item.status || "upcoming";
 
-    document.getElementById("currentTerm").textContent =
-        active ? active.term : "-";
+            return `
+                <tr>
 
-    document.getElementById("completedSessions").textContent =
-        sessions.filter(s => s.status === "completed").length;
+                    <td>
+                        <strong>
+                            ${escapeHtml(item.session || "-")}
+                        </strong>
+                    </td>
 
-    document.getElementById("sessionCount").textContent =
+                    <td>
+                        ${formatDate(item.start_date)}
+                    </td>
+
+                    <td>
+                        ${formatDate(item.end_date)}
+                    </td>
+
+                    <td>
+                        ${escapeHtml(item.term || "-")}
+                    </td>
+
+                    <td>
+                        <span class="status-badge ${
+                            status === "active"
+                                ? "active-status"
+                                : status === "completed"
+                                    ? "completed"
+                                    : "pending"
+                        }">
+                            ${escapeHtml(status)}
+                        </span>
+                    </td>
+
+                    <td>
+                        <div class="table-action-buttons">
+
+                            <button
+                                class="table-btn edit-table-btn"
+                                onclick="editSession(${item.id})"
+                                title="Edit Session">
+                                ✏
+                            </button>
+
+                            <button
+                                class="table-btn delete-table-btn"
+                                onclick="deleteSession(${item.id})"
+                                title="Delete Session">
+                                🗑
+                            </button>
+
+                        </div>
+                    </td>
+
+                </tr>
+            `;
+
+        }).join("");
+
+    $("emptySessionState").style.display =
+        filtered.length ? "none" : "block";
+
+    $("sessionCount").textContent =
+        filtered.length;
+}
+
+
+/* STATISTICS */
+
+function updateStatistics() {
+
+    $("totalSessions").textContent =
+        new Set(
+            sessions.map(item => item.session)
+        ).size;
+
+    const active =
+        sessions.find(
+            item =>
+                item.is_current === true ||
+                item.status === "active"
+        );
+
+    $("activeSession").textContent =
+        active?.session || "-";
+
+    $("currentTerm").textContent =
+        active?.term || "-";
+
+    $("completedSessions").textContent =
+        new Set(
+            sessions
+                .filter(item => item.status === "completed")
+                .map(item => item.session)
+        ).size;
+
+    $("sessionCount").textContent =
         sessions.length;
 }
 
 
-function openSessionModal(id = null) {
+/* OPEN */
 
-    modal.classList.add("show");
+function openSessionModal(session = null) {
 
-    document.getElementById("sessionForm").reset();
+    $("sessionForm").reset();
 
-    document.getElementById("sessionRecordId").value = "";
+    $("sessionRecordId").value =
+        session?.id || "";
 
-    document.getElementById("sessionModalTitle").textContent =
-        id ? "Edit Session" : "Add New Session";
+    $("sessionModalTitle").textContent =
+        session
+            ? "Edit Session"
+            : "Add New Session";
 
-    if (id) {
+    $("sessionName").value =
+        session?.session || "";
 
-        const s = sessions.find(x => x.id === id);
+    $("sessionTerm").value =
+        session?.term || "First Term";
 
-        document.getElementById("sessionRecordId").value = s.id;
-        document.getElementById("sessionName").value = s.name;
-        document.getElementById("startDate").value = s.start;
-        document.getElementById("endDate").value = s.end;
-        document.getElementById("sessionTerm").value = s.term;
-        document.getElementById("sessionStatus").value = s.status;
-    }
+    $("startDate").value =
+        session?.start_date || "";
+
+    $("endDate").value =
+        session?.end_date || "";
+
+    $("sessionStatus").value =
+        session?.status || "upcoming";
+
+    $("sessionModal")
+        .classList.add("active");
 }
 
+
+/* CLOSE */
 
 function closeSessionModal() {
-    modal.classList.remove("show");
+
+    $("sessionModal")
+        .classList.remove("active");
 }
 
 
-function editSession(id) {
-    openSessionModal(id);
-}
+/* SAVE */
 
+async function saveSession(event) {
 
-document.getElementById("sessionForm").addEventListener("submit", e => {
+    event.preventDefault();
 
-    e.preventDefault();
+    const id =
+        $("sessionRecordId").value;
 
-    const id = document.getElementById("sessionRecordId").value;
+    const sessionData = {
 
-    const data = {
-        name: document.getElementById("sessionName").value,
-        start: document.getElementById("startDate").value,
-        end: document.getElementById("endDate").value,
-        term: document.getElementById("sessionTerm").value,
-        status: document.getElementById("sessionStatus").value
+        session:
+            $("sessionName")
+                .value.trim(),
+
+        term:
+            $("sessionTerm")
+                .value,
+
+        start_date:
+            $("startDate")
+                .value,
+
+        end_date:
+            $("endDate")
+                .value,
+
+        status:
+            $("sessionStatus")
+                .value,
+
+        is_current:
+            $("sessionStatus").value === "active"
     };
+
+
+    if (
+        !sessionData.session ||
+        !sessionData.start_date ||
+        !sessionData.end_date
+    ) {
+
+        alert(
+            "Please enter the session name, start date and end date."
+        );
+
+        return;
+    }
+
+
+    if (
+        new Date(sessionData.end_date) <
+        new Date(sessionData.start_date)
+    ) {
+
+        alert(
+            "End date cannot be before start date."
+        );
+
+        return;
+    }
+
+
+    const button =
+        $("sessionForm")
+            .querySelector("button[type='submit']");
+
+    button.disabled = true;
+    button.textContent = "Saving...";
+
+
+    let result;
+
 
     if (id) {
 
-        Object.assign(
-            sessions.find(s => s.id == id),
-            data
-        );
+        result = await supabaseClient
+            .from("sessions_terms")
+            .update(sessionData)
+            .eq("id", id);
 
     } else {
 
-        sessions.push({
-            id: Date.now(),
-            ...data
-        });
-
+        result = await supabaseClient
+            .from("sessions_terms")
+            .insert([sessionData]);
     }
+
+
+    button.disabled = false;
+    button.textContent = "Save Session";
+
+
+    if (result.error) {
+
+        console.error(result.error);
+
+        alert(
+            "Could not save session: " +
+            result.error.message
+        );
+
+        return;
+    }
+
+
+    /*
+       If this session is active,
+       make other sessions inactive.
+    */
+
+    if (sessionData.is_current) {
+
+        await supabaseClient
+            .from("sessions_terms")
+            .update({
+                is_current: false
+            })
+            .neq(
+                "id",
+                id || 0
+            );
+
+        await supabaseClient
+            .from("sessions_terms")
+            .update({
+                is_current: true
+            })
+            .eq(
+                "session",
+                sessionData.session
+            );
+    }
+
 
     closeSessionModal();
-    renderSessions();
-});
+
+    await loadSessions();
+
+    alert(
+        id
+            ? "Session updated successfully."
+            : "Session added successfully."
+    );
+}
 
 
-document.getElementById("addSessionBtn")
-    .addEventListener("click", () => openSessionModal());
+/* EDIT */
 
-document.getElementById("emptyAddSessionBtn")
-    .addEventListener("click", () => openSessionModal());
+window.editSession = function(id) {
 
-document.getElementById("closeSessionModal")
-    .addEventListener("click", closeSessionModal);
+    const session =
+        sessions.find(
+            item => String(item.id) === String(id)
+        );
 
-document.getElementById("cancelSessionBtn")
-    .addEventListener("click", closeSessionModal);
-
-search.addEventListener("input", renderSessions);
-filter.addEventListener("change", renderSessions);
-
-
-document.getElementById("clearFiltersBtn").addEventListener("click", () => {
-    search.value = "";
-    filter.value = "";
-    renderSessions();
-});
+    if (session) {
+        openSessionModal(session);
+    }
+};
 
 
-document.getElementById("menuBtn").addEventListener("click", () => {
-    document.getElementById("sidebar").classList.toggle("open");
-});
+/* DELETE */
 
+window.deleteSession = async function(id) {
 
-document.getElementById("logoutBtn").addEventListener("click", e => {
+    const session =
+        sessions.find(
+            item => String(item.id) === String(id)
+        );
 
-    e.preventDefault();
+    if (!session) return;
 
-    if (confirm("Are you sure you want to logout?")) {
-        window.location.href = "login.html";
+    if (
+        !confirm(
+            `Are you sure you want to delete "${session.session}"?`
+        )
+    ) {
+        return;
     }
 
-});
+    const { error } =
+        await supabaseClient
+            .from("sessions_terms")
+            .delete()
+            .eq("id", id);
+
+    if (error) {
+
+        console.error(error);
+
+        alert(
+            "Could not delete session: " +
+            error.message
+        );
+
+        return;
+    }
+
+    await loadSessions();
+
+    alert(
+        "Session deleted successfully."
+    );
+};
 
 
-renderSessions();
-```
+/* HELPERS */
+
+function formatDate(date) {
+
+    if (!date) return "-";
+
+    return new Date(date + "T00:00:00")
+        .toLocaleDateString("en-GB", {
+            day: "2-digit",
+            month: "short",
+            year: "numeric"
+        });
+}
+
+
+function escapeHtml(value) {
+
+    return String(value ?? "")
+        .replaceAll("&", "&amp;")
+        .replaceAll("<", "&lt;")
+        .replaceAll(">", "&gt;")
+        .replaceAll('"', "&quot;")
+        .replaceAll("'", "&#039;");
+}

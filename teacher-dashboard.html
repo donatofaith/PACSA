@@ -1,25 +1,47 @@
 <!DOCTYPE html>
 <html lang="en">
+
 <head>
+
     <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+
+    <meta
+        name="viewport"
+        content="width=device-width, initial-scale=1.0">
 
     <title>PACSA Teacher Dashboard</title>
 
-    <link rel="stylesheet" href="teacher-dashboard.css">
+    <link
+        rel="stylesheet"
+        href="teacher-dashboard.css">
+
 </head>
 
+
 <body>
+
 
 <header class="header">
 
     <div>
-        <h1>PACSA Teacher Dashboard</h1>
-        <p>Becoming Leaders Through Righteousness</p>
+
+        <h1>
+            PACSA Teacher Dashboard
+        </h1>
+
+        <p>
+            Becoming Leaders Through Righteousness
+        </p>
+
     </div>
 
-    <button id="logoutBtn" class="logout">
+
+    <button
+        id="logoutBtn"
+        class="logout">
+
         Logout
+
     </button>
 
 </header>
@@ -27,33 +49,63 @@
 
 <main class="container">
 
+
+    <!-- ========================================= -->
     <!-- TEACHER PROFILE -->
+    <!-- ========================================= -->
 
     <section class="profile-card">
+
 
         <img
             src="images/Faith.jpg"
             alt="Teacher"
-            class="teacher-photo"
-        >
+            class="teacher-photo">
+
 
         <div class="profile-info">
 
-            <h2 id="teacherName">Loading...</h2>
+            <h2 id="teacherName">
+                Loading...
+            </h2>
+
 
             <p>
-                <strong>Teacher ID:</strong>
-                <span id="teacherId">--</span>
+
+                <strong>
+                    Teacher ID:
+                </strong>
+
+                <span id="teacherId">
+                    --
+                </span>
+
             </p>
 
-            <p>
-                <strong>Subject:</strong>
-                <span id="teacherSubject">--</span>
-            </p>
 
             <p>
-                <strong>Class:</strong>
-                <span id="teacherClass">--</span>
+
+                <strong>
+                    Subject:
+                </strong>
+
+                <span id="teacherSubject">
+                    --
+                </span>
+
+            </p>
+
+
+            <p>
+
+                <strong>
+                    Class:
+                </strong>
+
+                <span id="teacherClass">
+                    --
+                </span>
+
             </p>
 
         </div>
@@ -61,92 +113,466 @@
     </section>
 
 
+
+    <!-- ========================================= -->
     <!-- INFORMATION CARDS -->
+    <!-- ========================================= -->
 
     <section class="info-grid">
 
-        <div class="info-card">
-            <h3>Teacher</h3>
-            <p id="teacherCardName">--</p>
-        </div>
 
         <div class="info-card">
-            <h3>Subject</h3>
-            <p id="subjectCard">--</p>
+
+            <h3>
+                Teacher
+            </h3>
+
+            <p id="teacherCardName">
+                --
+            </p>
+
         </div>
 
+
         <div class="info-card">
-            <h3>Class</h3>
-            <p id="classCard">--</p>
+
+            <h3>
+                Assignments
+            </h3>
+
+            <p id="subjectCard">
+                --
+            </p>
+
         </div>
+
+
+        <div class="info-card">
+
+            <h3>
+                Classes
+            </h3>
+
+            <p id="classCard">
+                --
+            </p>
+
+        </div>
+
 
     </section>
 
 
+
+    <!-- ========================================= -->
     <!-- RESULTS -->
+    <!-- ========================================= -->
 
     <section class="results-card">
 
-        <h2>Student Results</h2>
 
-        <div class="table-wrapper">
-
-            <table>
-
-                <thead>
-                    <tr>
-                        <th>Student ID</th>
-                        <th>Student Name</th>
-                        <th>CA</th>
-                        <th>Exam</th>
-                        <th>Total</th>
-                        <th>Grade</th>
-                        <th>Action</th>
-                    </tr>
-                </thead>
-
-                <tbody id="resultsTable">
-
-                    <tr>
-                        <td colspan="7">
-                            Loading results...
-                        </td>
-                    </tr>
-
-                </tbody>
-
-            </table>
-
-        </div>
+        <div class="results-header">
 
 
-        <!-- EDIT PANEL -->
+            <div>
 
-        <div id="editPanel" class="edit-panel">
-
-            <h3>Edit Student Result</h3>
-
-            <div class="edit-info">
+                <h2>
+                    Student Results
+                </h2>
 
                 <p>
-                    <strong>Student:</strong>
-                    <span id="editStudentName">--</span>
-                </p>
-
-                <p>
-                    <strong>Student ID:</strong>
-                    <span id="editStudentId">--</span>
-                </p>
-
-                <p>
-                    <strong>Subject:</strong>
-                    <span id="editSubject">--</span>
+                    Enter and manage results for your assigned classes and subjects.
                 </p>
 
             </div>
 
 
+            <button
+                type="button"
+                id="addResultBtn"
+                class="add-result-btn">
+
+                + Enter Result
+
+            </button>
+
+
+        </div>
+
+
+
+        <!-- ========================================= -->
+        <!-- RESULT ENTRY -->
+        <!-- ========================================= -->
+
+        <div
+            id="resultEntryPanel"
+            class="result-entry-panel">
+
+
+            <h3>
+                Enter Student Result
+            </h3>
+
+
             <div class="form-grid">
+
+
+                <!-- ASSIGNMENT -->
+
+                <div class="form-group">
+
+                    <label for="resultAssignment">
+                        Class & Subject
+                    </label>
+
+
+                    <select id="resultAssignment">
+
+                        <option value="">
+                            Select Assignment
+                        </option>
+
+                    </select>
+
+                </div>
+
+
+
+                <!-- STUDENT -->
+
+                <div class="form-group">
+
+                    <label for="resultStudent">
+                        Student
+                    </label>
+
+
+                    <select id="resultStudent">
+
+                        <option value="">
+                            Select Student
+                        </option>
+
+                    </select>
+
+                </div>
+
+
+
+                <!-- TERM -->
+
+                <div class="form-group">
+
+                    <label for="resultTerm">
+                        Term
+                    </label>
+
+
+                    <select id="resultTerm">
+
+
+                        <option value="">
+                            Select Term
+                        </option>
+
+
+                        <option value="First Term">
+                            First Term
+                        </option>
+
+
+                        <option value="Second Term">
+                            Second Term
+                        </option>
+
+
+                        <option value="Third Term">
+                            Third Term
+                        </option>
+
+
+                    </select>
+
+                </div>
+
+
+
+                <!-- CA -->
+
+                <div class="form-group">
+
+                    <label for="resultCA">
+                        CA Mark (0–40)
+                    </label>
+
+
+                    <input
+                        type="number"
+                        id="resultCA"
+                        min="0"
+                        max="40"
+                        placeholder="Enter CA">
+
+                </div>
+
+
+
+                <!-- EXAM -->
+
+                <div class="form-group">
+
+                    <label for="resultExam">
+                        Exam Mark (0–60)
+                    </label>
+
+
+                    <input
+                        type="number"
+                        id="resultExam"
+                        min="0"
+                        max="60"
+                        placeholder="Enter Exam">
+
+                </div>
+
+
+
+                <!-- TOTAL -->
+
+                <div class="form-group">
+
+                    <label for="resultTotal">
+                        Total
+                    </label>
+
+
+                    <input
+                        type="number"
+                        id="resultTotal"
+                        class="calculated"
+                        readonly>
+
+                </div>
+
+
+
+                <!-- GRADE -->
+
+                <div class="form-group">
+
+                    <label for="resultGrade">
+                        Grade
+                    </label>
+
+
+                    <input
+                        type="text"
+                        id="resultGrade"
+                        class="calculated"
+                        readonly>
+
+                </div>
+
+
+            </div>
+
+
+            <p
+                id="resultMessage"
+                class="result-message">
+            </p>
+
+
+
+            <div class="edit-buttons">
+
+
+                <button
+                    type="button"
+                    id="submitResultBtn"
+                    class="save-btn">
+
+                    Submit Result
+
+                </button>
+
+
+                <button
+                    type="button"
+                    id="cancelResultBtn"
+                    class="cancel-btn">
+
+                    Cancel
+
+                </button>
+
+
+            </div>
+
+
+        </div>
+
+
+
+        <!-- ========================================= -->
+        <!-- RESULTS TABLE -->
+        <!-- ========================================= -->
+
+        <div class="table-wrapper">
+
+
+            <table>
+
+
+                <thead>
+
+                    <tr>
+
+                        <th>
+                            Student ID
+                        </th>
+
+                        <th>
+                            Student Name
+                        </th>
+
+                        <th>
+                            Class
+                        </th>
+
+                        <th>
+                            Subject
+                        </th>
+
+                        <th>
+                            CA
+                        </th>
+
+                        <th>
+                            Exam
+                        </th>
+
+                        <th>
+                            Total
+                        </th>
+
+                        <th>
+                            Grade
+                        </th>
+
+                        <th>
+                            Term
+                        </th>
+
+                        <th>
+                            Status
+                        </th>
+
+                        <th>
+                            Action
+                        </th>
+
+                    </tr>
+
+                </thead>
+
+
+                <tbody id="resultsTable">
+
+                    <tr>
+
+                        <td colspan="11">
+                            Loading results...
+                        </td>
+
+                    </tr>
+
+                </tbody>
+
+
+            </table>
+
+
+        </div>
+
+
+
+        <!-- ========================================= -->
+        <!-- EDIT PANEL -->
+        <!-- ========================================= -->
+
+        <div
+            id="editPanel"
+            class="edit-panel">
+
+
+            <h3>
+                Edit Student Result
+            </h3>
+
+
+            <div class="edit-info">
+
+
+                <p>
+
+                    <strong>
+                        Student:
+                    </strong>
+
+                    <span id="editStudentName">
+                        --
+                    </span>
+
+                </p>
+
+
+                <p>
+
+                    <strong>
+                        Student ID:
+                    </strong>
+
+                    <span id="editStudentId">
+                        --
+                    </span>
+
+                </p>
+
+
+                <p>
+
+                    <strong>
+                        Subject:
+                    </strong>
+
+                    <span id="editSubject">
+                        --
+                    </span>
+
+                </p>
+
+
+                <p>
+
+                    <strong>
+                        Term:
+                    </strong>
+
+                    <span id="editTerm">
+                        --
+                    </span>
+
+                </p>
+
+
+            </div>
+
+
+
+            <div class="form-grid">
+
 
                 <div class="form-group">
 
@@ -154,12 +580,12 @@
                         CA Mark (0–40)
                     </label>
 
+
                     <input
                         type="number"
                         id="editCA"
                         min="0"
-                        max="40"
-                    >
+                        max="40">
 
                 </div>
 
@@ -170,12 +596,12 @@
                         Exam Mark (0–60)
                     </label>
 
+
                     <input
                         type="number"
                         id="editExam"
                         min="0"
-                        max="60"
-                    >
+                        max="60">
 
                 </div>
 
@@ -186,12 +612,12 @@
                         Total
                     </label>
 
+
                     <input
                         type="number"
                         id="editTotal"
                         class="calculated"
-                        readonly
-                    >
+                        readonly>
 
                 </div>
 
@@ -202,55 +628,75 @@
                         Grade
                     </label>
 
+
                     <input
                         type="text"
                         id="editGrade"
                         class="calculated"
-                        readonly
-                    >
+                        readonly>
 
                 </div>
+
 
             </div>
 
 
-            <p id="editMessage" class="edit-message"></p>
+            <p
+                id="editMessage"
+                class="edit-message">
+            </p>
+
 
 
             <div class="edit-buttons">
 
+
                 <button
                     type="button"
                     id="saveBtn"
-                    class="save-btn"
-                >
+                    class="save-btn">
+
                     Save Changes
+
                 </button>
+
 
                 <button
                     type="button"
                     id="cancelBtn"
-                    class="cancel-btn"
-                >
+                    class="cancel-btn">
+
                     Cancel
+
                 </button>
+
 
             </div>
 
+
         </div>
 
+
     </section>
+
 
 </main>
 
 
+
 <!-- SUPABASE -->
 
-<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+<script
+    src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2">
+</script>
+
 
 <script src="supabase.js"></script>
 
+
 <script src="teacher-dashboard.js"></script>
 
+
 </body>
+
 </html>

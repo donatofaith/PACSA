@@ -1,68 +1,64 @@
-let reports = [
-    {
-        id: 1,
-        student: "John Peter",
-        class: "SS2A",
-        subject: "Mathematics",
-        score: 85,
-        term: "First Term"
-    },
-    {
-        id: 2,
-        student: "Mary James",
-        class: "SS1B",
-        subject: "English",
-        score: 72,
-        term: "First Term"
-    },
-    {
-        id: 3,
-        student: "David Paul",
-        class: "SS3A",
-        subject: "Physics",
-        score: 61,
-        term: "First Term"
-    },
-    {
-        id: 4,
-        student: "Sarah Faith",
-        class: "SS2A",
-        subject: "Biology",
-        score: 78,
-        term: "First Term"
-    }
-];
+let reports = [];
+let students = [];
 
 const table = document.getElementById("reportsTableBody");
 const search = document.getElementById("reportSearch");
 const termFilter = document.getElementById("termFilter");
 const classFilter = document.getElementById("classFilter");
 
+function escapeHtml(value) {
+    return String(value ?? "")
+        .replaceAll("&", "&amp;")
+        .replaceAll("<", "&lt;")
+        .replaceAll(">", "&gt;")
+        .replaceAll('"', "&quot;")
+        .replaceAll("'", "&#039;");
+}
+
 function getGrade(score) {
-    if (score >= 75) return "A";
-    if (score >= 65) return "B";
-    if (score >= 55) return "C";
+    if (score >= 70) return "A";
+    if (score >= 60) return "B";
+    if (score >= 50) return "C";
     if (score >= 45) return "D";
     if (score >= 40) return "E";
     return "F";
 }
 
 function getPerformance(score) {
-    if (score >= 75) return "Excellent";
-    if (score >= 65) return "Very Good";
-    if (score >= 55) return "Good";
+    if (score >= 70) return "Excellent";
+    if (score >= 60) return "Very Good";
+    if (score >= 50) return "Good";
     if (score >= 45) return "Fair";
     return "Needs Improvement";
 }
 
+function getStudentName(studentId) {
+
+    const student = students.find(
+        s => String(s.student_id) === String(studentId)
+    );
+
+    if (!student) return studentId || "--";
+
+    return (
+        `${student.first_name || ""} ${student.last_name || ""}`.trim() ||
+        student.fullname ||
+        studentId ||
+        "--"
+    );
+}
+
 function renderReports() {
 
-    const text = search.value.toLowerCase();
+    const text = search.value.trim().toLowerCase();
 
     const filtered = reports.filter(report => {
 
+        const studentName =
+            getStudentName(report.student_id);
+
         const matchesSearch =
-            `${report.student} ${report.class} ${report.subject}`
+            `${studentName} ${report.class || ""} ${report.subject || ""}`
                 .toLowerCase()
                 .includes(text);
 
@@ -77,31 +73,56 @@ function renderReports() {
         return matchesSearch && matchesTerm && matchesClass;
     });
 
-    table.innerHTML = filtered.map(report => `
-        <tr>
-            <td>
-                <strong>${report.student}</strong>
-            </td>
+    table.innerHTML = filtered.map(report => {
 
-            <td>${report.class}</td>
+        const score = Number(report.total) || 0;
 
-            <td>${report.subject}</td>
+        return `
+            <tr>
 
-            <td>${report.score}%</td>
+                <td>
+                    <strong>
+                        ${escapeHtml(
+                            getStudentName(report.student_id)
+                        )}
+                    </strong>
+                </td>
 
-            <td>
-                <strong>${getGrade(report.score)}</strong>
-            </td>
+                <td>
+                    ${escapeHtml(report.class)}
+                </td>
 
-            <td>${report.term}</td>
+                <td>
+                    ${escapeHtml(report.subject)}
+                </td>
 
-            <td>
-                <span class="status-badge active">
-                    ${getPerformance(report.score)}
-                </span>
-            </td>
-        </tr>
-    `).join("");
+                <td>
+                    ${score}%
+                </td>
+
+                <td>
+                    <strong>
+                        ${escapeHtml(
+                            report.grade || getGrade(score)
+                        )}
+                    </strong>
+                </td>
+
+                <td>
+                    ${escapeHtml(report.term)}
+                </td>
+
+                <td>
+                    <span class="status-badge active">
+                        ${escapeHtml(
+                            getPerformance(score)
+                        )}
+                    </span>
+                </td>
+
+            </tr>
+        `;
+    }).join("");
 
     document.getElementById("emptyReportState").style.display =
         filtered.length ? "none" : "block";
@@ -110,13 +131,15 @@ function renderReports() {
         filtered.length;
 
     document.getElementById("totalStudents").textContent =
-        new Set(reports.map(r => r.student)).size;
+        new Set(reports.map(r => r.student_id)).size;
 
     const average =
         reports.length
             ? Math.round(
-                reports.reduce((sum, r) => sum + r.score, 0) /
-                reports.length
+                reports.reduce(
+                    (sum, r) => sum + (Number(r.total) || 0),
+                    0
+                ) / reports.length
             )
             : 0;
 
@@ -124,11 +147,15 @@ function renderReports() {
         average + "%";
 
     const passed =
-        reports.filter(r => r.score >= 40).length;
+        reports.filter(
+            r => (Number(r.total) || 0) >= 40
+        ).length;
 
     const passRate =
         reports.length
-            ? Math.round((passed / reports.length) * 100)
+            ? Math.round(
+                (passed / reports.length) * 100
+            )
             : 0;
 
     document.getElementById("passRate").textContent =
@@ -138,34 +165,114 @@ function renderReports() {
         new Set(reports.map(r => r.subject)).size;
 }
 
-search.addEventListener("input", renderReports);
-termFilter.addEventListener("change", renderReports);
-classFilter.addEventListener("change", renderReports);
+async function loadReports() {
 
-document.getElementById("clearFiltersBtn").addEventListener("click", () => {
+    table.innerHTML = `
+        <tr>
+            <td colspan="7">
+                Loading reports...
+            </td>
+        </tr>
+    `;
 
-    search.value = "";
-    termFilter.value = "";
-    classFilter.value = "";
+    const { data, error } = await supabaseClient
+        .from("results")
+        .select("*")
+        .eq("status", "published")
+        .order("id", { ascending: false });
+
+    if (error) {
+
+        console.error(error);
+
+        table.innerHTML = `
+            <tr>
+                <td colspan="7">
+                    Could not load reports:
+                    ${escapeHtml(error.message)}
+                </td>
+            </tr>
+        `;
+
+        return;
+    }
+
+    reports = data || [];
+
+    await loadStudents();
 
     renderReports();
-});
+}
 
-document.getElementById("generateReportBtn").addEventListener("click", () => {
-    alert("Report generation will be connected to Supabase later.");
-});
+async function loadStudents() {
 
-document.getElementById("menuBtn").addEventListener("click", () => {
-    document.getElementById("sidebar").classList.toggle("open");
-});
+    const { data, error } = await supabaseClient
+        .from("students")
+        .select(
+            "student_id, first_name, last_name, fullname"
+        );
 
-document.getElementById("logoutBtn").addEventListener("click", e => {
+    if (error) {
 
-    e.preventDefault();
+        console.error(error);
 
-    if (confirm("Are you sure you want to logout?")) {
-        window.location.href = "login.html";
+        students = [];
+
+        return;
     }
-});
 
-renderReports();
+    students = data || [];
+}
+
+search.addEventListener(
+    "input",
+    renderReports
+);
+
+termFilter.addEventListener(
+    "change",
+    renderReports
+);
+
+classFilter.addEventListener(
+    "change",
+    renderReports
+);
+
+document.getElementById("clearFiltersBtn")
+    .addEventListener("click", () => {
+
+        search.value = "";
+        termFilter.value = "";
+        classFilter.value = "";
+
+        renderReports();
+    });
+
+document.getElementById("generateReportBtn")
+    .addEventListener("click", () => {
+
+        window.print();
+
+    });
+
+document.getElementById("menuBtn")
+    .addEventListener("click", () => {
+
+        document.getElementById("sidebar")
+            .classList.toggle("open");
+
+    });
+
+document.getElementById("logoutBtn")
+    .addEventListener("click", e => {
+
+        e.preventDefault();
+
+        if (confirm("Are you sure you want to logout?")) {
+            window.location.href = "login.html";
+        }
+
+    });
+
+loadReports();

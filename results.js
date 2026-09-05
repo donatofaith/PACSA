@@ -1,164 +1,267 @@
-```javascript
-let results = [
-    {id:1, student:"John Peter", class:"SS2A", subject:"Mathematics", score:85, term:"First Term", status:"published"},
-    {id:2, student:"Mary James", class:"SS1B", subject:"English", score:72, term:"First Term", status:"published"},
-    {id:3, student:"David Paul", class:"SS3A", subject:"Physics", score:61, term:"First Term", status:"pending"},
-    {id:4, student:"Sarah Faith", class:"SS2A", subject:"Biology", score:78, term:"First Term", status:"published"}
-];
+let results = [];
+let students = [];
 
-const table = document.getElementById("resultsTableBody");
-const search = document.getElementById("resultSearch");
-const termFilter = document.getElementById("termFilter");
-const statusFilter = document.getElementById("statusFilter");
-const modal = document.getElementById("resultModal");
+function $(id) {
+    return document.getElementById(id);
+}
 
-function grade(score) {
-    if (score >= 75) return "A";
-    if (score >= 65) return "B";
-    if (score >= 55) return "C";
-    if (score >= 45) return "D";
-    if (score >= 40) return "E";
-    return "F";
+function escapeHtml(value) {
+    return String(value ?? "")
+        .replaceAll("&", "&amp;")
+        .replaceAll("<", "&lt;")
+        .replaceAll(">", "&gt;")
+        .replaceAll('"', "&quot;")
+        .replaceAll("'", "&#039;");
+}
+
+function getStudentName(studentId) {
+    const student = students.find(
+        s => String(s.student_id) === String(studentId)
+    );
+
+    if (!student) return studentId;
+
+    return `${student.first_name || ""} ${student.last_name || ""}`.trim();
 }
 
 function renderResults() {
+    const search = $("resultSearch").value.trim().toLowerCase();
+    const term = $("termFilter").value;
+    const status = $("statusFilter").value;
 
-    const text = search.value.toLowerCase();
+    const filtered = results.filter(result => {
+        const studentName = getStudentName(result.student_id).toLowerCase();
 
-    const data = results.filter(r =>
-        `${r.student} ${r.subject} ${r.class}`.toLowerCase().includes(text) &&
-        (!termFilter.value || r.term === termFilter.value) &&
-        (!statusFilter.value || r.status === statusFilter.value)
-    );
+        return (
+            (
+                studentName.includes(search) ||
+                String(result.subject || "").toLowerCase().includes(search) ||
+                String(result.class || "").toLowerCase().includes(search)
+            ) &&
+            (!term || result.term === term) &&
+            (!status || result.status === status)
+        );
+    });
 
-    table.innerHTML = data.map(r => `
+    $("resultsTableBody").innerHTML = filtered.map(result => `
         <tr>
-            <td><strong>${r.student}</strong></td>
-            <td>${r.class}</td>
-            <td>${r.subject}</td>
-            <td>${r.score}</td>
-            <td><strong>${grade(r.score)}</strong></td>
-            <td>${r.term}</td>
             <td>
-                <span class="status-badge ${r.status}">
-                    ${r.status}
+                <strong>
+                    ${escapeHtml(getStudentName(result.student_id))}
+                </strong>
+            </td>
+
+            <td>${escapeHtml(result.class)}</td>
+
+            <td>${escapeHtml(result.subject)}</td>
+
+            <td>${escapeHtml(result.total)}/100</td>
+
+            <td>
+                <strong>${escapeHtml(result.grade)}</strong>
+            </td>
+
+            <td>${escapeHtml(result.term)}</td>
+
+            <td>
+                <span class="status-badge ${
+                    result.status === "published"
+                        ? "active-status"
+                        : result.status === "rejected"
+                            ? "rejected-status"
+                            : "pending"
+                }">
+                    ${escapeHtml(result.status || "pending")}
                 </span>
             </td>
+
             <td class="action-column">
-                <button class="btn btn-light" onclick="editResult(${r.id})">
-                    Edit
-                </button>
+                ${
+                    result.status === "pending"
+                        ? `
+                            <button
+                                type="button"
+                                class="btn btn-primary"
+                                onclick="publishResult('${result.id}')">
+                                Publish
+                            </button>
+
+                            <button
+                                type="button"
+                                class="btn btn-light"
+                                onclick="rejectResult('${result.id}')">
+                                Reject
+                            </button>
+                        `
+                        : result.status === "published"
+                            ? `<span>Published</span>`
+                            : `<span>Rejected</span>`
+                }
             </td>
         </tr>
     `).join("");
 
-    document.getElementById("emptyResultState").style.display =
-        data.length ? "none" : "block";
+    $("totalResults").textContent = results.length;
 
-    document.getElementById("totalResults").textContent = results.length;
-
-    document.getElementById("publishedResults").textContent =
+    $("publishedResults").textContent =
         results.filter(r => r.status === "published").length;
 
-    document.getElementById("pendingResults").textContent =
-        results.filter(r => r.status === "pending").length;
+    $("pendingResults").textContent =
+        results.filter(r => !r.status || r.status === "pending").length;
 
-    document.getElementById("studentCount").textContent =
-        new Set(results.map(r => r.student)).size;
+    $("studentCount").textContent = students.length;
 
-    document.getElementById("resultCount").textContent = results.length;
+    $("resultCount").textContent = filtered.length;
+
+    $("emptyResultState").style.display =
+        filtered.length ? "none" : "block";
 }
 
-function openResultModal(id = null) {
+async function loadResults() {
+    const { data, error } = await supabaseClient
+        .from("results")
+        .select("*")
+        .order("id", { ascending: false });
 
-    modal.classList.add("show");
-    document.getElementById("resultForm").reset();
-    document.getElementById("resultRecordId").value = "";
-
-    document.getElementById("resultModalTitle").textContent =
-        id ? "Edit Result" : "Enter Result";
-
-    if (id) {
-
-        const r = results.find(x => x.id === id);
-
-        document.getElementById("resultRecordId").value = r.id;
-        document.getElementById("studentName").value = r.student;
-        document.getElementById("studentClass").value = r.class;
-        document.getElementById("subjectName").value = r.subject;
-        document.getElementById("score").value = r.score;
-        document.getElementById("term").value = r.term;
-        document.getElementById("resultStatus").value = r.status;
-    }
-}
-
-function closeResultModal() {
-    modal.classList.remove("show");
-}
-
-function editResult(id) {
-    openResultModal(id);
-}
-
-document.getElementById("resultForm").addEventListener("submit", e => {
-
-    e.preventDefault();
-
-    const id = document.getElementById("resultRecordId").value;
-
-    const data = {
-        student: document.getElementById("studentName").value,
-        class: document.getElementById("studentClass").value,
-        subject: document.getElementById("subjectName").value,
-        score: Number(document.getElementById("score").value),
-        term: document.getElementById("term").value,
-        status: document.getElementById("resultStatus").value
-    };
-
-    if (id) {
-        Object.assign(results.find(r => r.id == id), data);
-    } else {
-        results.push({id: Date.now(), ...data});
+    if (error) {
+        console.error(error);
+        alert(`Could not load results: ${error.message}`);
+        return;
     }
 
-    closeResultModal();
+    results = data || [];
     renderResults();
-});
+}
 
-document.getElementById("addResultBtn")
-    .addEventListener("click", () => openResultModal());
+async function loadStudents() {
+    const { data, error } = await supabaseClient
+        .from("students")
+        .select("student_id, first_name, last_name");
 
-document.getElementById("emptyAddResultBtn")
-    .addEventListener("click", () => openResultModal());
-
-document.getElementById("closeResultModal")
-    .addEventListener("click", closeResultModal);
-
-document.getElementById("cancelResultBtn")
-    .addEventListener("click", closeResultModal);
-
-search.addEventListener("input", renderResults);
-termFilter.addEventListener("change", renderResults);
-statusFilter.addEventListener("change", renderResults);
-
-document.getElementById("clearFiltersBtn").addEventListener("click", () => {
-    search.value = "";
-    termFilter.value = "";
-    statusFilter.value = "";
-    renderResults();
-});
-
-document.getElementById("menuBtn").addEventListener("click", () => {
-    document.getElementById("sidebar").classList.toggle("open");
-});
-
-document.getElementById("logoutBtn").addEventListener("click", e => {
-    e.preventDefault();
-
-    if (confirm("Are you sure you want to logout?")) {
-        window.location.href = "login.html";
+    if (error) {
+        console.error(error);
+        alert(`Could not load students: ${error.message}`);
+        return;
     }
-});
 
-renderResults();
-```
+    students = data || [];
+    renderResults();
+}
+
+window.publishResult = async function(id) {
+    const result = results.find(
+        r => String(r.id) === String(id)
+    );
+
+    if (!result) return;
+
+    const confirmed = confirm(
+        `Publish the result for ${getStudentName(result.student_id)}?`
+    );
+
+    if (!confirmed) return;
+
+    const { error } = await supabaseClient
+        .from("results")
+        .update({
+            status: "published"
+        })
+        .eq("id", id);
+
+    if (error) {
+        console.error(error);
+        alert(`Could not publish result: ${error.message}`);
+        return;
+    }
+
+    await loadResults();
+};
+
+window.rejectResult = async function(id) {
+    const result = results.find(
+        r => String(r.id) === String(id)
+    );
+
+    if (!result) return;
+
+    const confirmed = confirm(
+        `Reject the result for ${getStudentName(result.student_id)}?`
+    );
+
+    if (!confirmed) return;
+
+    const { error } = await supabaseClient
+        .from("results")
+        .update({
+            status: "rejected"
+        })
+        .eq("id", id);
+
+    if (error) {
+        console.error(error);
+        alert(`Could not reject result: ${error.message}`);
+        return;
+    }
+
+    await loadResults();
+};
+
+document.addEventListener("DOMContentLoaded", () => {
+
+    /*
+     * REVIEW SUBMISSIONS
+     * Shows only results waiting for admin approval.
+     */
+    $("addResultBtn").addEventListener("click", () => {
+        $("statusFilter").value = "pending";
+        $("termFilter").value = "";
+        $("resultSearch").value = "";
+
+        renderResults();
+    });
+
+    /*
+     * REFRESH RESULTS
+     */
+    $("emptyAddResultBtn").addEventListener("click", async () => {
+        await loadResults();
+    });
+
+    $("resultSearch").addEventListener(
+        "input",
+        renderResults
+    );
+
+    $("termFilter").addEventListener(
+        "change",
+        renderResults
+    );
+
+    $("statusFilter").addEventListener(
+        "change",
+        renderResults
+    );
+
+    $("clearFiltersBtn").addEventListener("click", () => {
+        $("resultSearch").value = "";
+        $("termFilter").value = "";
+        $("statusFilter").value = "";
+
+        renderResults();
+    });
+
+    $("menuBtn").addEventListener("click", () => {
+        $("sidebar").classList.toggle("active");
+    });
+
+    $("logoutBtn").addEventListener("click", e => {
+        e.preventDefault();
+
+        if (confirm("Are you sure you want to logout?")) {
+            window.location.href = "login.html";
+        }
+    });
+
+    loadStudents();
+    loadResults();
+});

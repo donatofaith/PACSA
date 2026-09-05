@@ -127,11 +127,67 @@ body {
     box-shadow: 0 5px 20px rgba(0, 0, 0, .08);
 }
 
+.results-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    gap: 20px;
+    margin-bottom: 20px;
+}
+
 .results-card h2 {
-    margin-top: 0;
+    margin: 0;
     color: #5B21B6;
     font-size: 30px;
 }
+
+.results-header p {
+    margin: 7px 0 0;
+    color: #666;
+}
+
+
+/* ADD RESULT BUTTON */
+
+.add-result-btn {
+    background: #5B21B6;
+    color: white;
+    border: none;
+    padding: 12px 20px;
+    border-radius: 9px;
+    font-weight: bold;
+    font-size: 15px;
+    cursor: pointer;
+}
+
+.add-result-btn:hover {
+    background: #4C1D95;
+}
+
+
+/* RESULT ENTRY */
+
+.result-entry-panel {
+    display: none;
+    background: #f8f7ff;
+    border: 2px solid #7C3AED;
+    border-radius: 16px;
+    padding: 25px;
+    margin-bottom: 25px;
+}
+
+.result-entry-panel.show {
+    display: block;
+}
+
+.result-entry-panel h3 {
+    margin-top: 0;
+    color: #5B21B6;
+    font-size: 24px;
+}
+
+
+/* TABLE */
 
 .table-wrapper {
     overflow-x: auto;
@@ -140,7 +196,7 @@ body {
 table {
     width: 100%;
     border-collapse: collapse;
-    min-width: 750px;
+    min-width: 950px;
 }
 
 th {
@@ -163,10 +219,7 @@ tr:hover {
 
 /* MARKS */
 
-.total {
-    font-weight: bold;
-}
-
+.total,
 .grade {
     font-weight: bold;
 }
@@ -180,20 +233,65 @@ tr:hover {
 }
 
 
-/* EDIT BUTTON */
+/* STATUS */
 
-.edit-btn {
-    background: #F59E0B;
-    color: white;
-    border: none;
-    padding: 9px 16px;
-    border-radius: 8px;
+.status-badge {
+    display: inline-block;
+    padding: 6px 10px;
+    border-radius: 20px;
+    font-size: 13px;
     font-weight: bold;
-    cursor: pointer;
 }
 
-.edit-btn:hover {
-    background: #d97706;
+.status-pending {
+    background: #fef3c7;
+    color: #92400e;
+}
+
+.status-published {
+    background: #dcfce7;
+    color: #166534;
+}
+
+.status-rejected {
+    background: #fee2e2;
+    color: #991b1b;
+}
+
+
+/* FORM */
+
+.form-grid {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 15px;
+}
+
+.form-group label {
+    display: block;
+    font-weight: bold;
+    margin-bottom: 7px;
+}
+
+.form-group input,
+.form-group select {
+    width: 100%;
+    padding: 12px;
+    border: 1px solid #ccc;
+    border-radius: 8px;
+    font-size: 16px;
+    background: white;
+}
+
+.form-group input:focus,
+.form-group select:focus {
+    outline: none;
+    border-color: #7C3AED;
+}
+
+.calculated {
+    background: #eee !important;
+    font-weight: bold;
 }
 
 
@@ -227,38 +325,8 @@ tr:hover {
     font-size: 16px;
 }
 
-.form-grid {
-    display: grid;
-    grid-template-columns: 1fr 1fr;
-    gap: 15px;
-}
 
-.form-group label {
-    display: block;
-    font-weight: bold;
-    margin-bottom: 7px;
-}
-
-.form-group input {
-    width: 100%;
-    padding: 12px;
-    border: 1px solid #ccc;
-    border-radius: 8px;
-    font-size: 16px;
-}
-
-.form-group input:focus {
-    outline: none;
-    border-color: #7C3AED;
-}
-
-.calculated {
-    background: #eee;
-    font-weight: bold;
-}
-
-
-/* EDIT BUTTONS */
+/* BUTTONS */
 
 .edit-buttons {
     margin-top: 20px;
@@ -294,10 +362,25 @@ tr:hover {
     background: #b91c1c;
 }
 
+.edit-btn {
+    background: #F59E0B;
+    color: white;
+    border: none;
+    padding: 9px 16px;
+    border-radius: 8px;
+    font-weight: bold;
+    cursor: pointer;
+}
 
-/* EDIT MESSAGE */
+.edit-btn:hover {
+    background: #d97706;
+}
 
-.edit-message {
+
+/* MESSAGES */
+
+.edit-message,
+.result-message {
     margin: 15px 0 0;
     font-weight: bold;
     min-height: 20px;
@@ -327,4 +410,8 @@ tr:hover {
         grid-template-columns: 1fr;
     }
 
+    .results-header {
+        flex-direction: column;
+        align-items: flex-start;
+    }
 }
