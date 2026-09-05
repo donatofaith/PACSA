@@ -1,0 +1,342 @@
+```html
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>PACSA | Results Management</title>
+    <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Outfit:wght@300;400;500;600;700;800&display=swap">
+    <link rel="stylesheet" href="admin-dashboard.css">
+</head>
+
+<body>
+
+<button class="menu-btn" id="menuBtn">☰</button>
+
+<aside class="sidebar" id="sidebar">
+    <div class="brand">
+        <img src="images/PACSA LOGO.png" alt="PACSA Logo">
+        <div class="brand-text">
+            <h2>PACSA</h2>
+            <p>Admin Portal</p>
+        </div>
+    </div>
+
+    <nav class="sidebar-nav">
+        <p class="nav-label">MAIN MENU</p>
+        <a href="admin-dashboard.html" class="nav-link">
+            <span class="nav-icon">⌂</span> Dashboard
+        </a>
+
+        <p class="nav-label">STUDENT MANAGEMENT</p>
+        <a href="students.html" class="nav-link">
+            <span class="nav-icon">🎓</span> Students
+        </a>
+
+        <p class="nav-label">ACADEMIC MANAGEMENT</p>
+        <a href="teachers.html" class="nav-link">
+            <span class="nav-icon">👨‍🏫</span> Teachers
+        </a>
+        <a href="subjects.html" class="nav-link">
+            <span class="nav-icon">📚</span> Subjects
+        </a>
+        <a href="classes.html" class="nav-link">
+            <span class="nav-icon">🏫</span> Classes
+        </a>
+        <a href="sessions.html" class="nav-link">
+            <span class="nav-icon">📅</span> Sessions & Terms
+        </a>
+
+        <p class="nav-label">RESULT MANAGEMENT</p>
+        <a href="results.html" class="nav-link active">
+            <span class="nav-icon">📑</span> Results
+        </a>
+        <a href="reports.html" class="nav-link">
+            <span class="nav-icon">📊</span> Reports & Analytics
+        </a>
+
+        <p class="nav-label">ADMINISTRATION</p>
+        <a href="applications.html" class="nav-link">
+            <span class="nav-icon">📝</span> Applications
+        </a>
+        <a href="settings.html" class="nav-link">
+            <span class="nav-icon">⚙</span> Settings
+        </a>
+    </nav>
+
+    <div class="sidebar-footer">
+        <a href="#" class="logout-link" id="logoutBtn">
+            <span>🚪</span> Logout
+        </a>
+    </div>
+</aside>
+
+<main class="main-content">
+
+    <header class="topbar">
+        <div class="page-title">
+            <p class="breadcrumb">
+                Administration / Result Management / Results
+            </p>
+            <h1>Results Management</h1>
+        </div>
+
+        <div class="topbar-right">
+            <button class="notification-btn" aria-label="Notifications">
+                🔔
+                <span class="notification-dot"></span>
+            </button>
+
+            <div class="admin-profile">
+                <img src="images/Faith.jpg" alt="Administrator">
+                <div class="admin-info">
+                    <strong>Administrator</strong>
+                    <span>System Administrator</span>
+                </div>
+            </div>
+        </div>
+    </header>
+
+    <section class="management-hero">
+        <div>
+            <p class="section-subtitle">RESULT MANAGEMENT</p>
+            <h2>Manage Student Results</h2>
+            <p>
+                View, enter and manage academic results for students.
+            </p>
+        </div>
+
+        <button class="btn btn-primary" id="addResultBtn">
+            <span>+</span> Enter Result
+        </button>
+    </section>
+
+    <section class="teacher-stats-grid">
+
+        <div class="mini-stat-card">
+            <div class="mini-stat-icon">📑</div>
+            <div>
+                <p>Total Results</p>
+                <h3 id="totalResults">0</h3>
+            </div>
+        </div>
+
+        <div class="mini-stat-card">
+            <div class="mini-stat-icon green-icon">✓</div>
+            <div>
+                <p>Published</p>
+                <h3 id="publishedResults">0</h3>
+            </div>
+        </div>
+
+        <div class="mini-stat-card">
+            <div class="mini-stat-icon orange-icon">⏳</div>
+            <div>
+                <p>Pending</p>
+                <h3 id="pendingResults">0</h3>
+            </div>
+        </div>
+
+        <div class="mini-stat-card">
+            <div class="mini-stat-icon blue-icon">🎓</div>
+            <div>
+                <p>Students</p>
+                <h3 id="studentCount">0</h3>
+            </div>
+        </div>
+
+    </section>
+
+    <section class="management-page-card">
+
+        <div class="management-card-header">
+            <div>
+                <h2>Student Results</h2>
+                <p>Manage academic performance records.</p>
+            </div>
+
+            <div class="teacher-count">
+                <span id="resultCount">0</span> Results
+            </div>
+        </div>
+
+        <div class="teacher-controls">
+
+            <div class="search-wrapper">
+                <span class="search-icon">🔍</span>
+                <input
+                    type="text"
+                    id="resultSearch"
+                    placeholder="Search student, subject or class..."
+                >
+            </div>
+
+            <select id="termFilter" class="filter-select">
+                <option value="">All Terms</option>
+                <option value="First Term">First Term</option>
+                <option value="Second Term">Second Term</option>
+                <option value="Third Term">Third Term</option>
+            </select>
+
+            <select id="statusFilter" class="filter-select">
+                <option value="">All Status</option>
+                <option value="published">Published</option>
+                <option value="pending">Pending</option>
+            </select>
+
+            <button class="btn btn-light" id="clearFiltersBtn">
+                Clear
+            </button>
+
+        </div>
+
+        <div class="table-wrapper">
+
+            <table class="professional-table">
+
+                <thead>
+                    <tr>
+                        <th>Student</th>
+                        <th>Class</th>
+                        <th>Subject</th>
+                        <th>Score</th>
+                        <th>Grade</th>
+                        <th>Term</th>
+                        <th>Status</th>
+                        <th class="action-column">Action</th>
+                    </tr>
+                </thead>
+
+                <tbody id="resultsTableBody"></tbody>
+
+            </table>
+
+        </div>
+
+        <div class="empty-state" id="emptyResultState">
+            <div class="empty-icon">📑</div>
+            <h3>No Results Found</h3>
+            <p>Student results will appear here.</p>
+
+            <button class="btn btn-primary" id="emptyAddResultBtn">
+                + Enter First Result
+            </button>
+        </div>
+
+    </section>
+
+    <section class="teacher-management-info">
+
+        <div class="info-card">
+            <div class="info-icon purple-info">📝</div>
+            <div>
+                <h3>Result Entry</h3>
+                <p>Enter student scores and academic grades.</p>
+            </div>
+        </div>
+
+        <div class="info-card">
+            <div class="info-icon green-info">✓</div>
+            <div>
+                <h3>Result Publishing</h3>
+                <p>Publish completed results for student access.</p>
+            </div>
+        </div>
+
+        <div class="info-card">
+            <div class="info-icon orange-info">📊</div>
+            <div>
+                <h3>Performance</h3>
+                <p>Results can be used for academic performance reports.</p>
+            </div>
+        </div>
+
+    </section>
+
+    <div class="modal-overlay" id="resultModal">
+
+        <div class="modal-box">
+
+            <div class="modal-header">
+                <div>
+                    <p class="section-subtitle">RESULT INFORMATION</p>
+                    <h2 id="resultModalTitle">Enter Result</h2>
+                </div>
+
+                <button class="modal-close" id="closeResultModal">×</button>
+            </div>
+
+            <form id="resultForm">
+
+                <input type="hidden" id="resultRecordId">
+
+                <div class="form-grid">
+
+                    <div class="form-group">
+                        <label>Student Name</label>
+                        <input type="text" id="studentName" required>
+                    </div>
+
+                    <div class="form-group">
+                        <label>Class</label>
+                        <input type="text" id="studentClass" required>
+                    </div>
+
+                    <div class="form-group">
+                        <label>Subject</label>
+                        <input type="text" id="subjectName" required>
+                    </div>
+
+                    <div class="form-group">
+                        <label>Score</label>
+                        <input type="number" id="score" min="0" max="100" required>
+                    </div>
+
+                    <div class="form-group">
+                        <label>Term</label>
+                        <select id="term">
+                            <option>First Term</option>
+                            <option>Second Term</option>
+                            <option>Third Term</option>
+                        </select>
+                    </div>
+
+                    <div class="form-group">
+                        <label>Status</label>
+                        <select id="resultStatus">
+                            <option value="published">Published</option>
+                            <option value="pending">Pending</option>
+                        </select>
+                    </div>
+
+                </div>
+
+                <div class="modal-actions">
+                    <button type="button" class="btn btn-light" id="cancelResultBtn">
+                        Cancel
+                    </button>
+
+                    <button type="submit" class="btn btn-primary">
+                        Save Result
+                    </button>
+                </div>
+
+            </form>
+
+        </div>
+    </div>
+
+    <footer class="dashboard-footer">
+        <p>
+            © 2026 PACSA School Management System.
+            All rights reserved.
+        </p>
+    </footer>
+
+</main>
+
+<script src="results.js"></script>
+
+</body>
+</html>
+```

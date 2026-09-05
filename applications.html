@@ -1,0 +1,296 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>PACSA | Applications</title>
+    <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Outfit:wght@300;400;500;600;700;800&display=swap">
+    <link rel="stylesheet" href="admin-dashboard.css">
+</head>
+
+<body>
+
+<button class="menu-btn" id="menuBtn">☰</button>
+
+<aside class="sidebar" id="sidebar">
+
+    <div class="brand">
+        <img src="images/PACSA LOGO.png" alt="PACSA Logo">
+        <div class="brand-text">
+            <h2>PACSA</h2>
+            <p>Admin Portal</p>
+        </div>
+    </div>
+
+    <nav class="sidebar-nav">
+
+        <p class="nav-label">MAIN MENU</p>
+
+        <a href="admin-dashboard.html" class="nav-link">
+            <span class="nav-icon">⌂</span> Dashboard
+        </a>
+
+        <p class="nav-label">STUDENT MANAGEMENT</p>
+
+        <a href="students.html" class="nav-link">
+            <span class="nav-icon">🎓</span> Students
+        </a>
+
+        <p class="nav-label">ACADEMIC MANAGEMENT</p>
+
+        <a href="teachers.html" class="nav-link">
+            <span class="nav-icon">👨‍🏫</span> Teachers
+        </a>
+
+        <a href="subjects.html" class="nav-link">
+            <span class="nav-icon">📚</span> Subjects
+        </a>
+
+        <a href="classes.html" class="nav-link">
+            <span class="nav-icon">🏫</span> Classes
+        </a>
+
+        <a href="sessions.html" class="nav-link">
+            <span class="nav-icon">📅</span> Sessions & Terms
+        </a>
+
+        <p class="nav-label">RESULT MANAGEMENT</p>
+
+        <a href="results.html" class="nav-link">
+            <span class="nav-icon">📑</span> Results
+        </a>
+
+        <a href="reports.html" class="nav-link">
+            <span class="nav-icon">📊</span> Reports & Analytics
+        </a>
+
+        <p class="nav-label">ADMINISTRATION</p>
+
+        <a href="applications.html" class="nav-link active">
+            <span class="nav-icon">📝</span> Applications
+        </a>
+
+        <a href="settings.html" class="nav-link">
+            <span class="nav-icon">⚙</span> Settings
+        </a>
+
+    </nav>
+
+    <div class="sidebar-footer">
+        <a href="#" class="logout-link" id="logoutBtn">
+            <span>🚪</span> Logout
+        </a>
+    </div>
+
+</aside>
+
+<main class="main-content">
+
+    <header class="topbar">
+
+        <div class="page-title">
+            <p class="breadcrumb">
+                Administration / Applications
+            </p>
+            <h1>Applications</h1>
+        </div>
+
+        <div class="topbar-right">
+
+            <button class="notification-btn" aria-label="Notifications">
+                🔔
+                <span class="notification-dot"></span>
+            </button>
+
+            <div class="admin-profile">
+                <img src="images/Faith.jpg" alt="Administrator">
+
+                <div class="admin-info">
+                    <strong>Administrator</strong>
+                    <span>System Administrator</span>
+                </div>
+            </div>
+
+        </div>
+
+    </header>
+
+    <section class="management-hero">
+
+        <div>
+            <p class="section-subtitle">ADMISSIONS</p>
+
+            <h2>Manage Applications</h2>
+
+            <p>
+                Review and manage student admission applications.
+            </p>
+        </div>
+
+    </section>
+
+    <section class="teacher-stats-grid">
+
+        <div class="mini-stat-card">
+            <div class="mini-stat-icon">📝</div>
+            <div>
+                <p>Total Applications</p>
+                <h3 id="totalApplications">0</h3>
+            </div>
+        </div>
+
+        <div class="mini-stat-card">
+            <div class="mini-stat-icon orange-icon">⏳</div>
+            <div>
+                <p>Pending</p>
+                <h3 id="pendingApplications">0</h3>
+            </div>
+        </div>
+
+        <div class="mini-stat-card">
+            <div class="mini-stat-icon green-icon">✓</div>
+            <div>
+                <p>Approved</p>
+                <h3 id="approvedApplications">0</h3>
+            </div>
+        </div>
+
+        <div class="mini-stat-card">
+            <div class="mini-stat-icon blue-icon">✕</div>
+            <div>
+                <p>Rejected</p>
+                <h3 id="rejectedApplications">0</h3>
+            </div>
+        </div>
+
+    </section>
+
+    <section class="management-page-card">
+
+        <div class="management-card-header">
+
+            <div>
+                <h2>Admission Applications</h2>
+                <p>Review submitted student applications.</p>
+            </div>
+
+            <div class="teacher-count">
+                <span id="applicationCount">0</span> Applications
+            </div>
+
+        </div>
+
+        <div class="teacher-controls">
+
+            <div class="search-wrapper">
+                <span class="search-icon">🔍</span>
+
+                <input
+                    type="text"
+                    id="applicationSearch"
+                    placeholder="Search applicant..."
+                >
+            </div>
+
+            <select id="classFilter" class="filter-select">
+                <option value="">All Classes</option>
+                <option value="SS1">SS1</option>
+                <option value="SS2">SS2</option>
+                <option value="SS3">SS3</option>
+            </select>
+
+            <select id="statusFilter" class="filter-select">
+                <option value="">All Status</option>
+                <option value="pending">Pending</option>
+                <option value="approved">Approved</option>
+                <option value="rejected">Rejected</option>
+            </select>
+
+            <button class="btn btn-light" id="clearFiltersBtn">
+                Clear
+            </button>
+
+        </div>
+
+        <div class="table-wrapper">
+
+            <table class="professional-table">
+
+                <thead>
+                    <tr>
+                        <th>Applicant</th>
+                        <th>Gender</th>
+                        <th>Class</th>
+                        <th>Parent/Guardian</th>
+                        <th>Date</th>
+                        <th>Status</th>
+                        <th>Action</th>
+                    </tr>
+                </thead>
+
+                <tbody id="applicationsTableBody"></tbody>
+
+            </table>
+
+        </div>
+
+        <div class="empty-state" id="emptyApplicationState">
+
+            <div class="empty-icon">📝</div>
+
+            <h3>No Applications Found</h3>
+
+            <p>
+                Student admission applications will appear here.
+            </p>
+
+        </div>
+
+    </section>
+
+    <section class="teacher-management-info">
+
+        <div class="info-card">
+            <div class="info-icon purple-info">📝</div>
+
+            <div>
+                <h3>Review Applications</h3>
+                <p>Review applicant information before making a decision.</p>
+            </div>
+        </div>
+
+        <div class="info-card">
+            <div class="info-icon green-info">✓</div>
+
+            <div>
+                <h3>Approve Students</h3>
+                <p>Approve qualified applicants for admission.</p>
+            </div>
+        </div>
+
+        <div class="info-card">
+            <div class="info-icon orange-info">⏳</div>
+
+            <div>
+                <h3>Pending Applications</h3>
+                <p>Keep applications pending until they are reviewed.</p>
+            </div>
+        </div>
+
+    </section>
+
+    <footer class="dashboard-footer">
+
+        <p>
+            © 2026 PACSA School Management System.
+            All rights reserved.
+        </p>
+
+    </footer>
+
+</main>
+
+<script src="applications.js"></script>
+
+</body>
+</html>
