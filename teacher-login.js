@@ -87,7 +87,10 @@ if (loginForm) {
             // FIND TEACHER
             // ============================================
 
-            const { data: teachers, error: teacherError } =
+            const {
+                data: teachers,
+                error: teacherError
+            } =
                 await supabaseClient
                     .from("Teachers")
                     .select("*");
@@ -150,14 +153,20 @@ if (loginForm) {
 
 
             // ============================================
-            // LOAD TEACHER ASSIGNMENTS
+            // LOAD SUBJECT ASSIGNMENTS
             // ============================================
 
-            const { data: assignments, error: assignmentError } =
+            const {
+                data: assignments,
+                error: assignmentError
+            } =
                 await supabaseClient
                     .from("teacher_assignments")
                     .select("*")
-                    .eq("teacher_id", teacher.teacher_id);
+                    .eq(
+                        "teacher_id",
+                        teacher.teacher_id
+                    );
 
 
             if (assignmentError) {
@@ -168,7 +177,7 @@ if (loginForm) {
                 );
 
                 alert(
-                    "Teacher account found, but assignments could not be loaded.\n\n" +
+                    "Teacher account found, but subject assignments could not be loaded.\n\n" +
                     assignmentError.message
                 );
 
@@ -177,13 +186,58 @@ if (loginForm) {
 
 
             // ============================================
-            // REQUIRE AT LEAST ONE ASSIGNMENT
+            // LOAD CLASS TEACHER ASSIGNMENTS
             // ============================================
 
-            if (!assignments || assignments.length === 0) {
+            const {
+                data: classTeacherAssignments,
+                error: classTeacherError
+            } =
+                await supabaseClient
+                    .from("class_teacher_assignments")
+                    .select("*")
+                    .eq(
+                        "teacher_id",
+                        teacher.teacher_id
+                    );
+
+
+            if (classTeacherError) {
+
+                console.error(
+                    "Class teacher assignment lookup error:",
+                    classTeacherError
+                );
 
                 alert(
-                    "Your teacher account has no class or subject assignment yet.\n\n" +
+                    "Teacher account found, but class teacher assignment could not be loaded.\n\n" +
+                    classTeacherError.message
+                );
+
+                return;
+            }
+
+
+            // ============================================
+            // REQUIRE AT LEAST ONE RESPONSIBILITY
+            // ============================================
+
+            const hasSubjectAssignments =
+                assignments &&
+                assignments.length > 0;
+
+            const hasClassTeacherAssignments =
+                classTeacherAssignments &&
+                classTeacherAssignments.length > 0;
+
+
+            if (
+                !hasSubjectAssignments &&
+                !hasClassTeacherAssignments
+            ) {
+
+                alert(
+                    "Your teacher account has no class, subject, or class teacher assignment yet.\n\n" +
                     "Please contact the school administrator."
                 );
 
@@ -203,7 +257,15 @@ if (loginForm) {
 
             localStorage.setItem(
                 "teacherAssignments",
-                JSON.stringify(assignments)
+                JSON.stringify(assignments || [])
+            );
+
+
+            localStorage.setItem(
+                "classTeacherAssignments",
+                JSON.stringify(
+                    classTeacherAssignments || []
+                )
             );
 
 
@@ -214,8 +276,14 @@ if (loginForm) {
 
 
             console.log(
-                "Teacher assignments:",
+                "Subject assignments:",
                 assignments
+            );
+
+
+            console.log(
+                "Class teacher assignments:",
+                classTeacherAssignments
             );
 
 

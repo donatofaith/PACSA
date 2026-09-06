@@ -2,18 +2,406 @@
 <html lang="en">
 
 <head>
-
     <meta charset="UTF-8">
 
     <meta
         name="viewport"
-        content="width=device-width, initial-scale=1.0">
+        content="width=device-width, initial-scale=1.0"
+    >
 
     <title>PACSA Teacher Dashboard</title>
 
     <link
+        href="https://fonts.googleapis.com/css2?family=Outfit:wght@300;400;500;600;700;800&display=swap"
         rel="stylesheet"
-        href="teacher-dashboard.css">
+    >
+
+    <link
+        rel="stylesheet"
+        href="teacher-dashboard.css"
+    >
+
+    <style>
+        /* =========================================
+           CLASS TEACHER AREA
+        ========================================= */
+
+        #myClassSection {
+            display: none;
+        }
+
+        #myClassSection.show {
+            display: block;
+        }
+
+        .class-teacher-badge {
+            display: inline-flex;
+            align-items: center;
+            gap: 6px;
+            padding: 7px 11px;
+            margin-top: 12px;
+            border-radius: 999px;
+            background: #F3E8FF;
+            color: #5B21B6;
+            font-size: 12px;
+            font-weight: 700;
+        }
+
+        .class-teacher-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(230px, 1fr));
+            gap: 16px;
+            margin-top: 20px;
+        }
+
+        .class-teacher-card {
+            border: 1px solid #E5E7EB;
+            background: #FFFFFF;
+            border-radius: 16px;
+            padding: 20px;
+            box-shadow: 0 8px 24px rgba(0, 0, 0, 0.04);
+        }
+
+        .class-teacher-card-top {
+            display: flex;
+            justify-content: space-between;
+            align-items: flex-start;
+            gap: 12px;
+        }
+
+        .class-teacher-card h3 {
+            margin: 4px 0 0;
+            font-size: 22px;
+            color: #1F2937;
+        }
+
+        .class-teacher-card p {
+            color: #6B7280;
+            font-size: 13px;
+        }
+
+        .class-teacher-icon {
+            width: 45px;
+            height: 45px;
+            border-radius: 12px;
+            background: #F3E8FF;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 21px;
+        }
+
+        .class-session {
+            margin-top: 15px;
+            padding: 11px 13px;
+            border: 1px solid #E5E7EB;
+            border-radius: 11px;
+            background: #F9FAFB;
+        }
+
+        .class-session span {
+            display: block;
+            color: #6B7280;
+            font-size: 12px;
+        }
+
+        .class-session strong {
+            display: block;
+            margin-top: 3px;
+            color: #1F2937;
+            font-size: 14px;
+        }
+
+        .class-selector {
+            max-width: 320px;
+            margin-top: 22px;
+        }
+
+        .class-selector label {
+            display: block;
+            margin-bottom: 7px;
+            font-weight: 600;
+            font-size: 13px;
+        }
+
+        .class-selector select {
+            width: 100%;
+            padding: 11px 12px;
+            border: 1px solid #E5E7EB;
+            border-radius: 10px;
+            font-family: inherit;
+            outline: none;
+        }
+
+        .class-selector select:focus {
+            border-color: #5B21B6;
+        }
+
+        .class-student-list {
+            margin-top: 25px;
+        }
+
+        .class-student-list-header {
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            gap: 15px;
+            margin-bottom: 14px;
+        }
+
+        .class-student-list-header h3 {
+            font-size: 18px;
+            color: #1F2937;
+        }
+
+        .class-student-list-header span {
+            color: #6B7280;
+            font-size: 13px;
+        }
+
+        .class-students-table-wrapper {
+            border: 1px solid #E5E7EB;
+            border-radius: 14px;
+            overflow-x: auto;
+        }
+
+        .class-students-table {
+            width: 100%;
+            min-width: 700px;
+            border-collapse: collapse;
+        }
+
+        .class-students-table th {
+            padding: 13px 15px;
+            text-align: left;
+            background: #F9FAFB;
+            color: #6B7280;
+            font-size: 12px;
+        }
+
+        .class-students-table td {
+            padding: 14px 15px;
+            border-top: 1px solid #F1F5F9;
+            font-size: 14px;
+        }
+
+        .class-students-table tbody tr:hover {
+            background: #FAFAFF;
+        }
+
+        .class-account-badge {
+            display: inline-flex;
+            padding: 5px 9px;
+            border-radius: 999px;
+            background: #DCFCE7;
+            color: #15803D;
+            font-size: 11px;
+            font-weight: 700;
+        }
+
+        .class-view-btn {
+            border: none;
+            background: #5B21B6;
+            color: white;
+            padding: 8px 13px;
+            border-radius: 8px;
+            cursor: pointer;
+            font-family: inherit;
+            font-size: 12px;
+            font-weight: 600;
+        }
+
+        .class-view-btn:hover {
+            background: #4C1D95;
+        }
+
+        .class-empty {
+            padding: 25px !important;
+            text-align: center;
+            color: #6B7280;
+        }
+
+
+        /* =========================================
+           COMPLETE RESULT VIEW
+        ========================================= */
+
+        #classResultView {
+            display: none;
+        }
+
+        #classResultView.show {
+            display: block;
+        }
+
+        .complete-result-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: flex-start;
+            gap: 20px;
+            margin-bottom: 22px;
+        }
+
+        .complete-result-header h2 {
+            margin-top: 3px;
+        }
+
+        .complete-result-header p {
+            margin-top: 6px;
+            color: #6B7280;
+        }
+
+        .complete-result-meta {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(180px, 1fr));
+            gap: 14px;
+            margin-bottom: 20px;
+        }
+
+        .complete-result-meta-card {
+            border: 1px solid #E5E7EB;
+            border-radius: 12px;
+            padding: 14px;
+            background: #F9FAFB;
+        }
+
+        .complete-result-meta-card span {
+            display: block;
+            color: #6B7280;
+            font-size: 12px;
+            margin-bottom: 4px;
+        }
+
+        .complete-result-meta-card strong {
+            color: #1F2937;
+            font-size: 14px;
+        }
+
+        .complete-result-filters {
+            display: flex;
+            gap: 12px;
+            margin-bottom: 20px;
+            flex-wrap: wrap;
+        }
+
+        .complete-result-filters select {
+            min-width: 210px;
+            padding: 11px 12px;
+            border: 1px solid #E5E7EB;
+            border-radius: 10px;
+            font-family: inherit;
+            outline: none;
+        }
+
+        .complete-result-summary {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(150px, 1fr));
+            gap: 14px;
+            margin-top: 20px;
+        }
+
+        .complete-summary-card {
+            border: 1px solid #E5E7EB;
+            border-radius: 12px;
+            padding: 16px;
+            background: #FFFFFF;
+        }
+
+        .complete-summary-card span {
+            display: block;
+            color: #6B7280;
+            font-size: 12px;
+        }
+
+        .complete-summary-card strong {
+            display: block;
+            color: #1F2937;
+            font-size: 22px;
+            margin-top: 5px;
+        }
+
+        .readonly-note {
+            margin-top: 18px;
+            padding: 12px 14px;
+            background: #F9FAFB;
+            border: 1px solid #E5E7EB;
+            border-radius: 10px;
+            color: #6B7280;
+            font-size: 13px;
+        }
+
+
+        /* =========================================
+           REMARK AREA
+        ========================================= */
+
+        .remark-box {
+            margin-top: 20px;
+            padding: 20px;
+            border: 1px solid #E5E7EB;
+            border-radius: 14px;
+            background: #FFFFFF;
+        }
+
+        .remark-box h3 {
+            margin-bottom: 5px;
+            color: #1F2937;
+            font-size: 18px;
+        }
+
+        .remark-box > p {
+            color: #6B7280;
+            font-size: 13px;
+            margin-bottom: 14px;
+        }
+
+        .remark-box label {
+            display: block;
+            margin-bottom: 7px;
+            color: #374151;
+            font-size: 13px;
+            font-weight: 600;
+        }
+
+        .remark-box textarea {
+            width: 100%;
+            min-height: 110px;
+            padding: 12px 14px;
+            border: 1px solid #D1D5DB;
+            border-radius: 10px;
+            font-family: inherit;
+            font-size: 14px;
+            resize: vertical;
+            outline: none;
+        }
+
+        .remark-box textarea:focus {
+            border-color: #5B21B6;
+            box-shadow: 0 0 0 3px rgba(91, 33, 182, 0.08);
+        }
+
+        .remark-actions {
+            display: flex;
+            align-items: center;
+            gap: 15px;
+            margin-top: 12px;
+            flex-wrap: wrap;
+        }
+
+        #remarkMessage {
+            margin: 0;
+            font-size: 13px;
+        }
+
+
+        @media (max-width: 700px) {
+
+            .complete-result-header {
+                flex-direction: column;
+            }
+
+        }
+    </style>
 
 </head>
 
@@ -21,682 +409,1427 @@
 <body>
 
 
-<header class="header">
+<!-- =========================================
+     SIDEBAR
+========================================= -->
 
-    <div>
+<aside
+    class="sidebar"
+    id="sidebar"
+>
 
-        <h1>
-            PACSA Teacher Dashboard
-        </h1>
+    <div class="sidebar-brand">
 
-        <p>
-            Becoming Leaders Through Righteousness
-        </p>
+        <img
+            src="images/PACSA LOGO.png"
+            alt="PACSA Logo"
+            class="sidebar-logo"
+        >
+
+        <div>
+            <h2>PACSA</h2>
+            <p>Teacher Portal</p>
+        </div>
 
     </div>
 
 
-    <button
-        id="logoutBtn"
-        class="logout">
+    <nav class="sidebar-nav">
 
-        Logout
+        <a
+            href="#dashboard"
+            class="nav-link active"
+        >
+            <span class="nav-icon">🏠</span>
+            Dashboard
+        </a>
 
-    </button>
+
+        <a
+            href="#assignments"
+            class="nav-link"
+        >
+            <span class="nav-icon">📚</span>
+            My Assignments
+        </a>
+
+
+        <a
+            href="#myClassSection"
+            class="nav-link"
+            id="myClassNavLink"
+            style="display:none;"
+        >
+            <span class="nav-icon">🏫</span>
+            My Class
+        </a>
+
+
+        <a
+            href="#results"
+            class="nav-link"
+        >
+            <span class="nav-icon">📝</span>
+            Student Results
+        </a>
+
+
+        <a
+            href="#profile"
+            class="nav-link"
+        >
+            <span class="nav-icon">👤</span>
+            My Profile
+        </a>
+
+    </nav>
+
+
+    <div class="sidebar-bottom">
+
+        <button
+            type="button"
+            id="sidebarLogoutBtn"
+            class="sidebar-logout"
+        >
+            <span>🚪</span>
+            Logout
+        </button>
+
+    </div>
+
+</aside>
+
+
+
+<!-- =========================================
+     MAIN
+========================================= -->
+
+<div class="main-wrapper">
+
+
+<header class="topbar">
+
+    <div class="topbar-left">
+
+        <button
+            type="button"
+            id="menuBtn"
+            class="menu-btn"
+        >
+            ☰
+        </button>
+
+        <div>
+
+            <h1>
+                Teacher Dashboard
+            </h1>
+
+            <p>
+                Becoming Leaders Through Righteousness
+            </p>
+
+        </div>
+
+    </div>
+
+
+    <div class="topbar-right">
+
+        <div class="topbar-teacher">
+
+            <div
+                class="mini-avatar"
+                id="miniAvatar"
+            >
+                T
+            </div>
+
+            <div>
+
+                <strong id="topTeacherName">
+                    Loading...
+                </strong>
+
+                <span id="topTeacherId">
+                    --
+                </span>
+
+            </div>
+
+        </div>
+
+
+        <button
+            type="button"
+            id="logoutBtn"
+            class="logout-btn"
+        >
+            Logout
+        </button>
+
+    </div>
 
 </header>
 
 
-<main class="container">
+
+<main class="content">
 
 
-    <!-- ========================================= -->
-    <!-- TEACHER PROFILE -->
-    <!-- ========================================= -->
+<!-- =========================================
+     WELCOME
+========================================= -->
 
-    <section class="profile-card">
+<section
+    id="dashboard"
+    class="welcome-card"
+>
 
+    <div class="welcome-content">
 
-        <img
-            src="images/Faith.jpg"
-            alt="Teacher"
-            class="teacher-photo">
+        <p class="welcome-label">
+            PACSA TEACHER PORTAL
+        </p>
 
-
-        <div class="profile-info">
-
-            <h2 id="teacherName">
-                Loading...
-            </h2>
-
-
-            <p>
-
-                <strong>
-                    Teacher ID:
-                </strong>
-
-                <span id="teacherId">
-                    --
-                </span>
-
-            </p>
-
-
-            <p>
-
-                <strong>
-                    Subject:
-                </strong>
-
-                <span id="teacherSubject">
-                    --
-                </span>
-
-            </p>
-
-
-            <p>
-
-                <strong>
-                    Class:
-                </strong>
-
-                <span id="teacherClass">
-                    --
-                </span>
-
-            </p>
-
-        </div>
-
-    </section>
-
-
-
-    <!-- ========================================= -->
-    <!-- INFORMATION CARDS -->
-    <!-- ========================================= -->
-
-    <section class="info-grid">
-
-
-        <div class="info-card">
-
-            <h3>
+        <h2>
+            Welcome back,
+            <span id="welcomeTeacherName">
                 Teacher
-            </h3>
+            </span>
+        </h2>
 
-            <p id="teacherCardName">
-                --
-            </p>
-
-        </div>
-
-
-        <div class="info-card">
-
-            <h3>
-                Assignments
-            </h3>
-
-            <p id="subjectCard">
-                --
-            </p>
-
-        </div>
-
-
-        <div class="info-card">
-
-            <h3>
-                Classes
-            </h3>
-
-            <p id="classCard">
-                --
-            </p>
-
-        </div>
-
-
-    </section>
-
-
-
-    <!-- ========================================= -->
-    <!-- RESULTS -->
-    <!-- ========================================= -->
-
-    <section class="results-card">
-
-
-        <div class="results-header">
-
-
-            <div>
-
-                <h2>
-                    Student Results
-                </h2>
-
-                <p>
-                    Enter and manage results for your assigned classes and subjects.
-                </p>
-
-            </div>
-
-
-            <button
-                type="button"
-                id="addResultBtn"
-                class="add-result-btn">
-
-                + Enter Result
-
-            </button>
-
-
-        </div>
-
-
-
-        <!-- ========================================= -->
-        <!-- RESULT ENTRY -->
-        <!-- ========================================= -->
+        <p>
+            Manage your assigned classes, subjects and student
+            results from one place.
+        </p>
 
         <div
-            id="resultEntryPanel"
-            class="result-entry-panel">
+            id="classTeacherBadge"
+            class="class-teacher-badge"
+            style="display:none;"
+        >
+            🏫 Class Teacher
+        </div>
 
+    </div>
 
-            <h3>
-                Enter Student Result
-            </h3>
 
+    <div class="welcome-decoration">
+        👨‍🏫
+    </div>
 
-            <div class="form-grid">
+</section>
 
 
-                <!-- ASSIGNMENT -->
 
-                <div class="form-group">
+<!-- =========================================
+     STATISTICS
+========================================= -->
 
-                    <label for="resultAssignment">
-                        Class & Subject
-                    </label>
+<section class="stats-grid">
 
+    <div class="stat-card">
 
-                    <select id="resultAssignment">
+        <div class="stat-icon purple">
+            📚
+        </div>
 
-                        <option value="">
-                            Select Assignment
-                        </option>
+        <div>
+            <span>Assignments</span>
+            <h3 id="assignmentCount">0</h3>
+        </div>
 
-                    </select>
+    </div>
 
-                </div>
 
+    <div class="stat-card">
 
+        <div class="stat-icon blue">
+            🏫
+        </div>
 
-                <!-- STUDENT -->
+        <div>
+            <span>Classes</span>
+            <h3 id="classCount">0</h3>
+        </div>
 
-                <div class="form-group">
+    </div>
 
-                    <label for="resultStudent">
-                        Student
-                    </label>
 
+    <div class="stat-card">
 
-                    <select id="resultStudent">
+        <div class="stat-icon green">
+            👨‍🎓
+        </div>
 
-                        <option value="">
-                            Select Student
-                        </option>
+        <div>
+            <span>Students</span>
+            <h3 id="studentCount">0</h3>
+        </div>
 
-                    </select>
+    </div>
 
-                </div>
 
+    <div class="stat-card">
 
+        <div class="stat-icon orange">
+            📝
+        </div>
 
-                <!-- TERM -->
+        <div>
+            <span>Results</span>
+            <h3 id="resultCount">0</h3>
+        </div>
 
-                <div class="form-group">
+    </div>
 
-                    <label for="resultTerm">
-                        Term
-                    </label>
+</section>
 
 
-                    <select id="resultTerm">
 
+<!-- =========================================
+     RESULT STATUS
+========================================= -->
 
-                        <option value="">
-                            Select Term
-                        </option>
+<section class="result-status-grid">
 
+    <div class="status-summary-card">
 
-                        <option value="First Term">
-                            First Term
-                        </option>
+        <span class="status-dot pending-dot"></span>
 
+        <div>
+            <p>Pending Review</p>
+            <strong id="pendingResultCount">0</strong>
+        </div>
 
-                        <option value="Second Term">
-                            Second Term
-                        </option>
+    </div>
 
 
-                        <option value="Third Term">
-                            Third Term
-                        </option>
+    <div class="status-summary-card">
 
+        <span class="status-dot published-dot"></span>
 
-                    </select>
+        <div>
+            <p>Published</p>
+            <strong id="publishedResultCount">0</strong>
+        </div>
 
-                </div>
+    </div>
 
 
+    <div class="status-summary-card">
 
-                <!-- CA -->
+        <span class="status-dot rejected-dot"></span>
 
-                <div class="form-group">
+        <div>
+            <p>Rejected</p>
+            <strong id="rejectedResultCount">0</strong>
+        </div>
 
-                    <label for="resultCA">
-                        CA Mark (0–40)
-                    </label>
+    </div>
 
+</section>
 
-                    <input
-                        type="number"
-                        id="resultCA"
-                        min="0"
-                        max="40"
-                        placeholder="Enter CA">
 
-                </div>
 
+<!-- =========================================
+     ASSIGNMENTS
+========================================= -->
 
+<section
+    id="assignments"
+    class="page-card"
+>
 
-                <!-- EXAM -->
+    <div class="section-heading">
 
-                <div class="form-group">
+        <div>
 
-                    <label for="resultExam">
-                        Exam Mark (0–60)
-                    </label>
+            <span class="section-label">
+                MY ASSIGNMENTS
+            </span>
 
+            <h2>
+                Assigned Classes & Subjects
+            </h2>
 
-                    <input
-                        type="number"
-                        id="resultExam"
-                        min="0"
-                        max="60"
-                        placeholder="Enter Exam">
-
-                </div>
-
-
-
-                <!-- TOTAL -->
-
-                <div class="form-group">
-
-                    <label for="resultTotal">
-                        Total
-                    </label>
-
-
-                    <input
-                        type="number"
-                        id="resultTotal"
-                        class="calculated"
-                        readonly>
-
-                </div>
-
-
-
-                <!-- GRADE -->
-
-                <div class="form-group">
-
-                    <label for="resultGrade">
-                        Grade
-                    </label>
-
-
-                    <input
-                        type="text"
-                        id="resultGrade"
-                        class="calculated"
-                        readonly>
-
-                </div>
-
-
-            </div>
-
-
-            <p
-                id="resultMessage"
-                class="result-message">
+            <p>
+                These are the classes and subjects assigned
+                to your teacher account by the administrator.
             </p>
 
+        </div>
+
+    </div>
 
 
-            <div class="edit-buttons">
+    <div
+        id="assignmentCards"
+        class="assignment-grid"
+    >
+        <div class="empty-card">
+            Loading assignments...
+        </div>
+    </div>
+
+</section>
 
 
-                <button
-                    type="button"
-                    id="submitResultBtn"
-                    class="save-btn">
 
-                    Submit Result
+<!-- =========================================
+     MY CLASS
+========================================= -->
 
-                </button>
+<section
+    id="myClassSection"
+    class="page-card"
+>
+
+    <div class="section-heading">
+
+        <div>
+
+            <span class="section-label">
+                CLASS TEACHER
+            </span>
+
+            <h2>
+                My Class
+            </h2>
+
+            <p>
+                View students assigned to you as class teacher
+                and open their complete results.
+            </p>
+
+        </div>
+
+    </div>
 
 
-                <button
-                    type="button"
-                    id="cancelResultBtn"
-                    class="cancel-btn">
-
-                    Cancel
-
-                </button>
+    <div
+        id="classTeacherCards"
+        class="class-teacher-grid"
+    >
+    </div>
 
 
-            </div>
+    <div
+        id="classSelectorWrapper"
+        class="class-selector"
+        style="display:none;"
+    >
 
+        <label for="classTeacherClassSelect">
+            Select Class
+        </label>
+
+        <select id="classTeacherClassSelect">
+        </select>
+
+    </div>
+
+
+    <div class="class-student-list">
+
+        <div class="class-student-list-header">
+
+            <h3>
+                Students
+            </h3>
+
+            <span id="classStudentCount">
+                0 students
+            </span>
 
         </div>
 
 
+        <div class="class-students-table-wrapper">
 
-        <!-- ========================================= -->
-        <!-- RESULTS TABLE -->
-        <!-- ========================================= -->
-
-        <div class="table-wrapper">
-
-
-            <table>
-
+            <table class="class-students-table">
 
                 <thead>
 
                     <tr>
-
-                        <th>
-                            Student ID
-                        </th>
-
-                        <th>
-                            Student Name
-                        </th>
-
-                        <th>
-                            Class
-                        </th>
-
-                        <th>
-                            Subject
-                        </th>
-
-                        <th>
-                            CA
-                        </th>
-
-                        <th>
-                            Exam
-                        </th>
-
-                        <th>
-                            Total
-                        </th>
-
-                        <th>
-                            Grade
-                        </th>
-
-                        <th>
-                            Term
-                        </th>
-
-                        <th>
-                            Status
-                        </th>
-
-                        <th>
-                            Action
-                        </th>
-
+                        <th>Student ID</th>
+                        <th>Student Name</th>
+                        <th>Class</th>
+                        <th>Status</th>
+                        <th>Action</th>
                     </tr>
 
                 </thead>
 
 
-                <tbody id="resultsTable">
+                <tbody id="classStudentsTable">
 
                     <tr>
 
-                        <td colspan="11">
-                            Loading results...
+                        <td
+                            colspan="5"
+                            class="class-empty"
+                        >
+                            Loading students...
                         </td>
 
                     </tr>
 
                 </tbody>
 
-
             </table>
 
+        </div>
+
+    </div>
+
+</section>
+
+
+
+<!-- =========================================
+     COMPLETE CLASS RESULT
+========================================= -->
+
+<section
+    id="classResultView"
+    class="page-card"
+>
+
+    <div class="complete-result-header">
+
+        <div>
+
+            <span class="section-label">
+                COMPLETE STUDENT RESULT
+            </span>
+
+            <h2 id="classResultStudentName">
+                Student Result
+            </h2>
+
+            <p id="classResultStudentInfo">
+                --
+            </p>
 
         </div>
 
 
+        <button
+            type="button"
+            id="closeClassResultBtn"
+            class="secondary-btn"
+        >
+            Close
+        </button>
 
-        <!-- ========================================= -->
-        <!-- EDIT PANEL -->
-        <!-- ========================================= -->
-
-        <div
-            id="editPanel"
-            class="edit-panel">
+    </div>
 
 
-            <h3>
-                Edit Student Result
+    <div class="complete-result-meta">
+
+        <div class="complete-result-meta-card">
+
+            <span>
+                Student ID
+            </span>
+
+            <strong id="classResultStudentId">
+                --
+            </strong>
+
+        </div>
+
+
+        <div class="complete-result-meta-card">
+
+            <span>
+                Class
+            </span>
+
+            <strong id="classResultClass">
+                --
+            </strong>
+
+        </div>
+
+
+        <div class="complete-result-meta-card">
+
+            <span>
+                Session
+            </span>
+
+            <strong id="classResultSession">
+                --
+            </strong>
+
+        </div>
+
+    </div>
+
+
+    <div class="complete-result-filters">
+
+        <select id="classResultTerm">
+
+            <option value="">
+                Select Term
+            </option>
+
+        </select>
+
+    </div>
+
+
+    <div class="table-wrapper">
+
+        <table>
+
+            <thead>
+
+                <tr>
+                    <th>Subject</th>
+                    <th>CA</th>
+                    <th>Exam</th>
+                    <th>Total</th>
+                    <th>Grade</th>
+                </tr>
+
+            </thead>
+
+
+            <tbody id="classFullResultTable">
+
+                <tr>
+                    <td colspan="5">
+                        Select a student to view result.
+                    </td>
+                </tr>
+
+            </tbody>
+
+        </table>
+
+    </div>
+
+
+    <div class="complete-result-summary">
+
+        <div class="complete-summary-card">
+
+            <span>
+                Subjects
+            </span>
+
+            <strong id="classResultSubjectCount">
+                0
+            </strong>
+
+        </div>
+
+
+        <div class="complete-summary-card">
+
+            <span>
+                Average
+            </span>
+
+            <strong id="classResultAverage">
+                0%
+            </strong>
+
+        </div>
+
+
+        <div class="complete-summary-card">
+
+            <span>
+                Passed
+            </span>
+
+            <strong id="classResultPassed">
+                0
+            </strong>
+
+        </div>
+
+
+        <div class="complete-summary-card">
+
+            <span>
+                Failed
+            </span>
+
+            <strong id="classResultFailed">
+                0
+            </strong>
+
+        </div>
+
+    </div>
+
+
+    <div class="readonly-note">
+
+        This is a read-only class teacher view.
+        Scores entered by subject teachers cannot be edited here.
+
+    </div>
+
+
+    <!-- =========================================
+         CLASS TEACHER REMARK
+    ========================================= -->
+
+    <div class="remark-box">
+
+        <h3>
+            Remark
+        </h3>
+
+        <p>
+            Add the class teacher's remark for this student's report.
+        </p>
+
+        <label for="classTeacherRemark">
+            Student Remark
+        </label>
+
+        <textarea
+            id="classTeacherRemark"
+            placeholder="Enter remark for this student..."
+        ></textarea>
+
+
+        <div class="remark-actions">
+
+            <button
+                type="button"
+                id="saveRemarkBtn"
+                class="save-btn"
+            >
+                Save Remark
+            </button>
+
+            <p
+                id="remarkMessage"
+                class="form-message"
+            ></p>
+
+        </div>
+
+    </div>
+
+</section>
+
+
+
+<!-- =========================================
+     SUBJECT RESULT MANAGEMENT
+========================================= -->
+
+<section
+    id="results"
+    class="page-card results-section"
+>
+
+    <div class="results-header">
+
+        <div>
+
+            <span class="section-label">
+                RESULT MANAGEMENT
+            </span>
+
+            <h2>
+                Student Results
+            </h2>
+
+            <p>
+                Enter and manage results only for your
+                assigned classes and subjects.
+            </p>
+
+        </div>
+
+
+        <button
+            type="button"
+            id="addResultBtn"
+            class="primary-btn"
+        >
+            + Enter Result
+        </button>
+
+    </div>
+
+
+
+    <!-- RESULT ENTRY -->
+
+    <div
+        id="resultEntryPanel"
+        class="result-entry-panel"
+    >
+
+        <div class="panel-heading">
+
+            <div>
+
+                <h3>
+                    Enter Student Result
+                </h3>
+
+                <p>
+                    Select one of your assignments and enter
+                    the student's marks.
+                </p>
+
+            </div>
+
+        </div>
+
+
+        <div class="form-grid">
+
+            <div class="form-group">
+
+                <label for="resultAssignment">
+                    Class & Subject
+                </label>
+
+                <select id="resultAssignment">
+
+                    <option value="">
+                        Select Class & Subject
+                    </option>
+
+                </select>
+
+            </div>
+
+
+            <div class="form-group">
+
+                <label for="resultStudent">
+                    Student
+                </label>
+
+                <select id="resultStudent">
+
+                    <option value="">
+                        Select Student
+                    </option>
+
+                </select>
+
+            </div>
+
+
+            <div class="form-group">
+
+                <label for="resultTerm">
+                    Term
+                </label>
+
+                <select id="resultTerm">
+
+                    <option value="">
+                        Select Term
+                    </option>
+
+                    <option value="First Term">
+                        First Term
+                    </option>
+
+                    <option value="Second Term">
+                        Second Term
+                    </option>
+
+                    <option value="Third Term">
+                        Third Term
+                    </option>
+
+                </select>
+
+            </div>
+
+
+            <div class="form-group">
+
+                <label for="resultCA">
+                    CA Mark
+                    <small>(0 - 40)</small>
+                </label>
+
+                <input
+                    type="number"
+                    id="resultCA"
+                    min="0"
+                    max="40"
+                    placeholder="Enter CA mark"
+                >
+
+            </div>
+
+
+            <div class="form-group">
+
+                <label for="resultExam">
+                    Exam Mark
+                    <small>(0 - 60)</small>
+                </label>
+
+                <input
+                    type="number"
+                    id="resultExam"
+                    min="0"
+                    max="60"
+                    placeholder="Enter exam mark"
+                >
+
+            </div>
+
+
+            <div class="form-group">
+
+                <label for="resultTotal">
+                    Total
+                </label>
+
+                <input
+                    type="number"
+                    id="resultTotal"
+                    class="calculated"
+                    readonly
+                >
+
+            </div>
+
+
+            <div class="form-group">
+
+                <label for="resultGrade">
+                    Grade
+                </label>
+
+                <input
+                    type="text"
+                    id="resultGrade"
+                    class="calculated"
+                    readonly
+                >
+
+            </div>
+
+        </div>
+
+
+        <p
+            id="resultMessage"
+            class="form-message"
+        ></p>
+
+
+        <div class="panel-actions">
+
+            <button
+                type="button"
+                id="submitResultBtn"
+                class="save-btn"
+            >
+                Submit Result
+            </button>
+
+
+            <button
+                type="button"
+                id="cancelResultBtn"
+                class="secondary-btn"
+            >
+                Cancel
+            </button>
+
+        </div>
+
+    </div>
+
+
+
+    <!-- FILTERS -->
+
+    <div class="result-filters">
+
+        <div class="search-box">
+
+            <input
+                type="text"
+                id="resultSearch"
+                placeholder="Search student, class or subject..."
+            >
+
+        </div>
+
+
+        <select id="resultClassFilter">
+
+            <option value="">
+                All Classes
+            </option>
+
+        </select>
+
+
+        <select id="resultSubjectFilter">
+
+            <option value="">
+                All Subjects
+            </option>
+
+        </select>
+
+
+        <select id="resultTermFilter">
+
+            <option value="">
+                All Terms
+            </option>
+
+            <option value="First Term">
+                First Term
+            </option>
+
+            <option value="Second Term">
+                Second Term
+            </option>
+
+            <option value="Third Term">
+                Third Term
+            </option>
+
+        </select>
+
+
+        <select id="resultStatusFilter">
+
+            <option value="">
+                All Statuses
+            </option>
+
+            <option value="pending">
+                Pending
+            </option>
+
+            <option value="published">
+                Published
+            </option>
+
+            <option value="rejected">
+                Rejected
+            </option>
+
+        </select>
+
+
+        <button
+            type="button"
+            id="clearResultFilters"
+            class="clear-filter-btn"
+        >
+            Clear
+        </button>
+
+    </div>
+
+
+
+    <!-- RESULT TABLE -->
+
+    <div class="table-wrapper">
+
+        <table>
+
+            <thead>
+
+                <tr>
+                    <th>Student ID</th>
+                    <th>Student Name</th>
+                    <th>Class</th>
+                    <th>Subject</th>
+                    <th>CA</th>
+                    <th>Exam</th>
+                    <th>Total</th>
+                    <th>Grade</th>
+                    <th>Term</th>
+                    <th>Status</th>
+                    <th>Action</th>
+                </tr>
+
+            </thead>
+
+
+            <tbody id="resultsTable">
+
+                <tr>
+                    <td colspan="11">
+                        Loading results...
+                    </td>
+                </tr>
+
+            </tbody>
+
+        </table>
+
+    </div>
+
+
+
+    <!-- EDIT RESULT -->
+
+    <div
+        id="editPanel"
+        class="edit-panel"
+    >
+
+        <div class="panel-heading">
+
+            <div>
+
+                <h3>
+                    Edit Student Result
+                </h3>
+
+                <p>
+                    Editing a result sends it back to the
+                    administrator for review.
+                </p>
+
+            </div>
+
+        </div>
+
+
+        <div class="edit-details">
+
+            <div>
+                <span>Student</span>
+                <strong id="editStudentName">--</strong>
+            </div>
+
+            <div>
+                <span>Student ID</span>
+                <strong id="editStudentId">--</strong>
+            </div>
+
+            <div>
+                <span>Class</span>
+                <strong id="editClass">--</strong>
+            </div>
+
+            <div>
+                <span>Subject</span>
+                <strong id="editSubject">--</strong>
+            </div>
+
+            <div>
+                <span>Term</span>
+                <strong id="editTerm">--</strong>
+            </div>
+
+        </div>
+
+
+        <div class="form-grid">
+
+            <div class="form-group">
+
+                <label for="editCA">
+                    CA Mark
+                    <small>(0 - 40)</small>
+                </label>
+
+                <input
+                    type="number"
+                    id="editCA"
+                    min="0"
+                    max="40"
+                >
+
+            </div>
+
+
+            <div class="form-group">
+
+                <label for="editExam">
+                    Exam Mark
+                    <small>(0 - 60)</small>
+                </label>
+
+                <input
+                    type="number"
+                    id="editExam"
+                    min="0"
+                    max="60"
+                >
+
+            </div>
+
+
+            <div class="form-group">
+
+                <label for="editTotal">
+                    Total
+                </label>
+
+                <input
+                    type="number"
+                    id="editTotal"
+                    class="calculated"
+                    readonly
+                >
+
+            </div>
+
+
+            <div class="form-group">
+
+                <label for="editGrade">
+                    Grade
+                </label>
+
+                <input
+                    type="text"
+                    id="editGrade"
+                    class="calculated"
+                    readonly
+                >
+
+            </div>
+
+        </div>
+
+
+        <p
+            id="editMessage"
+            class="form-message"
+        ></p>
+
+
+        <div class="panel-actions">
+
+            <button
+                type="button"
+                id="saveBtn"
+                class="save-btn"
+            >
+                Save Changes
+            </button>
+
+
+            <button
+                type="button"
+                id="cancelBtn"
+                class="secondary-btn"
+            >
+                Cancel
+            </button>
+
+        </div>
+
+    </div>
+
+</section>
+
+
+
+<!-- =========================================
+     PROFILE
+========================================= -->
+
+<section
+    id="profile"
+    class="page-card"
+>
+
+    <div class="section-heading">
+
+        <div>
+
+            <span class="section-label">
+                MY PROFILE
+            </span>
+
+            <h2>
+                Teacher Information
+            </h2>
+
+            <p>
+                Your account information and current
+                teaching assignments.
+            </p>
+
+        </div>
+
+    </div>
+
+
+    <div class="profile-layout">
+
+        <div class="teacher-profile-card">
+
+            <div
+                class="large-avatar"
+                id="teacherAvatar"
+            >
+                T
+            </div>
+
+
+            <h3 id="teacherName">
+                Loading...
             </h3>
 
 
-            <div class="edit-info">
-
-
-                <p>
-
-                    <strong>
-                        Student:
-                    </strong>
-
-                    <span id="editStudentName">
-                        --
-                    </span>
-
-                </p>
-
-
-                <p>
-
-                    <strong>
-                        Student ID:
-                    </strong>
-
-                    <span id="editStudentId">
-                        --
-                    </span>
-
-                </p>
-
-
-                <p>
-
-                    <strong>
-                        Subject:
-                    </strong>
-
-                    <span id="editSubject">
-                        --
-                    </span>
-
-                </p>
-
-
-                <p>
-
-                    <strong>
-                        Term:
-                    </strong>
-
-                    <span id="editTerm">
-                        --
-                    </span>
-
-                </p>
-
-
-            </div>
-
-
-
-            <div class="form-grid">
-
-
-                <div class="form-group">
-
-                    <label for="editCA">
-                        CA Mark (0–40)
-                    </label>
-
-
-                    <input
-                        type="number"
-                        id="editCA"
-                        min="0"
-                        max="40">
-
-                </div>
-
-
-                <div class="form-group">
-
-                    <label for="editExam">
-                        Exam Mark (0–60)
-                    </label>
-
-
-                    <input
-                        type="number"
-                        id="editExam"
-                        min="0"
-                        max="60">
-
-                </div>
-
-
-                <div class="form-group">
-
-                    <label for="editTotal">
-                        Total
-                    </label>
-
-
-                    <input
-                        type="number"
-                        id="editTotal"
-                        class="calculated"
-                        readonly>
-
-                </div>
-
-
-                <div class="form-group">
-
-                    <label for="editGrade">
-                        Grade
-                    </label>
-
-
-                    <input
-                        type="text"
-                        id="editGrade"
-                        class="calculated"
-                        readonly>
-
-                </div>
-
-
-            </div>
-
-
-            <p
-                id="editMessage"
-                class="edit-message">
+            <p class="teacher-role">
+                PACSA Teacher
             </p>
 
 
-
-            <div class="edit-buttons">
-
-
-                <button
-                    type="button"
-                    id="saveBtn"
-                    class="save-btn">
-
-                    Save Changes
-
-                </button>
-
-
-                <button
-                    type="button"
-                    id="cancelBtn"
-                    class="cancel-btn">
-
-                    Cancel
-
-                </button>
-
-
-            </div>
-
+            <span
+                id="teacherStatus"
+                class="active-account-badge"
+            >
+                Active Account
+            </span>
 
         </div>
 
 
-    </section>
+        <div class="profile-information">
+
+            <div class="profile-info-row">
+
+                <span>
+                    Teacher ID
+                </span>
+
+                <strong id="teacherId">
+                    --
+                </strong>
+
+            </div>
+
+
+            <div class="profile-info-row">
+
+                <span>
+                    Email Address
+                </span>
+
+                <strong id="teacherEmail">
+                    --
+                </strong>
+
+            </div>
+
+
+            <div class="profile-info-row">
+
+                <span>
+                    Phone Number
+                </span>
+
+                <strong id="teacherPhone">
+                    --
+                </strong>
+
+            </div>
+
+
+            <div class="profile-info-row">
+
+                <span>
+                    Assigned Subjects
+                </span>
+
+                <strong id="teacherSubject">
+                    --
+                </strong>
+
+            </div>
+
+
+            <div class="profile-info-row">
+
+                <span>
+                    Assigned Classes
+                </span>
+
+                <strong id="teacherClass">
+                    --
+                </strong>
+
+            </div>
+
+
+            <div
+                class="profile-info-row"
+                id="classTeacherProfileRow"
+                style="display:none;"
+            >
+
+                <span>
+                    Class Teacher
+                </span>
+
+                <strong id="teacherClassTeacher">
+                    --
+                </strong>
+
+            </div>
+
+        </div>
+
+    </div>
+
+</section>
+
+
+
+<footer class="dashboard-footer">
+
+    <p>
+        © PACSA School Management System
+    </p>
+
+    <span>
+        Teacher Portal
+    </span>
+
+</footer>
 
 
 </main>
 
+</div>
 
 
-<!-- SUPABASE -->
 
-<script
-    src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2">
-</script>
+<div
+    id="sidebarOverlay"
+    class="sidebar-overlay"
+>
+</div>
 
 
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
 <script src="supabase.js"></script>
-
-
 <script src="teacher-dashboard.js"></script>
 
 
 </body>
-
 </html>
