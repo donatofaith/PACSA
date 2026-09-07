@@ -1,78 +1,157 @@
+/* =========================================
+   PACSA SESSIONS & TERMS
+   ADMIN AUTH + CURRENT TERM CONTROL
+========================================= */
+
 let sessions = [];
 
-const $ = id => document.getElementById(id);
-
-document.addEventListener("DOMContentLoaded", () => {
-
-    $("menuBtn")?.addEventListener("click", () => {
-        $("sidebar")?.classList.toggle("active");
-    });
-
-    $("logoutBtn")?.addEventListener("click", e => {
-        e.preventDefault();
-
-        if (confirm("Are you sure you want to logout?")) {
-            window.location.href = "login.html";
-        }
-    });
-
-    $("sessionSearch")?.addEventListener("input", renderSessions);
-    $("statusFilter")?.addEventListener("change", renderSessions);
-
-    $("clearFiltersBtn")?.addEventListener("click", () => {
-        $("sessionSearch").value = "";
-        $("statusFilter").value = "";
-        renderSessions();
-    });
-
-    $("addSessionBtn")?.addEventListener(
-        "click",
-        () => openSessionModal()
-    );
-
-    $("emptyAddSessionBtn")?.addEventListener(
-        "click",
-        () => openSessionModal()
-    );
-
-    $("closeSessionModal")?.addEventListener(
-        "click",
-        closeSessionModal
-    );
-
-    $("cancelSessionBtn")?.addEventListener(
-        "click",
-        closeSessionModal
-    );
-
-    $("sessionForm")?.addEventListener(
-        "submit",
-        saveSession
-    );
-
-    loadSessions();
-});
+const $ = id =>
+    document.getElementById(id);
 
 
-/* LOAD */
+/* =========================================
+   START
+========================================= */
+
+document.addEventListener(
+    "DOMContentLoaded",
+    async () => {
+
+        const admin =
+            await window.adminAuthReady;
+
+        if (!admin) return;
+
+
+        $("menuBtn")
+            ?.addEventListener(
+                "click",
+                () => {
+                    $("sidebar")
+                        ?.classList
+                        .toggle("active");
+                }
+            );
+
+
+        $("sessionSearch")
+            ?.addEventListener(
+                "input",
+                renderSessions
+            );
+
+
+        $("statusFilter")
+            ?.addEventListener(
+                "change",
+                renderSessions
+            );
+
+
+        $("clearFiltersBtn")
+            ?.addEventListener(
+                "click",
+                () => {
+
+                    $("sessionSearch").value = "";
+                    $("statusFilter").value = "";
+
+                    renderSessions();
+                }
+            );
+
+
+        $("addSessionBtn")
+            ?.addEventListener(
+                "click",
+                () => openSessionModal()
+            );
+
+
+        $("emptyAddSessionBtn")
+            ?.addEventListener(
+                "click",
+                () => openSessionModal()
+            );
+
+
+        $("closeSessionModal")
+            ?.addEventListener(
+                "click",
+                closeSessionModal
+            );
+
+
+        $("cancelSessionBtn")
+            ?.addEventListener(
+                "click",
+                closeSessionModal
+            );
+
+
+        $("sessionModal")
+            ?.addEventListener(
+                "click",
+                event => {
+
+                    if (
+                        event.target ===
+                        $("sessionModal")
+                    ) {
+                        closeSessionModal();
+                    }
+                }
+            );
+
+
+        $("sessionForm")
+            ?.addEventListener(
+                "submit",
+                saveSession
+            );
+
+
+        await loadSessions();
+    }
+);
+
+
+/* =========================================
+   LOAD SESSIONS
+========================================= */
 
 async function loadSessions() {
 
-    const { data, error } = await supabaseClient
-        .from("sessions_terms")
-        .select(`
-            id,
-            session,
-            term,
-            start_date,
-            end_date,
-            status,
-            is_current
-        `)
-        .order("start_date", { ascending: false });
+    const {
+        data,
+        error
+    } =
+        await supabaseClient
+            .from("sessions_terms")
+            .select(`
+                id,
+                session,
+                term,
+                start_date,
+                end_date,
+                status,
+                is_current,
+                created_at
+            `)
+            .order(
+                "start_date",
+                {
+                    ascending: false
+                }
+            );
+
 
     if (error) {
-        console.error(error);
+
+        console.error(
+            "Load sessions error:",
+            error
+        );
 
         alert(
             "Could not load sessions: " +
@@ -82,233 +161,577 @@ async function loadSessions() {
         return;
     }
 
-    sessions = data || [];
+
+    sessions =
+        data || [];
+
 
     renderSessions();
+
     updateStatistics();
 }
 
 
-/* RENDER */
+/* =========================================
+   RENDER TABLE
+========================================= */
 
 function renderSessions() {
 
     const search =
-        $("sessionSearch").value
-            .toLowerCase()
-            .trim();
+        String(
+            $("sessionSearch")
+                ?.value || ""
+        )
+            .trim()
+            .toLowerCase();
+
 
     const selectedStatus =
-        $("statusFilter").value;
+        $("statusFilter")
+            ?.value || "";
 
-    const filtered = sessions.filter(item => {
 
-        const sessionName =
-            String(item.session || "")
-                .toLowerCase();
+    const filtered =
+        sessions.filter(
+            item => {
 
-        return (
-            sessionName.includes(search) &&
-            (
-                !selectedStatus ||
-                item.status === selectedStatus
-            )
+                const searchable =
+                    `${item.session || ""} ${item.term || ""}`
+                        .toLowerCase();
+
+
+                return (
+                    searchable.includes(search)
+                    &&
+                    (
+                        !selectedStatus
+                        ||
+                        item.status === selectedStatus
+                    )
+                );
+            }
         );
-    });
 
-    $("sessionsTableBody").innerHTML =
-        filtered.map(item => {
 
-            const status =
-                item.status || "upcoming";
+    const body =
+        $("sessionsTableBody");
 
-            return `
-                <tr>
 
-                    <td>
-                        <strong>
-                            ${escapeHtml(item.session || "-")}
-                        </strong>
-                    </td>
+    if (!body) return;
 
-                    <td>
-                        ${formatDate(item.start_date)}
-                    </td>
 
-                    <td>
-                        ${formatDate(item.end_date)}
-                    </td>
+    body.innerHTML =
+        filtered
+            .map(
+                item => {
 
-                    <td>
-                        ${escapeHtml(item.term || "-")}
-                    </td>
+                    const status =
+                        item.status || "upcoming";
 
-                    <td>
-                        <span class="status-badge ${
-                            status === "active"
-                                ? "active-status"
-                                : status === "completed"
-                                    ? "completed"
-                                    : "pending"
-                        }">
-                            ${escapeHtml(status)}
-                        </span>
-                    </td>
 
-                    <td>
-                        <div class="table-action-buttons">
+                    return `
 
-                            <button
-                                class="table-btn edit-table-btn"
-                                onclick="editSession(${item.id})"
-                                title="Edit Session">
-                                ✏
-                            </button>
+                        <tr>
 
-                            <button
-                                class="table-btn delete-table-btn"
-                                onclick="deleteSession(${item.id})"
-                                title="Delete Session">
-                                🗑
-                            </button>
+                            <td>
+                                <strong>
+                                    ${escapeHtml(
+                                        item.session || "-"
+                                    )}
+                                </strong>
+                            </td>
 
-                        </div>
-                    </td>
 
-                </tr>
-            `;
+                            <td>
+                                ${escapeHtml(
+                                    item.term || "-"
+                                )}
+                            </td>
 
-        }).join("");
+
+                            <td>
+                                ${formatDate(
+                                    item.start_date
+                                )}
+                            </td>
+
+
+                            <td>
+                                ${formatDate(
+                                    item.end_date
+                                )}
+                            </td>
+
+
+                            <td>
+
+                                <span
+                                    class="status-badge ${
+                                        status === "active"
+                                            ? "active-status"
+                                            : status === "completed"
+                                                ? "completed"
+                                                : "pending"
+                                    }"
+                                >
+                                    ${escapeHtml(
+                                        capitalize(status)
+                                    )}
+                                </span>
+
+                            </td>
+
+
+                            <td>
+
+                                ${
+                                    item.is_current
+
+                                        ? `
+                                            <span
+                                                class="status-badge active-status"
+                                            >
+                                                ✓ Current
+                                            </span>
+                                        `
+
+                                        : `
+                                            <span>
+                                                -
+                                            </span>
+                                        `
+                                }
+
+                            </td>
+
+
+                            <td>
+
+                                <div class="table-action-buttons">
+
+                                    ${
+                                        !item.is_current
+
+                                            ? `
+                                                <button
+                                                    type="button"
+                                                    class="table-btn view-table-btn"
+                                                    onclick="setCurrentSession('${item.id}')"
+                                                    title="Make Current"
+                                                >
+                                                    ✓
+                                                </button>
+                                            `
+
+                                            : `
+                                                <button
+                                                    type="button"
+                                                    class="table-btn view-table-btn"
+                                                    disabled
+                                                    title="Current Term"
+                                                >
+                                                    ✓
+                                                </button>
+                                            `
+                                    }
+
+
+                                    <button
+                                        type="button"
+                                        class="table-btn edit-table-btn"
+                                        onclick="editSession('${item.id}')"
+                                        title="Edit"
+                                    >
+                                        ✏
+                                    </button>
+
+
+                                    <button
+                                        type="button"
+                                        class="table-btn delete-table-btn"
+                                        onclick="deleteSession('${item.id}')"
+                                        title="Delete"
+                                    >
+                                        🗑
+                                    </button>
+
+                                </div>
+
+                            </td>
+
+                        </tr>
+                    `;
+                }
+            )
+            .join("");
+
 
     $("emptySessionState").style.display =
-        filtered.length ? "none" : "block";
+        filtered.length
+            ? "none"
+            : "block";
+
 
     $("sessionCount").textContent =
         filtered.length;
 }
 
 
-/* STATISTICS */
+/* =========================================
+   TOP STATISTICS
+========================================= */
 
 function updateStatistics() {
 
-    $("totalSessions").textContent =
-        new Set(
-            sessions.map(item => item.session)
-        ).size;
-
-    const active =
-        sessions.find(
-            item =>
-                item.is_current === true ||
-                item.status === "active"
-        );
-
-    $("activeSession").textContent =
-        active?.session || "-";
-
-    $("currentTerm").textContent =
-        active?.term || "-";
-
-    $("completedSessions").textContent =
+    const uniqueSessions =
         new Set(
             sessions
-                .filter(item => item.status === "completed")
-                .map(item => item.session)
-        ).size;
+                .map(
+                    item =>
+                        item.session
+                )
+                .filter(Boolean)
+        );
 
-    $("sessionCount").textContent =
-        sessions.length;
+
+    $("totalSessions").textContent =
+        uniqueSessions.size;
+
+
+    /*
+        IMPORTANT:
+        ONLY is_current=true controls
+        the current session/term cards.
+    */
+
+    const current =
+        sessions.find(
+            item =>
+                item.is_current === true
+        );
+
+
+    $("activeSession").textContent =
+        current
+            ? current.session
+            : "-";
+
+
+    $("currentTerm").textContent =
+        current
+            ? current.term
+            : "-";
+
+
+    const completedSessions =
+        new Set(
+            sessions
+                .filter(
+                    item =>
+                        item.status ===
+                        "completed"
+                )
+                .map(
+                    item =>
+                        item.session
+                )
+        );
+
+
+    $("completedSessions").textContent =
+        completedSessions.size;
 }
 
 
-/* OPEN */
+/* =========================================
+   SET CURRENT SESSION / TERM
+========================================= */
 
-function openSessionModal(session = null) {
+window.setCurrentSession =
+    async function (
+        id
+    ) {
 
-    $("sessionForm").reset();
+        const selected =
+            sessions.find(
+                item =>
+                    String(item.id) ===
+                    String(id)
+            );
+
+
+        if (!selected) {
+
+            alert(
+                "Session / term could not be found."
+            );
+
+            return;
+        }
+
+
+        const confirmed =
+            confirm(
+                `Make ${selected.session} - ${selected.term} the current academic term?`
+            );
+
+
+        if (!confirmed) return;
+
+
+        try {
+
+            /*
+                STEP 1:
+                Clear is_current from ALL rows.
+            */
+
+            const {
+                error: clearCurrentError
+            } =
+                await supabaseClient
+                    .from("sessions_terms")
+                    .update({
+                        is_current: false
+                    })
+                    .neq(
+                        "id",
+                        -1
+                    );
+
+
+            if (
+                clearCurrentError
+            ) {
+
+                throw clearCurrentError;
+            }
+
+
+            /*
+                STEP 2:
+                Any previously active row
+                should become completed.
+            */
+
+            const {
+                error: oldActiveError
+            } =
+                await supabaseClient
+                    .from("sessions_terms")
+                    .update({
+                        status:
+                            "completed"
+                    })
+                    .eq(
+                        "status",
+                        "active"
+                    )
+                    .neq(
+                        "id",
+                        id
+                    );
+
+
+            if (
+                oldActiveError
+            ) {
+
+                throw oldActiveError;
+            }
+
+
+            /*
+                STEP 3:
+                Set EXACT selected row
+                to current + active.
+            */
+
+            const {
+                data,
+                error: setCurrentError
+            } =
+                await supabaseClient
+                    .from("sessions_terms")
+                    .update({
+
+                        is_current:
+                            true,
+
+                        status:
+                            "active"
+
+                    })
+                    .eq(
+                        "id",
+                        id
+                    )
+                    .select();
+
+
+            if (
+                setCurrentError
+            ) {
+
+                throw setCurrentError;
+            }
+
+
+            if (
+                !data ||
+                !data.length
+            ) {
+
+                throw new Error(
+                    "The selected session could not be updated."
+                );
+            }
+
+
+            /*
+                STEP 4:
+                Reload everything.
+            */
+
+            await loadSessions();
+
+
+            alert(
+                `${selected.session} - ${selected.term} is now the current academic term.`
+            );
+
+
+        } catch (error) {
+
+            console.error(
+                "Set current session error:",
+                error
+            );
+
+
+            alert(
+                "Could not set current session: " +
+                error.message
+            );
+        }
+    };
+
+
+/* =========================================
+   OPEN MODAL
+========================================= */
+
+function openSessionModal(
+    item = null
+) {
+
+    $("sessionForm")
+        ?.reset();
+
 
     $("sessionRecordId").value =
-        session?.id || "";
+        item?.id || "";
+
 
     $("sessionModalTitle").textContent =
-        session
-            ? "Edit Session"
-            : "Add New Session";
+        item
+            ? "Edit Session / Term"
+            : "Add Session / Term";
+
 
     $("sessionName").value =
-        session?.session || "";
+        item?.session || "";
+
 
     $("sessionTerm").value =
-        session?.term || "First Term";
+        item?.term ||
+        "First Term";
+
 
     $("startDate").value =
-        session?.start_date || "";
+        item?.start_date || "";
+
 
     $("endDate").value =
-        session?.end_date || "";
+        item?.end_date || "";
+
 
     $("sessionStatus").value =
-        session?.status || "upcoming";
+        item?.status ||
+        "upcoming";
+
 
     $("sessionModal")
-        .classList.add("active");
+        ?.classList
+        .add("active");
 }
 
 
-/* CLOSE */
+/* =========================================
+   CLOSE MODAL
+========================================= */
 
 function closeSessionModal() {
 
     $("sessionModal")
-        .classList.remove("active");
+        ?.classList
+        .remove("active");
 }
 
 
-/* SAVE */
+/* =========================================
+   SAVE SESSION
+========================================= */
 
-async function saveSession(event) {
+async function saveSession(
+    event
+) {
 
     event.preventDefault();
 
+
     const id =
-        $("sessionRecordId").value;
+        $("sessionRecordId")
+            ?.value || "";
+
 
     const sessionData = {
 
         session:
             $("sessionName")
-                .value.trim(),
+                ?.value
+                .trim() || "",
 
         term:
             $("sessionTerm")
-                .value,
+                ?.value ||
+            "First Term",
 
         start_date:
             $("startDate")
-                .value,
+                ?.value || "",
 
         end_date:
             $("endDate")
-                .value,
+                ?.value || "",
 
         status:
             $("sessionStatus")
-                .value,
-
-        is_current:
-            $("sessionStatus").value === "active"
+                ?.value ||
+            "upcoming"
     };
 
 
     if (
         !sessionData.session ||
+        !sessionData.term ||
         !sessionData.start_date ||
         !sessionData.end_date
     ) {
 
         alert(
-            "Please enter the session name, start date and end date."
+            "Please complete all session information."
         );
 
         return;
@@ -316,8 +739,13 @@ async function saveSession(event) {
 
 
     if (
-        new Date(sessionData.end_date) <
-        new Date(sessionData.start_date)
+        new Date(
+            sessionData.end_date
+        )
+        <
+        new Date(
+            sessionData.start_date
+        )
     ) {
 
         alert(
@@ -328,171 +756,561 @@ async function saveSession(event) {
     }
 
 
-    const button =
-        $("sessionForm")
-            .querySelector("button[type='submit']");
+    /*
+        Prevent duplicate
+        Session + Term.
+    */
 
-    button.disabled = true;
-    button.textContent = "Saving...";
+    const duplicate =
+        sessions.find(
+            item =>
+
+                String(
+                    item.session
+                )
+                    .trim()
+                    .toLowerCase()
+
+                ===
+
+                sessionData.session
+                    .toLowerCase()
+
+                &&
+
+                item.term ===
+                sessionData.term
+
+                &&
+
+                String(
+                    item.id
+                )
+                !==
+                String(
+                    id
+                )
+        );
 
 
-    let result;
+    if (
+        duplicate
+    ) {
 
+        alert(
+            `${sessionData.term} already exists for ${sessionData.session}.`
+        );
 
-    if (id) {
-
-        result = await supabaseClient
-            .from("sessions_terms")
-            .update(sessionData)
-            .eq("id", id);
-
-    } else {
-
-        result = await supabaseClient
-            .from("sessions_terms")
-            .insert([sessionData]);
+        return;
     }
 
 
-    button.disabled = false;
-    button.textContent = "Save Session";
+    const button =
+        $("saveSessionBtn");
 
 
-    if (result.error) {
+    button.disabled =
+        true;
 
-        console.error(result.error);
+
+    button.textContent =
+        "Saving...";
+
+
+    try {
+
+        let result;
+
+
+        if (
+            id
+        ) {
+
+            const existing =
+                sessions.find(
+                    item =>
+                        String(item.id) ===
+                        String(id)
+                );
+
+
+            result =
+                await supabaseClient
+                    .from("sessions_terms")
+                    .update({
+
+                        ...sessionData,
+
+                        is_current:
+                            existing?.is_current ===
+                            true
+
+                    })
+                    .eq(
+                        "id",
+                        id
+                    );
+
+
+        } else {
+
+            result =
+                await supabaseClient
+                    .from("sessions_terms")
+                    .insert([
+                        {
+                            ...sessionData,
+
+                            is_current:
+                                false
+                        }
+                    ]);
+        }
+
+
+        if (
+            result.error
+        ) {
+
+            throw result.error;
+        }
+
+
+        /*
+            IMPORTANT:
+            If Admin chooses "Active"
+            while saving, make that exact
+            row the current term too.
+        */
+
+        if (
+            sessionData.status ===
+            "active"
+        ) {
+
+            let targetId =
+                id;
+
+
+            /*
+                New record:
+                find the new exact row first.
+            */
+
+            if (
+                !targetId
+            ) {
+
+                const {
+                    data:
+                    newRecord,
+                    error:
+                    findError
+                } =
+                    await supabaseClient
+                        .from(
+                            "sessions_terms"
+                        )
+                        .select("id")
+                        .eq(
+                            "session",
+                            sessionData.session
+                        )
+                        .eq(
+                            "term",
+                            sessionData.term
+                        )
+                        .maybeSingle();
+
+
+                if (
+                    findError
+                ) {
+
+                    throw findError;
+                }
+
+
+                targetId =
+                    newRecord?.id;
+            }
+
+
+            if (
+                targetId
+            ) {
+
+                await makeCurrentWithoutConfirm(
+                    targetId
+                );
+            }
+        }
+
+
+        closeSessionModal();
+
+
+        await loadSessions();
+
+
+        alert(
+            id
+                ? "Session / term updated successfully."
+                : "Session / term added successfully."
+        );
+
+
+    } catch (error) {
+
+        console.error(
+            "Save session error:",
+            error
+        );
+
 
         alert(
             "Could not save session: " +
-            result.error.message
-        );
-
-        return;
-    }
-
-
-    /*
-       If this session is active,
-       make other sessions inactive.
-    */
-
-    if (sessionData.is_current) {
-
-        await supabaseClient
-            .from("sessions_terms")
-            .update({
-                is_current: false
-            })
-            .neq(
-                "id",
-                id || 0
-            );
-
-        await supabaseClient
-            .from("sessions_terms")
-            .update({
-                is_current: true
-            })
-            .eq(
-                "session",
-                sessionData.session
-            );
-    }
-
-
-    closeSessionModal();
-
-    await loadSessions();
-
-    alert(
-        id
-            ? "Session updated successfully."
-            : "Session added successfully."
-    );
-}
-
-
-/* EDIT */
-
-window.editSession = function(id) {
-
-    const session =
-        sessions.find(
-            item => String(item.id) === String(id)
-        );
-
-    if (session) {
-        openSessionModal(session);
-    }
-};
-
-
-/* DELETE */
-
-window.deleteSession = async function(id) {
-
-    const session =
-        sessions.find(
-            item => String(item.id) === String(id)
-        );
-
-    if (!session) return;
-
-    if (
-        !confirm(
-            `Are you sure you want to delete "${session.session}"?`
-        )
-    ) {
-        return;
-    }
-
-    const { error } =
-        await supabaseClient
-            .from("sessions_terms")
-            .delete()
-            .eq("id", id);
-
-    if (error) {
-
-        console.error(error);
-
-        alert(
-            "Could not delete session: " +
             error.message
         );
 
-        return;
+
+    } finally {
+
+        button.disabled =
+            false;
+
+
+        button.textContent =
+            "Save Term";
+    }
+}
+
+
+/* =========================================
+   MAKE CURRENT WITHOUT CONFIRM
+========================================= */
+
+async function makeCurrentWithoutConfirm(
+    id
+) {
+
+    const clear =
+        await supabaseClient
+            .from("sessions_terms")
+            .update({
+                is_current:
+                    false
+            })
+            .neq(
+                "id",
+                -1
+            );
+
+
+    if (
+        clear.error
+    ) {
+
+        throw clear.error;
     }
 
-    await loadSessions();
 
-    alert(
-        "Session deleted successfully."
-    );
-};
+    const oldActive =
+        await supabaseClient
+            .from("sessions_terms")
+            .update({
+                status:
+                    "completed"
+            })
+            .eq(
+                "status",
+                "active"
+            )
+            .neq(
+                "id",
+                id
+            );
 
 
-/* HELPERS */
+    if (
+        oldActive.error
+    ) {
+
+        throw oldActive.error;
+    }
+
+
+    const current =
+        await supabaseClient
+            .from("sessions_terms")
+            .update({
+
+                is_current:
+                    true,
+
+                status:
+                    "active"
+
+            })
+            .eq(
+                "id",
+                id
+            );
+
+
+    if (
+        current.error
+    ) {
+
+        throw current.error;
+    }
+}
+
+
+/* =========================================
+   EDIT SESSION
+========================================= */
+
+window.editSession =
+    function (
+        id
+    ) {
+
+        const item =
+            sessions.find(
+                session =>
+                    String(session.id) ===
+                    String(id)
+            );
+
+
+        if (
+            item
+        ) {
+
+            openSessionModal(
+                item
+            );
+        }
+    };
+
+
+/* =========================================
+   DELETE SESSION
+========================================= */
+
+window.deleteSession =
+    async function (
+        id
+    ) {
+
+        const item =
+            sessions.find(
+                session =>
+                    String(session.id) ===
+                    String(id)
+            );
+
+
+        if (!item) return;
+
+
+        if (
+            item.is_current
+        ) {
+
+            alert(
+                "You cannot delete the current academic term. Set another term as current first."
+            );
+
+            return;
+        }
+
+
+        try {
+
+            const [
+                resultsCheck,
+                reportsCheck
+            ] =
+                await Promise.all([
+
+                    supabaseClient
+                        .from("results")
+                        .select(
+                            "id",
+                            {
+                                count:
+                                    "exact",
+                                head:
+                                    true
+                            }
+                        )
+                        .eq(
+                            "session",
+                            item.session
+                        )
+                        .eq(
+                            "term",
+                            item.term
+                        ),
+
+                    supabaseClient
+                        .from(
+                            "student_reports"
+                        )
+                        .select(
+                            "id",
+                            {
+                                count:
+                                    "exact",
+                                head:
+                                    true
+                            }
+                        )
+                        .eq(
+                            "session",
+                            item.session
+                        )
+                        .eq(
+                            "term",
+                            item.term
+                        )
+
+                ]);
+
+
+            const records =
+                Number(
+                    resultsCheck.count || 0
+                )
+                +
+                Number(
+                    reportsCheck.count || 0
+                );
+
+
+            if (
+                records > 0
+            ) {
+
+                alert(
+                    `${item.session} - ${item.term} already has academic records.\n\n` +
+                    `Change its status to Completed instead of deleting it.`
+                );
+
+                return;
+            }
+
+
+            const confirmed =
+                confirm(
+                    `Delete ${item.session} - ${item.term}?`
+                );
+
+
+            if (!confirmed) return;
+
+
+            const {
+                error
+            } =
+                await supabaseClient
+                    .from(
+                        "sessions_terms"
+                    )
+                    .delete()
+                    .eq(
+                        "id",
+                        id
+                    );
+
+
+            if (error) {
+                throw error;
+            }
+
+
+            await loadSessions();
+
+
+            alert(
+                "Session / term deleted successfully."
+            );
+
+
+        } catch (error) {
+
+            console.error(
+                "Delete session error:",
+                error
+            );
+
+
+            alert(
+                "Could not delete session: " +
+                error.message
+            );
+        }
+    };
+
+
+/* =========================================
+   HELPERS
+========================================= */
 
 function formatDate(date) {
 
-    if (!date) return "-";
+    if (!date) {
+        return "-";
+    }
 
-    return new Date(date + "T00:00:00")
-        .toLocaleDateString("en-GB", {
-            day: "2-digit",
-            month: "short",
-            year: "numeric"
-        });
+
+    return new Date(
+        date + "T00:00:00"
+    )
+        .toLocaleDateString(
+            "en-GB",
+            {
+                day:
+                    "2-digit",
+
+                month:
+                    "short",
+
+                year:
+                    "numeric"
+            }
+        );
+}
+
+
+function capitalize(value) {
+
+    const text =
+        String(
+            value || ""
+        );
+
+
+    return (
+        text
+            .charAt(0)
+            .toUpperCase()
+        +
+        text.slice(1)
+    );
 }
 
 
 function escapeHtml(value) {
 
-    return String(value ?? "")
-        .replaceAll("&", "&amp;")
-        .replaceAll("<", "&lt;")
-        .replaceAll(">", "&gt;")
-        .replaceAll('"', "&quot;")
-        .replaceAll("'", "&#039;");
+    return String(
+        value ?? ""
+    )
+        .replace(/&/g, "&amp;")
+        .replace(/</g, "&lt;")
+        .replace(/>/g, "&gt;")
+        .replace(/"/g, "&quot;")
+        .replace(/'/g, "&#039;");
 }

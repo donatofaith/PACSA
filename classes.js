@@ -1,103 +1,478 @@
 /* =========================================
-PACSA CLASSES
+   PACSA CLASSES MANAGEMENT
+   ADMIN AUTH + SUPABASE
 ========================================= */
 
-document.addEventListener("DOMContentLoaded", () => {
+let classes = [];
+let students = [];
+let teachers = [];
+let classTeacherAssignments = [];
 
-```
-const classes = [
-    {
-        id: 1,
-        name: "JSS1A",
-        level: "JSS",
-        arm: "A",
-        students: 32,
-        teacher: "Mr. Ade",
-        status: "Active"
-    },
-    {
-        id: 2,
-        name: "JSS1B",
-        level: "JSS",
-        arm: "B",
-        students: 29,
-        teacher: "Mrs. James",
-        status: "Active"
-    },
-    {
-        id: 3,
-        name: "JSS2A",
-        level: "JSS",
-        arm: "A",
-        students: 35,
-        teacher: "Mr. Okafor",
-        status: "Active"
-    },
-    {
-        id: 4,
-        name: "JSS2B",
-        level: "JSS",
-        arm: "B",
-        students: 31,
-        teacher: "Mrs. Williams",
-        status: "Active"
-    },
-    {
-        id: 5,
-        name: "SS1A",
-        level: "SSS",
-        arm: "A",
-        students: 34,
-        teacher: "Mr. Johnson",
-        status: "Active"
-    },
-    {
-        id: 6,
-        name: "SS1B",
-        level: "SSS",
-        arm: "B",
-        students: 30,
-        teacher: "Mrs. David",
-        status: "Active"
-    },
-    {
-        id: 7,
-        name: "SS2A",
-        level: "SSS",
-        arm: "A",
-        students: 35,
-        teacher: "Mr. Paul",
-        status: "Active"
-    },
-    {
-        id: 8,
-        name: "SS2B",
-        level: "SSS",
-        arm: "B",
-        students: 28,
-        teacher: "Not Assigned",
-        status: "Inactive"
+let currentSession = "";
+
+const $ = id =>
+    document.getElementById(id);
+
+
+/* =========================================
+   START
+========================================= */
+
+document.addEventListener(
+    "DOMContentLoaded",
+    async () => {
+
+        const admin =
+            await window.adminAuthReady;
+
+        if (!admin) {
+            return;
+        }
+
+
+        $("menuBtn")
+            ?.addEventListener(
+                "click",
+                () => {
+                    $("sidebar")
+                        ?.classList
+                        .toggle("active");
+                }
+            );
+
+
+        $("classSearch")
+            ?.addEventListener(
+                "input",
+                renderClasses
+            );
+
+
+        $("levelFilter")
+            ?.addEventListener(
+                "change",
+                renderClasses
+            );
+
+
+        $("statusFilter")
+            ?.addEventListener(
+                "change",
+                renderClasses
+            );
+
+
+        $("addClassBtn")
+            ?.addEventListener(
+                "click",
+                () => {
+                    openClassModal();
+                }
+            );
+
+
+        $("closeModal")
+            ?.addEventListener(
+                "click",
+                closeClassModal
+            );
+
+
+        $("cancelModal")
+            ?.addEventListener(
+                "click",
+                closeClassModal
+            );
+
+
+        $("classModal")
+            ?.addEventListener(
+                "click",
+                event => {
+
+                    if (
+                        event.target ===
+                        $("classModal")
+                    ) {
+                        closeClassModal();
+                    }
+                }
+            );
+
+
+        $("classForm")
+            ?.addEventListener(
+                "submit",
+                saveClass
+            );
+
+
+        await loadCurrentSession();
+
+        await loadClasses();
     }
-];
+);
 
 
-const tableBody =
-    document.getElementById("classesTableBody");
+/* =========================================
+   NORMALIZE
+========================================= */
 
-const searchInput =
-    document.getElementById("classSearch");
+function normalize(value) {
 
-const levelFilter =
-    document.getElementById("levelFilter");
+    return String(
+        value || ""
+    )
+        .trim()
+        .toLowerCase();
+}
 
-const statusFilter =
-    document.getElementById("statusFilter");
 
-const modal =
-    document.getElementById("classModal");
+/* =========================================
+   CURRENT SESSION
+========================================= */
 
-const form =
-    document.getElementById("classForm");
+async function loadCurrentSession() {
+
+    const {
+        data,
+        error
+    } =
+        await supabaseClient
+            .from("sessions_terms")
+            .select(`
+                session,
+                term,
+                start_date,
+                is_current
+            `)
+            .order(
+                "start_date",
+                {
+                    ascending: false
+                }
+            );
+
+
+    if (error) {
+
+        console.error(
+            "Current session error:",
+            error
+        );
+
+        return;
+    }
+
+
+    const rows =
+        data || [];
+
+
+    const selected =
+        rows.find(
+            row =>
+                row.is_current === true
+        )
+        ||
+        rows[0];
+
+
+    currentSession =
+        selected?.session ||
+        "";
+
+
+    if (
+        $("academicSession")
+    ) {
+
+        $("academicSession").value =
+            currentSession;
+    }
+}
+
+
+/* =========================================
+   LOAD ALL DATA
+========================================= */
+
+async function loadClasses() {
+
+    try {
+
+        const [
+            classResult,
+            studentResult,
+            teacherResult,
+            classTeacherResult
+        ] =
+            await Promise.all([
+
+                supabaseClient
+                    .from("classes")
+                    .select(`
+                        id,
+                        name,
+                        level,
+                        arm,
+                        session,
+                        status
+                    `)
+                    .order(
+                        "name",
+                        {
+                            ascending: true
+                        }
+                    ),
+
+                supabaseClient
+                    .from("students")
+                    .select(`
+                        student_id,
+                        first_name,
+                        last_name,
+                        class,
+                        status
+                    `),
+
+                supabaseClient
+                    .from("Teachers")
+                    .select(`
+                        id,
+                        teacher_id,
+                        first_name,
+                        last_name,
+                        fullname,
+                        email
+                    `)
+                    .order(
+                        "first_name",
+                        {
+                            ascending: true
+                        }
+                    ),
+
+                supabaseClient
+                    .from(
+                        "class_teacher_assignments"
+                    )
+                    .select(`
+                        id,
+                        teacher_id,
+                        class,
+                        session
+                    `)
+
+            ]);
+
+
+        if (
+            classResult.error
+        ) {
+            throw classResult.error;
+        }
+
+
+        if (
+            studentResult.error
+        ) {
+            throw studentResult.error;
+        }
+
+
+        if (
+            teacherResult.error
+        ) {
+            throw teacherResult.error;
+        }
+
+
+        classes =
+            classResult.data ||
+            [];
+
+
+        students =
+            studentResult.data ||
+            [];
+
+
+        teachers =
+            teacherResult.data ||
+            [];
+
+
+        classTeacherAssignments =
+            classTeacherResult.error
+                ? []
+                : classTeacherResult.data || [];
+
+
+        populateTeacherDropdown();
+
+        renderClasses();
+
+        updateStats();
+
+
+    } catch (error) {
+
+        console.error(
+            "Classes loading error:",
+            error
+        );
+
+
+        alert(
+            "Could not load classes: " +
+            error.message
+        );
+    }
+}
+
+
+/* =========================================
+   STUDENT COUNT
+========================================= */
+
+function getClassStudentCount(
+    className
+) {
+
+    return students.filter(
+        student =>
+            normalize(
+                student.class
+            )
+            ===
+            normalize(
+                className
+            )
+    ).length;
+}
+
+
+/* =========================================
+   CLASS TEACHER ASSIGNMENT
+========================================= */
+
+function getClassTeacherAssignment(
+    className
+) {
+
+    return classTeacherAssignments.find(
+        assignment => {
+
+            const sameClass =
+                normalize(
+                    assignment.class
+                )
+                ===
+                normalize(
+                    className
+                );
+
+
+            const sameSession =
+                !currentSession
+                ||
+                assignment.session ===
+                currentSession;
+
+
+            return (
+                sameClass &&
+                sameSession
+            );
+        }
+    );
+}
+
+
+/* =========================================
+   FIND TEACHER
+========================================= */
+
+function findTeacherByTeacherId(
+    teacherId
+) {
+
+    return teachers.find(
+        teacher =>
+            String(
+                teacher.teacher_id
+            )
+            ===
+            String(
+                teacherId
+            )
+    );
+}
+
+
+/* =========================================
+   TEACHER NAME
+========================================= */
+
+function getTeacherName(
+    teacher
+) {
+
+    if (!teacher) {
+        return "Not Assigned";
+    }
+
+
+    return (
+
+        `${teacher.first_name || ""} ${teacher.last_name || ""}`
+            .trim()
+
+        ||
+
+        teacher.fullname
+
+        ||
+
+        teacher.teacher_id
+
+        ||
+
+        "Teacher"
+    );
+}
+
+
+/* =========================================
+   CLASS TEACHER NAME
+========================================= */
+
+function getClassTeacherName(
+    className
+) {
+
+    const assignment =
+        getClassTeacherAssignment(
+            className
+        );
+
+
+    if (!assignment) {
+        return "Not Assigned";
+    }
+
+
+    const teacher =
+        findTeacherByTeacherId(
+            assignment.teacher_id
+        );
+
+
+    return getTeacherName(
+        teacher
+    );
+}
 
 
 /* =========================================
@@ -107,44 +482,94 @@ const form =
 function renderClasses() {
 
     const search =
-        searchInput.value.toLowerCase().trim();
-
-    const level =
-        levelFilter.value;
-
-    const status =
-        statusFilter.value;
-
-
-    const filtered = classes.filter(item => {
-
-        const matchesSearch =
-            item.name.toLowerCase().includes(search) ||
-            item.teacher.toLowerCase().includes(search);
-
-        const matchesLevel =
-            level === "all" ||
-            item.level === level;
-
-        const matchesStatus =
-            status === "all" ||
-            item.status === status;
-
-        return (
-            matchesSearch &&
-            matchesLevel &&
-            matchesStatus
+        normalize(
+            $("classSearch")
+                ?.value
         );
 
-    });
+
+    const level =
+        $("levelFilter")
+            ?.value ||
+        "all";
 
 
-    tableBody.innerHTML = "";
+    const status =
+        $("statusFilter")
+            ?.value ||
+        "all";
 
 
-    if (filtered.length === 0) {
+    const filtered =
+        classes.filter(
+            item => {
+
+                const teacherName =
+                    getClassTeacherName(
+                        item.name
+                    );
+
+
+                const matchesSearch =
+                    normalize(
+                        item.name
+                    )
+                        .includes(
+                            search
+                        )
+
+                    ||
+
+                    normalize(
+                        teacherName
+                    )
+                        .includes(
+                            search
+                        );
+
+
+                const matchesLevel =
+                    level === "all"
+
+                    ||
+
+                    item.level ===
+                    level;
+
+
+                const matchesStatus =
+                    status === "all"
+
+                    ||
+
+                    item.status ===
+                    status;
+
+
+                return (
+                    matchesSearch &&
+                    matchesLevel &&
+                    matchesStatus
+                );
+            }
+        );
+
+
+    const tableBody =
+        $("classesTableBody");
+
+
+    if (!tableBody) {
+        return;
+    }
+
+
+    if (
+        !filtered.length
+    ) {
 
         tableBody.innerHTML = `
+
             <tr>
                 <td colspan="6" class="empty-state">
                     No classes found.
@@ -156,383 +581,1367 @@ function renderClasses() {
     }
 
 
-    filtered.forEach(item => {
+    tableBody.innerHTML =
+        filtered
+            .map(
+                item => {
 
-        const row =
-            document.createElement("tr");
+                    const studentCount =
+                        getClassStudentCount(
+                            item.name
+                        );
 
-        row.innerHTML = `
 
-            <td>
-                <span class="class-name">
-                    ${item.name}
-                </span>
-            </td>
+                    const assignment =
+                        getClassTeacherAssignment(
+                            item.name
+                        );
 
-            <td>
-                <span class="class-level">
-                    ${item.level}
-                </span>
-            </td>
 
-            <td>
-                <span class="student-count">
-                    ${item.students}
-                </span>
-            </td>
+                    const teacher =
+                        assignment
+                            ? findTeacherByTeacherId(
+                                assignment.teacher_id
+                            )
+                            : null;
 
-            <td>
-                <span class="teacher-name">
-                    ${item.teacher}
-                </span>
-            </td>
 
-            <td>
+                    const teacherName =
+                        getTeacherName(
+                            teacher
+                        );
 
-                <span class="status-badge ${
-                    item.status === "Active"
-                        ? "active-status"
-                        : "pending"
-                }">
-                    ${item.status}
-                </span>
 
-            </td>
+                    const teacherHtml =
+                        assignment
 
-            <td>
+                            ? `
+                                <span class="class-teacher-badge">
+                                    👨‍🏫
+                                    ${escapeHtml(
+                                        teacherName
+                                    )}
+                                </span>
+                            `
 
-                <div class="action-buttons">
+                            : `
+                                <span class="class-no-teacher">
+                                    Not Assigned
+                                </span>
+                            `;
 
-                    <button
-                        class="table-action"
-                        onclick="viewClass(${item.id})">
-                        View
-                    </button>
 
-                    <button
-                        class="table-action"
-                        onclick="editClass(${item.id})">
-                        Edit
-                    </button>
+                    const currentStatus =
+                        item.status ||
+                        "Active";
 
-                </div>
 
-            </td>
+                    return `
 
-        `;
+                        <tr>
 
-        tableBody.appendChild(row);
+                            <td>
+                                <span class="class-name">
+                                    ${escapeHtml(
+                                        item.name ||
+                                        "-"
+                                    )}
+                                </span>
+                            </td>
 
-    });
 
+                            <td>
+                                <span class="class-level">
+                                    ${escapeHtml(
+                                        item.level ||
+                                        "-"
+                                    )}
+                                </span>
+                            </td>
+
+
+                            <td>
+                                <span class="student-count">
+                                    ${studentCount}
+                                </span>
+                            </td>
+
+
+                            <td>
+                                ${teacherHtml}
+                            </td>
+
+
+                            <td>
+                                <span
+                                    class="status-badge ${
+                                        normalize(
+                                            currentStatus
+                                        )
+                                        ===
+                                        "active"
+                                            ? "active-status"
+                                            : "pending"
+                                    }"
+                                >
+                                    ${escapeHtml(
+                                        currentStatus
+                                    )}
+                                </span>
+                            </td>
+
+
+                            <td>
+
+                                <div class="action-buttons">
+
+                                    <button
+                                        type="button"
+                                        class="table-action"
+                                        onclick="viewClass('${item.id}')"
+                                    >
+                                        View
+                                    </button>
+
+
+                                    <button
+                                        type="button"
+                                        class="table-action"
+                                        onclick="editClass('${item.id}')"
+                                    >
+                                        Edit
+                                    </button>
+
+
+                                    <button
+                                        type="button"
+                                        class="table-action"
+                                        onclick="deleteClass('${item.id}')"
+                                    >
+                                        Delete
+                                    </button>
+
+                                </div>
+
+                            </td>
+
+                        </tr>
+                    `;
+                }
+            )
+            .join("");
 }
 
 
 /* =========================================
-   UPDATE STATISTICS
+   STATS
 ========================================= */
 
 function updateStats() {
 
-    const totalClasses =
-        classes.length;
+    if (
+        $("totalClasses")
+    ) {
 
-    const totalStudents =
-        classes.reduce(
-            (sum, item) => sum + item.students,
-            0
-        );
+        $("totalClasses")
+            .textContent =
+            classes.length;
+    }
+
+
+    if (
+        $("totalStudents")
+    ) {
+
+        $("totalStudents")
+            .textContent =
+            students.length;
+    }
+
 
     const assignedClasses =
-        classes.filter(
-            item => item.teacher !== "Not Assigned"
-        ).length;
+        new Set(
 
-    const activeClasses =
-        classes.filter(
-            item => item.status === "Active"
-        ).length;
+            classTeacherAssignments
+
+                .filter(
+                    assignment =>
+                        !currentSession
+                        ||
+                        assignment.session ===
+                        currentSession
+                )
+
+                .map(
+                    assignment =>
+                        normalize(
+                            assignment.class
+                        )
+                )
+
+                .filter(Boolean)
+        );
 
 
-    document.getElementById("totalClasses")
-        .textContent = totalClasses;
+    if (
+        $("assignedClasses")
+    ) {
 
-    document.getElementById("totalStudents")
-        .textContent = totalStudents;
+        $("assignedClasses")
+            .textContent =
+            assignedClasses.size;
+    }
 
-    document.getElementById("assignedClasses")
-        .textContent = assignedClasses;
 
-    document.getElementById("activeClasses")
-        .textContent = activeClasses;
+    if (
+        $("activeClasses")
+    ) {
 
+        $("activeClasses")
+            .textContent =
+
+            classes.filter(
+                item =>
+                    normalize(
+                        item.status
+                    )
+                    ===
+                    "active"
+            )
+                .length;
+    }
 }
 
 
 /* =========================================
-   ADD CLASS
+   TEACHER DROPDOWN
 ========================================= */
 
-document
-    .getElementById("addClassBtn")
-    .addEventListener("click", () => {
+function populateTeacherDropdown() {
 
-        form.reset();
+    const select =
+        $("classTeacher");
 
-        document.getElementById("classId")
-            .value = "";
 
-        document.getElementById("modalTitle")
-            .textContent = "Add New Class";
+    if (!select) {
+        return;
+    }
 
-        document.getElementById("academicSession")
-            .value = "2025/2026";
 
-        modal.classList.add("show");
+    select.innerHTML = `
 
-    });
+        <option value="">
+            Not Assigned
+        </option>
+    `;
+
+
+    teachers.forEach(
+        teacher => {
+
+            if (
+                !teacher.teacher_id
+            ) {
+                return;
+            }
+
+
+            const option =
+                document.createElement(
+                    "option"
+                );
+
+
+            option.value =
+                teacher.teacher_id;
+
+
+            option.textContent =
+                `${getTeacherName(
+                    teacher
+                )} (${teacher.teacher_id})`;
+
+
+            select.appendChild(
+                option
+            );
+        }
+    );
+}
+
+
+/* =========================================
+   OPEN CLASS MODAL
+========================================= */
+
+function openClassModal(
+    item = null
+) {
+
+    const modal =
+        $("classModal");
+
+
+    if (!modal) {
+        return;
+    }
+
+
+    $("classForm")
+        ?.reset();
+
+
+    if (
+        $("classId")
+    ) {
+
+        $("classId").value =
+            item?.id ||
+            "";
+    }
+
+
+    if (
+        $("modalTitle")
+    ) {
+
+        $("modalTitle")
+            .textContent =
+            item
+                ? "Edit Class"
+                : "Add New Class";
+    }
+
+
+    if (
+        $("className")
+    ) {
+
+        $("className").value =
+            item?.name ||
+            "";
+    }
+
+
+    if (
+        $("classLevel")
+    ) {
+
+        $("classLevel").value =
+            item?.level ||
+            "";
+    }
+
+
+    if (
+        $("classArm")
+    ) {
+
+        $("classArm").value =
+            item?.arm ||
+            "";
+    }
+
+
+    if (
+        $("academicSession")
+    ) {
+
+        $("academicSession").value =
+            currentSession ||
+            item?.session ||
+            "";
+    }
+
+
+    if (
+        $("classStatus")
+    ) {
+
+        $("classStatus").value =
+            item?.status ||
+            "Active";
+    }
+
+
+    const assignment =
+        item
+            ? getClassTeacherAssignment(
+                item.name
+            )
+            : null;
+
+
+    if (
+        $("classTeacher")
+    ) {
+
+        $("classTeacher").value =
+            assignment?.teacher_id ||
+            "";
+    }
+
+
+    /*
+        Support both classes.css possibilities.
+    */
+
+    modal.classList.add(
+        "show"
+    );
+
+    modal.classList.add(
+        "active"
+    );
+
+    modal.style.display =
+        "flex";
+
+
+    modal.style.position =
+        "fixed";
+
+
+    modal.style.inset =
+        "0";
+
+
+    modal.style.zIndex =
+        "9999";
+}
 
 
 /* =========================================
    CLOSE MODAL
 ========================================= */
 
-function closeModal() {
+function closeClassModal() {
 
-    modal.classList.remove("show");
+    const modal =
+        $("classModal");
 
+
+    if (!modal) {
+        return;
+    }
+
+
+    modal.classList.remove(
+        "show"
+    );
+
+    modal.classList.remove(
+        "active"
+    );
+
+    modal.style.display =
+        "none";
 }
-
-document
-    .getElementById("closeModal")
-    .addEventListener("click", closeModal);
-
-document
-    .getElementById("cancelModal")
-    .addEventListener("click", closeModal);
 
 
 /* =========================================
    SAVE CLASS
 ========================================= */
 
-form.addEventListener("submit", event => {
+async function saveClass(
+    event
+) {
 
     event.preventDefault();
 
 
-    const id =
-        document.getElementById("classId").value;
-
-    const name =
-        document.getElementById("className").value
-            .trim();
-
-    const level =
-        document.getElementById("classLevel").value;
-
-    const arm =
-        document.getElementById("classArm").value
-            .trim()
-            .toUpperCase();
-
-    const status =
-        document.getElementById("classStatus").value;
+    const recordId =
+        $("classId")
+            ?.value ||
+        "";
 
 
-    if (id) {
+    const existing =
+        recordId
 
-        const existing =
-            classes.find(
-                item => item.id === Number(id)
-            );
+            ? classes.find(
+                item =>
+                    String(
+                        item.id
+                    )
+                    ===
+                    String(
+                        recordId
+                    )
+            )
 
-        if (existing) {
+            : null;
 
-            existing.name = name;
-            existing.level = level;
-            existing.arm = arm;
-            existing.status = status;
 
-        }
+    const oldClassName =
+        existing?.name ||
+        "";
 
-    } else {
 
-        classes.push({
+    const classData = {
 
-            id:
-                Date.now(),
+        name:
+            $("className")
+                ?.value
+                .trim() ||
+            "",
 
-            name:
-                name,
+        level:
+            $("classLevel")
+                ?.value ||
+            "",
 
-            level:
-                level,
+        arm:
+            $("classArm")
+                ?.value
+                .trim()
+                .toUpperCase() ||
+            "",
 
-            arm:
-                arm,
+        session:
+            currentSession ||
+            $("academicSession")
+                ?.value ||
+            "",
 
-            students:
-                0,
+        status:
+            $("classStatus")
+                ?.value ||
+            "Active"
+    };
 
-            teacher:
-                "Not Assigned",
 
-            status:
-                status
+    const selectedTeacherId =
+        $("classTeacher")
+            ?.value ||
+        "";
 
-        });
 
+    if (
+        !classData.name ||
+        !classData.level
+    ) {
+
+        alert(
+            "Please enter Class Name and Level."
+        );
+
+        return;
     }
 
 
-    renderClasses();
-    updateStats();
-    closeModal();
+    const duplicate =
+        classes.find(
+            item =>
 
-});
+                normalize(
+                    item.name
+                )
+                ===
+                normalize(
+                    classData.name
+                )
+
+                &&
+
+                String(
+                    item.id
+                )
+                !==
+                String(
+                    recordId
+                )
+        );
+
+
+    if (
+        duplicate
+    ) {
+
+        alert(
+            "Another class already uses this name."
+        );
+
+        return;
+    }
+
+
+    const button =
+        $("saveClassBtn");
+
+
+    if (
+        button
+    ) {
+
+        button.disabled =
+            true;
+
+        button.textContent =
+            "Saving...";
+    }
+
+
+    try {
+
+        if (
+            recordId
+        ) {
+
+            const {
+                error
+            } =
+                await supabaseClient
+                    .from("classes")
+                    .update(
+                        classData
+                    )
+                    .eq(
+                        "id",
+                        recordId
+                    );
+
+
+            if (error) {
+                throw error;
+            }
+
+
+            if (
+                oldClassName
+
+                &&
+
+                normalize(
+                    oldClassName
+                )
+                !==
+                normalize(
+                    classData.name
+                )
+            ) {
+
+                await updateCurrentClassReferences(
+                    oldClassName,
+                    classData.name
+                );
+            }
+
+
+        } else {
+
+            const {
+                error
+            } =
+                await supabaseClient
+                    .from("classes")
+                    .insert([
+                        classData
+                    ]);
+
+
+            if (error) {
+                throw error;
+            }
+        }
+
+
+        await saveClassTeacherAssignment(
+            oldClassName ||
+            classData.name,
+            classData.name,
+            selectedTeacherId
+        );
+
+
+        closeClassModal();
+
+
+        await loadClasses();
+
+
+        alert(
+            recordId
+                ? "Class updated successfully."
+                : "Class added successfully."
+        );
+
+
+    } catch (error) {
+
+        console.error(
+            "Save class error:",
+            error
+        );
+
+
+        alert(
+            "Could not save class: " +
+            error.message
+        );
+
+
+    } finally {
+
+        if (
+            button
+        ) {
+
+            button.disabled =
+                false;
+
+            button.textContent =
+                "Save Class";
+        }
+    }
+}
 
 
 /* =========================================
-   SEARCH / FILTER
+   UPDATE CURRENT CLASS REFERENCES
 ========================================= */
 
-searchInput.addEventListener(
-    "input",
-    renderClasses
-);
+async function updateCurrentClassReferences(
+    oldClassName,
+    newClassName
+) {
 
-levelFilter.addEventListener(
-    "change",
-    renderClasses
-);
+    const studentUpdate =
+        await supabaseClient
+            .from("students")
+            .update({
+                class:
+                    newClassName
+            })
+            .eq(
+                "class",
+                oldClassName
+            );
 
-statusFilter.addEventListener(
-    "change",
-    renderClasses
-);
+
+    if (
+        studentUpdate.error
+    ) {
+
+        throw studentUpdate.error;
+    }
+
+
+    const teacherUpdate =
+        await supabaseClient
+            .from(
+                "teacher_assignments"
+            )
+            .update({
+                class:
+                    newClassName
+            })
+            .eq(
+                "class",
+                oldClassName
+            );
+
+
+    if (
+        teacherUpdate.error
+    ) {
+
+        throw teacherUpdate.error;
+    }
+
+
+    if (
+        currentSession
+    ) {
+
+        const subjectUpdate =
+            await supabaseClient
+                .from(
+                    "student_subjects"
+                )
+                .update({
+                    class:
+                        newClassName
+                })
+                .eq(
+                    "class",
+                    oldClassName
+                )
+                .eq(
+                    "session",
+                    currentSession
+                );
+
+
+        if (
+            subjectUpdate.error
+        ) {
+            throw subjectUpdate.error;
+        }
+
+
+        const resultUpdate =
+            await supabaseClient
+                .from("results")
+                .update({
+                    class:
+                        newClassName
+                })
+                .eq(
+                    "class",
+                    oldClassName
+                )
+                .eq(
+                    "session",
+                    currentSession
+                );
+
+
+        if (
+            resultUpdate.error
+        ) {
+            throw resultUpdate.error;
+        }
+
+
+        const reportUpdate =
+            await supabaseClient
+                .from(
+                    "student_reports"
+                )
+                .update({
+                    class:
+                        newClassName
+                })
+                .eq(
+                    "class",
+                    oldClassName
+                )
+                .eq(
+                    "session",
+                    currentSession
+                );
+
+
+        if (
+            reportUpdate.error
+        ) {
+            throw reportUpdate.error;
+        }
+    }
+
+
+    let classTeacherQuery =
+        supabaseClient
+            .from(
+                "class_teacher_assignments"
+            )
+            .update({
+                class:
+                    newClassName
+            })
+            .eq(
+                "class",
+                oldClassName
+            );
+
+
+    if (
+        currentSession
+    ) {
+
+        classTeacherQuery =
+            classTeacherQuery.eq(
+                "session",
+                currentSession
+            );
+    }
+
+
+    const classTeacherUpdate =
+        await classTeacherQuery;
+
+
+    if (
+        classTeacherUpdate.error
+    ) {
+
+        throw classTeacherUpdate.error;
+    }
+}
+
+
+/* =========================================
+   SAVE CLASS TEACHER
+========================================= */
+
+async function saveClassTeacherAssignment(
+    oldClassName,
+    newClassName,
+    teacherId
+) {
+
+    if (
+        !currentSession
+    ) {
+        return;
+    }
+
+
+    const {
+        error: deleteCurrentError
+    } =
+        await supabaseClient
+            .from(
+                "class_teacher_assignments"
+            )
+            .delete()
+            .eq(
+                "class",
+                newClassName
+            )
+            .eq(
+                "session",
+                currentSession
+            );
+
+
+    if (
+        deleteCurrentError
+    ) {
+
+        throw deleteCurrentError;
+    }
+
+
+    if (
+        oldClassName
+
+        &&
+
+        normalize(
+            oldClassName
+        )
+        !==
+        normalize(
+            newClassName
+        )
+    ) {
+
+        const {
+            error
+        } =
+            await supabaseClient
+                .from(
+                    "class_teacher_assignments"
+                )
+                .delete()
+                .eq(
+                    "class",
+                    oldClassName
+                )
+                .eq(
+                    "session",
+                    currentSession
+                );
+
+
+        if (error) {
+            throw error;
+        }
+    }
+
+
+    if (
+        !teacherId
+    ) {
+        return;
+    }
+
+
+    const {
+        error
+    } =
+        await supabaseClient
+            .from(
+                "class_teacher_assignments"
+            )
+            .insert([
+                {
+                    teacher_id:
+                        teacherId,
+
+                    class:
+                        newClassName,
+
+                    session:
+                        currentSession
+                }
+            ]);
+
+
+    if (error) {
+        throw error;
+    }
+}
 
 
 /* =========================================
    VIEW CLASS
 ========================================= */
 
-window.viewClass = function(id) {
+window.viewClass =
+    function (
+        id
+    ) {
 
-    const item =
-        classes.find(
-            cls => cls.id === id
+        const item =
+            classes.find(
+                cls =>
+                    String(
+                        cls.id
+                    )
+                    ===
+                    String(
+                        id
+                    )
+            );
+
+
+        if (!item) {
+            return;
+        }
+
+
+        const studentCount =
+            getClassStudentCount(
+                item.name
+            );
+
+
+        const teacherName =
+            getClassTeacherName(
+                item.name
+            );
+
+
+        alert(
+            `Class: ${item.name}\n` +
+            `Level: ${item.level || "-"}\n` +
+            `Arm: ${item.arm || "-"}\n` +
+            `Students: ${studentCount}\n` +
+            `Class Teacher: ${teacherName}\n` +
+            `Session: ${currentSession || item.session || "-"}\n` +
+            `Status: ${item.status || "Active"}`
         );
-
-    if (!item) return;
-
-    alert(
-        `Class: ${item.name}\n` +
-        `Level: ${item.level}\n` +
-        `Students: ${item.students}\n` +
-        `Class Teacher: ${item.teacher}\n` +
-        `Status: ${item.status}`
-    );
-
-};
+    };
 
 
 /* =========================================
    EDIT CLASS
 ========================================= */
 
-window.editClass = function(id) {
+window.editClass =
+    function (
+        id
+    ) {
 
-    const item =
-        classes.find(
-            cls => cls.id === id
-        );
-
-    if (!item) return;
-
-
-    document.getElementById("classId")
-        .value = item.id;
-
-    document.getElementById("className")
-        .value = item.name;
-
-    document.getElementById("classLevel")
-        .value = item.level;
-
-    document.getElementById("classArm")
-        .value = item.arm;
-
-    document.getElementById("classStatus")
-        .value = item.status;
-
-    document.getElementById("modalTitle")
-        .textContent = "Edit Class";
-
-    modal.classList.add("show");
-
-};
+        const item =
+            classes.find(
+                cls =>
+                    String(
+                        cls.id
+                    )
+                    ===
+                    String(
+                        id
+                    )
+            );
 
 
-/* =========================================
-   MOBILE SIDEBAR
-========================================= */
+        if (!item) {
 
-const menuBtn =
-    document.getElementById("menuBtn");
+            alert(
+                "Class could not be found."
+            );
 
-const sidebar =
-    document.getElementById("sidebar");
-
-
-if (menuBtn && sidebar) {
-
-    menuBtn.addEventListener(
-        "click",
-        () => {
-            sidebar.classList.toggle("open");
+            return;
         }
-    );
 
-}
+
+        openClassModal(
+            item
+        );
+    };
 
 
 /* =========================================
-   LOGOUT
+   DELETE CLASS
 ========================================= */
 
-const logoutBtn =
-    document.getElementById("logoutBtn");
+window.deleteClass =
+    async function (
+        id
+    ) {
 
-if (logoutBtn) {
+        const item =
+            classes.find(
+                cls =>
+                    String(
+                        cls.id
+                    )
+                    ===
+                    String(
+                        id
+                    )
+            );
 
-    logoutBtn.addEventListener(
-        "click",
-        event => {
 
-            event.preventDefault();
+        if (!item) {
+            return;
+        }
+
+
+        try {
+
+            const [
+                studentCheck,
+                resultCheck,
+                reportCheck,
+                teacherCheck,
+                subjectCheck,
+                classTeacherCheck
+            ] =
+                await Promise.all([
+
+                    supabaseClient
+                        .from("students")
+                        .select(
+                            "student_id",
+                            {
+                                count:
+                                    "exact",
+                                head:
+                                    true
+                            }
+                        )
+                        .eq(
+                            "class",
+                            item.name
+                        ),
+
+                    supabaseClient
+                        .from("results")
+                        .select(
+                            "id",
+                            {
+                                count:
+                                    "exact",
+                                head:
+                                    true
+                            }
+                        )
+                        .eq(
+                            "class",
+                            item.name
+                        ),
+
+                    supabaseClient
+                        .from(
+                            "student_reports"
+                        )
+                        .select(
+                            "id",
+                            {
+                                count:
+                                    "exact",
+                                head:
+                                    true
+                            }
+                        )
+                        .eq(
+                            "class",
+                            item.name
+                        ),
+
+                    supabaseClient
+                        .from(
+                            "teacher_assignments"
+                        )
+                        .select(
+                            "id",
+                            {
+                                count:
+                                    "exact",
+                                head:
+                                    true
+                            }
+                        )
+                        .eq(
+                            "class",
+                            item.name
+                        ),
+
+                    supabaseClient
+                        .from(
+                            "student_subjects"
+                        )
+                        .select(
+                            "id",
+                            {
+                                count:
+                                    "exact",
+                                head:
+                                    true
+                            }
+                        )
+                        .eq(
+                            "class",
+                            item.name
+                        ),
+
+                    supabaseClient
+                        .from(
+                            "class_teacher_assignments"
+                        )
+                        .select(
+                            "id",
+                            {
+                                count:
+                                    "exact",
+                                head:
+                                    true
+                            }
+                        )
+                        .eq(
+                            "class",
+                            item.name
+                        )
+
+                ]);
+
+
+            const inUse =
+                Number(
+                    studentCheck.count || 0
+                )
+                +
+                Number(
+                    resultCheck.count || 0
+                )
+                +
+                Number(
+                    reportCheck.count || 0
+                )
+                +
+                Number(
+                    teacherCheck.count || 0
+                )
+                +
+                Number(
+                    subjectCheck.count || 0
+                )
+                +
+                Number(
+                    classTeacherCheck.count || 0
+                );
+
 
             if (
-                confirm(
-                    "Are you sure you want to logout?"
-                )
+                inUse > 0
             ) {
 
-                window.location.href =
-                    "index.html";
+                alert(
+                    `"${item.name}" is already being used by students, teachers or academic records.\n\n` +
+                    `Change its Status to Inactive instead of deleting it.`
+                );
 
+                return;
             }
 
+
+            const confirmed =
+                confirm(
+                    `Delete "${item.name}"?`
+                );
+
+
+            if (!confirmed) {
+                return;
+            }
+
+
+            const {
+                error
+            } =
+                await supabaseClient
+                    .from("classes")
+                    .delete()
+                    .eq(
+                        "id",
+                        id
+                    );
+
+
+            if (error) {
+                throw error;
+            }
+
+
+            await loadClasses();
+
+
+            alert(
+                "Class deleted successfully."
+            );
+
+
+        } catch (error) {
+
+            console.error(
+                "Delete class error:",
+                error
+            );
+
+
+            alert(
+                "Could not delete class: " +
+                error.message
+            );
         }
-    );
+    };
 
+
+/* =========================================
+   ESCAPE HTML
+========================================= */
+
+function escapeHtml(
+    value
+) {
+
+    return String(
+        value ??
+        ""
+    )
+        .replace(
+            /&/g,
+            "&amp;"
+        )
+        .replace(
+            /</g,
+            "&lt;"
+        )
+        .replace(
+            />/g,
+            "&gt;"
+        )
+        .replace(
+            /"/g,
+            "&quot;"
+        )
+        .replace(
+            /'/g,
+            "&#039;"
+        );
 }
-
-
-/* INITIAL LOAD */
-
-renderClasses();
-updateStats();
-```
-
-});

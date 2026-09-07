@@ -3,7 +3,11 @@
 
 <head>
     <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+
+    <meta
+        name="viewport"
+        content="width=device-width, initial-scale=1.0"
+    >
 
     <title>PACSA Student Dashboard</title>
 
@@ -13,646 +17,1115 @@
     >
 
     <style>
-        :root{
-            --primary:#5B21B6;
-            --primary-dark:#4C1D95;
-            --primary-light:#F3E8FF;
-            --secondary:#7C3AED;
-            --background:#F7F7FB;
-            --white:#FFFFFF;
-            --text-dark:#1F2937;
-            --text:#374151;
-            --text-muted:#6B7280;
-            --border:#E5E7EB;
-            --success:#16A34A;
-            --success-light:#DCFCE7;
-            --warning:#D97706;
-            --warning-light:#FEF3C7;
-            --danger:#DC2626;
-            --danger-light:#FEE2E2;
-            --blue:#2563EB;
-            --blue-light:#DBEAFE;
-            --shadow:0 10px 30px rgba(0,0,0,0.06);
+        :root {
+            --primary: #5B21B6;
+            --primary-dark: #4C1D95;
+            --primary-light: #F3E8FF;
+            --secondary: #7C3AED;
+            --background: #F7F7FB;
+            --white: #FFFFFF;
+            --text-dark: #1F2937;
+            --text: #374151;
+            --text-muted: #6B7280;
+            --border: #E5E7EB;
+            --success: #16A34A;
+            --success-light: #DCFCE7;
+            --warning: #D97706;
+            --warning-light: #FEF3C7;
+            --danger: #DC2626;
+            --danger-light: #FEE2E2;
+            --blue: #2563EB;
+            --blue-light: #DBEAFE;
+            --shadow: 0 10px 30px rgba(0, 0, 0, 0.06);
         }
 
-        *{
-            box-sizing:border-box;
-            margin:0;
-            padding:0;
+        * {
+            box-sizing: border-box;
+            margin: 0;
+            padding: 0;
         }
 
-        body{
-            font-family:"Outfit",sans-serif;
-            background:var(--background);
-            color:var(--text-dark);
-            min-height:100vh;
+        body {
+            font-family: "Outfit", sans-serif;
+            background: var(--background);
+            color: var(--text-dark);
+            min-height: 100vh;
         }
 
         button,
-        select{
-            font-family:inherit;
+        select,
+        input {
+            font-family: inherit;
         }
 
-        button{
-            cursor:pointer;
+        button {
+            cursor: pointer;
         }
 
-        .topbar{
-            background:linear-gradient(
+        .topbar {
+            background: linear-gradient(
                 135deg,
                 var(--primary-dark),
                 var(--primary),
                 var(--secondary)
             );
-            color:var(--white);
-            padding:16px 28px;
-            display:flex;
-            align-items:center;
-            justify-content:space-between;
-            gap:20px;
-            box-shadow:0 4px 15px rgba(91,33,182,.18);
+
+            color: var(--white);
+            padding: 16px 28px;
+
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+
+            gap: 20px;
+
+            box-shadow:
+                0 4px 15px
+                rgba(91, 33, 182, 0.18);
         }
 
-        .brand{
-            display:flex;
-            align-items:center;
-            gap:14px;
+        .brand {
+            display: flex;
+            align-items: center;
+            gap: 14px;
         }
 
-        .brand img{
-            width:52px;
-            height:52px;
-            object-fit:contain;
-            background:#fff;
-            border-radius:14px;
-            padding:5px;
+        .brand img {
+            width: 52px;
+            height: 52px;
+
+            object-fit: contain;
+
+            background: #fff;
+
+            border-radius: 14px;
+
+            padding: 5px;
         }
 
-        .brand-text h1{
-            font-size:22px;
-            font-weight:800;
+        .brand-text h1 {
+            font-size: 22px;
+            font-weight: 800;
         }
 
-        .brand-text p{
-            font-size:13px;
-            opacity:.9;
-            margin-top:3px;
+        .brand-text p {
+            font-size: 13px;
+            opacity: 0.9;
+            margin-top: 3px;
         }
 
-        .topbar-right{
-            display:flex;
-            align-items:center;
-            gap:14px;
+        .topbar-right {
+            display: flex;
+            align-items: center;
+            gap: 14px;
         }
 
-        .student-mini{
-            display:flex;
-            align-items:center;
-            gap:10px;
+        .student-mini {
+            display: flex;
+            align-items: center;
+            gap: 10px;
         }
 
-        .student-mini-avatar{
-            width:46px;
-            height:46px;
-            border-radius:50%;
-            object-fit:cover;
-            border:2px solid rgba(255,255,255,.75);
-            background:#fff;
-            box-shadow:0 3px 10px rgba(0,0,0,.15);
+        .student-mini-avatar {
+            width: 46px;
+            height: 46px;
+
+            border-radius: 50%;
+
+            object-fit: cover;
+
+            border:
+                2px solid
+                rgba(255, 255, 255, 0.75);
+
+            background:
+                var(--primary-light);
+
+            box-shadow:
+                0 3px 10px
+                rgba(0, 0, 0, 0.15);
         }
 
-        .student-mini-info strong{
-            display:block;
-            font-size:14px;
+        .student-mini-info strong {
+            display: block;
+            font-size: 14px;
         }
 
-        .student-mini-info span{
-            display:block;
-            font-size:12px;
-            opacity:.85;
-            margin-top:2px;
+        .student-mini-info span {
+            display: block;
+            font-size: 12px;
+            opacity: 0.85;
+            margin-top: 2px;
         }
 
-        .logout-btn{
-            border:none;
-            background:rgba(255,255,255,.14);
-            color:#fff;
-            padding:10px 14px;
-            border-radius:10px;
-            font-weight:600;
-            transition:.2s;
+        .logout-btn {
+            border: none;
+
+            background:
+                rgba(255, 255, 255, 0.14);
+
+            color: #fff;
+
+            padding:
+                10px 14px;
+
+            border-radius: 10px;
+
+            font-weight: 600;
+
+            transition: 0.2s;
         }
 
-        .logout-btn:hover{
-            background:rgba(255,255,255,.24);
+        .logout-btn:hover {
+            background:
+                rgba(255, 255, 255, 0.24);
         }
 
-        .page-container{
-            width:min(1250px,calc(100% - 32px));
-            margin:28px auto 50px;
+        .page-container {
+            width:
+                min(
+                    1250px,
+                    calc(100% - 32px)
+                );
+
+            margin:
+                28px auto 50px;
         }
 
-        .welcome-card{
-            background:linear-gradient(135deg,#ffffff,#f8f4ff);
-            border:1px solid #ede9fe;
-            border-radius:22px;
-            padding:26px;
-            box-shadow:var(--shadow);
-            display:flex;
-            align-items:center;
-            justify-content:space-between;
-            gap:20px;
-            margin-bottom:24px;
+        .welcome-card {
+            background:
+                linear-gradient(
+                    135deg,
+                    #ffffff,
+                    #f8f4ff
+                );
+
+            border:
+                1px solid
+                #ede9fe;
+
+            border-radius: 22px;
+
+            padding: 26px;
+
+            box-shadow:
+                var(--shadow);
+
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+
+            gap: 20px;
+
+            margin-bottom: 24px;
         }
 
-        .welcome-card h2{
-            font-size:26px;
-            margin-bottom:8px;
+        .welcome-card h2 {
+            font-size: 26px;
+            margin-bottom: 8px;
         }
 
-        .welcome-card p{
-            color:var(--text-muted);
-            font-size:14px;
-            line-height:1.6;
+        .welcome-card p {
+            color:
+                var(--text-muted);
+
+            font-size: 14px;
+
+            line-height: 1.6;
         }
 
-        .welcome-badge{
-            background:var(--primary-light);
-            color:var(--primary);
-            padding:10px 14px;
-            border-radius:999px;
-            font-size:13px;
-            font-weight:700;
-            white-space:nowrap;
+        .welcome-badge {
+            background:
+                var(--primary-light);
+
+            color:
+                var(--primary);
+
+            padding:
+                10px 14px;
+
+            border-radius: 999px;
+
+            font-size: 13px;
+
+            font-weight: 700;
+
+            white-space: nowrap;
         }
 
-        .profile-card{
-            background:var(--white);
-            border-radius:20px;
-            padding:24px;
-            box-shadow:var(--shadow);
-            border:1px solid var(--border);
-            display:flex;
-            align-items:center;
-            gap:20px;
-            margin-bottom:24px;
+        /* ================================
+           PROFILE
+        ================================= */
+
+        .profile-card {
+            background:
+                var(--white);
+
+            border-radius: 20px;
+
+            padding: 24px;
+
+            box-shadow:
+                var(--shadow);
+
+            border:
+                1px solid
+                var(--border);
+
+            display: flex;
+            align-items: center;
+
+            gap: 22px;
+
+            margin-bottom: 24px;
         }
 
-        .profile-avatar{
-            width:92px;
-            height:92px;
-            border-radius:20px;
-            object-fit:cover;
-            border:3px solid var(--primary-light);
-            background:var(--primary-light);
-            flex-shrink:0;
+        .profile-photo-section {
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+
+            gap: 10px;
+
+            flex-shrink: 0;
         }
 
-        .profile-content{
-            flex:1;
+        .profile-avatar-wrapper {
+            position: relative;
+
+            width: 100px;
+            height: 100px;
         }
 
-        .profile-content h2{
-            font-size:24px;
-            margin-bottom:9px;
+        .profile-avatar {
+            width: 100px;
+            height: 100px;
+
+            border-radius: 22px;
+
+            object-fit: cover;
+
+            border:
+                3px solid
+                var(--primary-light);
+
+            background:
+                var(--primary-light);
+
+            display: block;
         }
 
-        .profile-meta{
-            display:flex;
-            gap:12px;
-            flex-wrap:wrap;
+        .photo-loading {
+            position: absolute;
+
+            inset: 0;
+
+            border-radius: 22px;
+
+            background:
+                rgba(31, 41, 55, 0.65);
+
+            color: #fff;
+
+            display: none;
+
+            align-items: center;
+            justify-content: center;
+
+            text-align: center;
+
+            padding: 10px;
+
+            font-size: 12px;
+            font-weight: 600;
         }
 
-        .profile-meta span{
-            background:#F9FAFB;
-            border:1px solid var(--border);
-            padding:7px 11px;
-            border-radius:10px;
-            font-size:13px;
-            color:var(--text);
+        .photo-loading.show {
+            display: flex;
         }
 
-        .filter-card{
-            background:var(--white);
-            border:1px solid var(--border);
-            border-radius:20px;
-            padding:22px;
-            box-shadow:var(--shadow);
-            margin-bottom:24px;
+        .photo-upload-btn {
+            border: none;
+
+            background:
+                var(--primary-light);
+
+            color:
+                var(--primary);
+
+            padding:
+                8px 12px;
+
+            border-radius: 9px;
+
+            font-weight: 700;
+
+            font-size: 12px;
+
+            transition: 0.2s;
         }
 
-        .section-heading{
-            margin-bottom:18px;
+        .photo-upload-btn:hover {
+            background: #E9D5FF;
         }
 
-        .section-heading h2{
-            font-size:20px;
+        .photo-upload-btn:disabled {
+            opacity: 0.6;
+            cursor: not-allowed;
         }
 
-        .section-heading p{
-            color:var(--text-muted);
-            font-size:13px;
-            margin-top:4px;
+        .photo-help {
+            color:
+                var(--text-muted);
+
+            font-size: 10px;
+
+            text-align: center;
+
+            max-width: 130px;
+
+            line-height: 1.4;
         }
 
-        .filter-grid{
-            display:grid;
-            grid-template-columns:repeat(3,minmax(180px,1fr));
-            gap:16px;
+        .photo-message {
+            font-size: 11px;
+
+            max-width: 150px;
+
+            text-align: center;
+
+            line-height: 1.4;
+
+            display: none;
         }
 
-        .field-group label{
-            display:block;
-            font-size:13px;
-            font-weight:600;
-            margin-bottom:7px;
+        .photo-message.show {
+            display: block;
         }
 
-        .field-group select{
-            width:100%;
-            border:1px solid var(--border);
-            background:#fff;
-            padding:12px 13px;
-            border-radius:11px;
-            outline:none;
-            color:var(--text-dark);
-            font-size:14px;
+        .photo-message.success {
+            color:
+                var(--success);
         }
 
-        .field-group select:focus{
-            border-color:var(--primary);
-            box-shadow:0 0 0 3px rgba(91,33,182,.08);
+        .photo-message.error {
+            color:
+                var(--danger);
         }
 
-        .result-message{
-            margin-top:16px;
-            padding:12px 14px;
-            border-radius:10px;
-            font-size:13px;
-            display:none;
+        .profile-content {
+            flex: 1;
         }
 
-        .result-message.show{
-            display:block;
+        .profile-content h2 {
+            font-size: 24px;
+            margin-bottom: 9px;
         }
 
-        .result-message.info{
-            background:var(--blue-light);
-            color:var(--blue);
+        .profile-meta {
+            display: flex;
+            gap: 12px;
+            flex-wrap: wrap;
         }
 
-        .result-message.warning{
-            background:var(--warning-light);
-            color:var(--warning);
+        .profile-meta span {
+            background: #F9FAFB;
+
+            border:
+                1px solid
+                var(--border);
+
+            padding:
+                7px 11px;
+
+            border-radius: 10px;
+
+            font-size: 13px;
+
+            color:
+                var(--text);
         }
 
-        .stats-grid{
-            display:grid;
-            grid-template-columns:repeat(4,minmax(160px,1fr));
-            gap:16px;
-            margin-bottom:24px;
+        /* ================================
+           FILTERS
+        ================================= */
+
+        .filter-card {
+            background:
+                var(--white);
+
+            border:
+                1px solid
+                var(--border);
+
+            border-radius: 20px;
+
+            padding: 22px;
+
+            box-shadow:
+                var(--shadow);
+
+            margin-bottom: 24px;
         }
 
-        .stat-card{
-            background:var(--white);
-            border:1px solid var(--border);
-            border-radius:18px;
-            padding:20px;
-            box-shadow:var(--shadow);
+        .section-heading {
+            margin-bottom: 18px;
         }
 
-        .stat-label{
-            color:var(--text-muted);
-            font-size:13px;
-            margin-bottom:9px;
+        .section-heading h2 {
+            font-size: 20px;
         }
 
-        .stat-value{
-            font-size:25px;
-            font-weight:800;
+        .section-heading p {
+            color:
+                var(--text-muted);
+
+            font-size: 13px;
+
+            margin-top: 4px;
         }
 
-        .primary{ color:var(--primary); }
-        .success{ color:var(--success); }
-        .blue{ color:var(--blue); }
-        .warning{ color:var(--warning); }
+        .filter-grid {
+            display: grid;
+
+            grid-template-columns:
+                repeat(
+                    3,
+                    minmax(180px, 1fr)
+                );
+
+            gap: 16px;
+        }
+
+        .field-group label {
+            display: block;
+
+            font-size: 13px;
+
+            font-weight: 600;
+
+            margin-bottom: 7px;
+        }
+
+        .field-group select {
+            width: 100%;
+
+            border:
+                1px solid
+                var(--border);
+
+            background: #fff;
+
+            padding:
+                12px 13px;
+
+            border-radius: 11px;
+
+            outline: none;
+
+            color:
+                var(--text-dark);
+
+            font-size: 14px;
+        }
+
+        .field-group select:focus {
+            border-color:
+                var(--primary);
+
+            box-shadow:
+                0 0 0 3px
+                rgba(91, 33, 182, 0.08);
+        }
+
+        .result-message {
+            margin-top: 16px;
+
+            padding:
+                12px 14px;
+
+            border-radius: 10px;
+
+            font-size: 13px;
+
+            display: none;
+        }
+
+        .result-message.show {
+            display: block;
+        }
+
+        .result-message.info {
+            background:
+                var(--blue-light);
+
+            color:
+                var(--blue);
+        }
+
+        .result-message.warning {
+            background:
+                var(--warning-light);
+
+            color:
+                var(--warning);
+        }
+
+        /* ================================
+           STATS
+        ================================= */
+
+        .stats-grid {
+            display: grid;
+
+            grid-template-columns:
+                repeat(
+                    4,
+                    minmax(160px, 1fr)
+                );
+
+            gap: 16px;
+
+            margin-bottom: 24px;
+        }
+
+        .stat-card {
+            background:
+                var(--white);
+
+            border:
+                1px solid
+                var(--border);
+
+            border-radius: 18px;
+
+            padding: 20px;
+
+            box-shadow:
+                var(--shadow);
+        }
+
+        .stat-label {
+            color:
+                var(--text-muted);
+
+            font-size: 13px;
+
+            margin-bottom: 9px;
+        }
+
+        .stat-value {
+            font-size: 25px;
+            font-weight: 800;
+        }
+
+        .primary {
+            color:
+                var(--primary);
+        }
+
+        .success {
+            color:
+                var(--success);
+        }
+
+        .blue {
+            color:
+                var(--blue);
+        }
+
+        .warning {
+            color:
+                var(--warning);
+        }
+
+        /* ================================
+           RESULTS
+        ================================= */
 
         .results-card,
-        .report-wrapper{
-            background:var(--white);
-            border:1px solid var(--border);
-            border-radius:20px;
-            box-shadow:var(--shadow);
-            overflow:hidden;
-            margin-bottom:24px;
+        .report-wrapper {
+            background:
+                var(--white);
+
+            border:
+                1px solid
+                var(--border);
+
+            border-radius: 20px;
+
+            box-shadow:
+                var(--shadow);
+
+            overflow: hidden;
+
+            margin-bottom: 24px;
         }
 
-        .results-card-header{
-            padding:22px;
-            border-bottom:1px solid var(--border);
+        .results-card-header {
+            padding: 22px;
+
+            border-bottom:
+                1px solid
+                var(--border);
         }
 
-        .results-card-header h2{
-            font-size:20px;
+        .results-card-header h2 {
+            font-size: 20px;
         }
 
-        .results-card-header p{
-            color:var(--text-muted);
-            margin-top:5px;
-            font-size:13px;
+        .results-card-header p {
+            color:
+                var(--text-muted);
+
+            margin-top: 5px;
+
+            font-size: 13px;
         }
 
-        .table-wrap{
-            width:100%;
-            overflow-x:auto;
+        .table-wrap {
+            width: 100%;
+            overflow-x: auto;
         }
 
-        table{
-            width:100%;
-            border-collapse:collapse;
-            min-width:720px;
+        table {
+            width: 100%;
+
+            border-collapse:
+                collapse;
+
+            min-width: 720px;
         }
 
-        th{
-            background:#F9FAFB;
-            font-size:12px;
-            text-transform:uppercase;
-            letter-spacing:.04em;
-            text-align:left;
-            padding:14px 16px;
-            border-bottom:1px solid var(--border);
+        th {
+            background: #F9FAFB;
+
+            font-size: 12px;
+
+            text-transform:
+                uppercase;
+
+            letter-spacing: 0.04em;
+
+            text-align: left;
+
+            padding:
+                14px 16px;
+
+            border-bottom:
+                1px solid
+                var(--border);
         }
 
-        td{
-            padding:15px 16px;
-            border-bottom:1px solid #F1F5F9;
-            font-size:14px;
+        td {
+            padding:
+                15px 16px;
+
+            border-bottom:
+                1px solid
+                #F1F5F9;
+
+            font-size: 14px;
         }
 
-        tbody tr:hover{
-            background:#FAFAFF;
+        tbody tr:hover {
+            background: #FAFAFF;
         }
 
-        .grade-badge{
-            display:inline-flex;
-            min-width:38px;
-            justify-content:center;
-            padding:5px 9px;
-            border-radius:999px;
-            font-size:12px;
-            font-weight:800;
+        .grade-badge {
+            display: inline-flex;
+
+            min-width: 38px;
+
+            justify-content: center;
+
+            padding:
+                5px 9px;
+
+            border-radius: 999px;
+
+            font-size: 12px;
+
+            font-weight: 800;
         }
 
         .grade-a,
         .grade-b,
-        .grade-c{
-            background:var(--success-light);
-            color:var(--success);
+        .grade-c {
+            background:
+                var(--success-light);
+
+            color:
+                var(--success);
         }
 
         .grade-d,
-        .grade-e{
-            background:var(--warning-light);
-            color:var(--warning);
+        .grade-e {
+            background:
+                var(--warning-light);
+
+            color:
+                var(--warning);
         }
 
-        .grade-f{
-            background:var(--danger-light);
-            color:var(--danger);
+        .grade-f {
+            background:
+                var(--danger-light);
+
+            color:
+                var(--danger);
         }
 
-        .empty-row{
-            text-align:center;
-            color:var(--text-muted);
-            padding:30px 16px;
+        .empty-row {
+            text-align: center;
+
+            color:
+                var(--text-muted);
+
+            padding:
+                30px 16px;
         }
 
-        .report-card{
-            padding:30px;
+        /* ================================
+           REPORT
+        ================================= */
+
+        .report-card {
+            padding: 30px;
         }
 
-        .report-header{
-            text-align:center;
-            padding-bottom:20px;
-            border-bottom:2px solid var(--primary);
-            margin-bottom:22px;
+        .report-header {
+            text-align: center;
+
+            padding-bottom: 20px;
+
+            border-bottom:
+                2px solid
+                var(--primary);
+
+            margin-bottom: 22px;
         }
 
-        .report-header img{
-            width:75px;
-            height:75px;
-            object-fit:contain;
-            margin-bottom:10px;
+        .report-header img {
+            width: 75px;
+            height: 75px;
+
+            object-fit: contain;
+
+            margin-bottom: 10px;
         }
 
-        .report-header h2{
-            font-size:24px;
-            color:var(--primary-dark);
+        .report-header h2 {
+            font-size: 24px;
+
+            color:
+                var(--primary-dark);
         }
 
-        .report-header p{
-            font-size:13px;
-            color:var(--text-muted);
-            margin-top:5px;
+        .report-header p {
+            font-size: 13px;
+
+            color:
+                var(--text-muted);
+
+            margin-top: 5px;
         }
 
-        .student-info-grid{
-            display:grid;
-            grid-template-columns:repeat(3,minmax(180px,1fr));
-            gap:14px;
-            margin-bottom:22px;
+        .student-info-grid {
+            display: grid;
+
+            grid-template-columns:
+                repeat(
+                    3,
+                    minmax(180px, 1fr)
+                );
+
+            gap: 14px;
+
+            margin-bottom: 22px;
         }
 
-        .student-info-item{
-            background:#F9FAFB;
-            border:1px solid var(--border);
-            border-radius:11px;
-            padding:12px 14px;
+        .student-info-item {
+            background: #F9FAFB;
+
+            border:
+                1px solid
+                var(--border);
+
+            border-radius: 11px;
+
+            padding:
+                12px 14px;
         }
 
-        .student-info-item span{
-            display:block;
-            color:var(--text-muted);
-            font-size:11px;
-            text-transform:uppercase;
-            letter-spacing:.04em;
-            margin-bottom:4px;
+        .student-info-item span {
+            display: block;
+
+            color:
+                var(--text-muted);
+
+            font-size: 11px;
+
+            text-transform:
+                uppercase;
+
+            letter-spacing:
+                0.04em;
+
+            margin-bottom: 4px;
         }
 
-        .student-info-item strong{
-            font-size:14px;
+        .student-info-item strong {
+            font-size: 14px;
         }
 
-        .report-table{
-            min-width:0;
+        .report-table {
+            min-width: 0;
         }
 
-        .report-table th{
-            background:var(--primary);
-            color:#fff;
-            text-align:center;
+        .report-table th {
+            background:
+                var(--primary);
+
+            color: #fff;
+
+            text-align: center;
         }
 
-        .report-table td{
-            text-align:center;
+        .report-table td {
+            text-align: center;
         }
 
-        .report-summary{
-            display:grid;
-            grid-template-columns:repeat(4,minmax(140px,1fr));
-            gap:14px;
-            margin-top:22px;
+        .report-summary {
+            display: grid;
+
+            grid-template-columns:
+                repeat(
+                    4,
+                    minmax(140px, 1fr)
+                );
+
+            gap: 14px;
+
+            margin-top: 22px;
         }
 
-        .summary-box{
-            border:1px solid var(--border);
-            border-radius:12px;
-            padding:14px;
-            background:#F9FAFB;
+        .summary-box {
+            border:
+                1px solid
+                var(--border);
+
+            border-radius: 12px;
+
+            padding: 14px;
+
+            background: #F9FAFB;
         }
 
-        .summary-box span{
-            display:block;
-            color:var(--text-muted);
-            font-size:12px;
-            margin-bottom:5px;
+        .summary-box span {
+            display: block;
+
+            color:
+                var(--text-muted);
+
+            font-size: 12px;
+
+            margin-bottom: 5px;
         }
 
-        .summary-box strong{
-            font-size:16px;
+        .summary-box strong {
+            font-size: 16px;
         }
 
-        .remark-display{
-            margin-top:18px;
-            border:1px solid var(--border);
-            border-radius:12px;
-            padding:16px;
-            background:#F9FAFB;
+        .remark-display {
+            margin-top: 18px;
+
+            border:
+                1px solid
+                var(--border);
+
+            border-radius: 12px;
+
+            padding: 16px;
+
+            background: #F9FAFB;
         }
 
-        .remark-display span{
-            display:block;
-            color:var(--text-muted);
-            font-size:12px;
-            margin-bottom:6px;
+        .remark-display span {
+            display: block;
+
+            color:
+                var(--text-muted);
+
+            font-size: 12px;
+
+            margin-bottom: 6px;
         }
 
-        .remark-display strong{
-            display:block;
-            font-size:15px;
-            line-height:1.6;
+        .remark-display strong {
+            display: block;
+
+            font-size: 15px;
+
+            line-height: 1.6;
         }
 
-        .report-actions-bottom{
-            display:flex;
-            justify-content:flex-end;
-            margin-top:25px;
-            padding-top:20px;
-            border-top:1px solid var(--border);
+        .report-actions-bottom {
+            display: flex;
+
+            justify-content:
+                flex-end;
+
+            margin-top: 25px;
+
+            padding-top: 20px;
+
+            border-top:
+                1px solid
+                var(--border);
         }
 
-        .btn{
-            border:none;
-            border-radius:10px;
-            padding:12px 18px;
-            font-weight:600;
-            font-size:13px;
+        .btn {
+            border: none;
+
+            border-radius: 10px;
+
+            padding:
+                12px 18px;
+
+            font-weight: 600;
+
+            font-size: 13px;
         }
 
-        .btn-primary{
-            background:var(--primary);
-            color:#fff;
+        .btn-primary {
+            background:
+                var(--primary);
+
+            color: #fff;
         }
 
-        .btn-primary:hover{
-            background:var(--primary-dark);
+        .btn-primary:hover {
+            background:
+                var(--primary-dark);
         }
 
-        @media(max-width:900px){
+        /* ================================
+           RESPONSIVE
+        ================================= */
+
+        @media(max-width: 900px) {
+
             .filter-grid,
-            .student-info-grid{
-                grid-template-columns:1fr 1fr;
+            .student-info-grid {
+                grid-template-columns:
+                    1fr 1fr;
             }
 
             .stats-grid,
-            .report-summary{
-                grid-template-columns:1fr 1fr;
+            .report-summary {
+                grid-template-columns:
+                    1fr 1fr;
             }
         }
 
-        @media(max-width:650px){
-            .topbar{
-                padding:14px 15px;
+
+        @media(max-width: 650px) {
+
+            .topbar {
+                padding:
+                    14px 15px;
             }
 
-            .brand img{
-                width:44px;
-                height:44px;
+            .brand img {
+                width: 44px;
+                height: 44px;
             }
 
-            .brand-text h1{
-                font-size:17px;
+            .brand-text h1 {
+                font-size: 17px;
             }
 
             .brand-text p,
-            .student-mini-info{
-                display:none;
+            .student-mini-info {
+                display: none;
             }
 
-            .student-mini-avatar{
-                width:42px;
-                height:42px;
+            .student-mini-avatar {
+                width: 42px;
+                height: 42px;
             }
 
-            .logout-btn{
-                padding:9px 11px;
+            .logout-btn {
+                padding:
+                    9px 11px;
             }
 
-            .page-container{
-                width:calc(100% - 20px);
-                margin-top:18px;
+            .page-container {
+                width:
+                    calc(100% - 20px);
+
+                margin-top: 18px;
             }
 
-            .welcome-card{
-                flex-direction:column;
-                align-items:flex-start;
-                padding:20px;
+            .welcome-card {
+                flex-direction:
+                    column;
+
+                align-items:
+                    flex-start;
+
+                padding: 20px;
             }
 
-            .profile-card{
-                align-items:flex-start;
-                padding:18px;
+            .profile-card {
+                align-items:
+                    flex-start;
+
+                padding: 18px;
             }
 
-            .profile-avatar{
-                width:72px;
-                height:72px;
-                border-radius:16px;
+            .profile-avatar-wrapper,
+            .profile-avatar {
+                width: 82px;
+                height: 82px;
+            }
+
+            .profile-avatar {
+                border-radius: 18px;
+            }
+
+            .photo-loading {
+                border-radius: 18px;
             }
 
             .filter-grid,
             .stats-grid,
             .student-info-grid,
-            .report-summary{
-                grid-template-columns:1fr;
+            .report-summary {
+                grid-template-columns:
+                    1fr;
             }
 
-            .report-card{
-                padding:18px;
+            .report-card {
+                padding: 18px;
             }
 
-            .report-actions-bottom{
-                justify-content:stretch;
+            .report-actions-bottom {
+                justify-content:
+                    stretch;
             }
 
-            .report-actions-bottom .btn{
-                width:100%;
+            .report-actions-bottom .btn {
+                width: 100%;
             }
         }
 
-        @media print{
-            body{
-                background:#fff;
+
+        @media print {
+
+            body {
+                background: #fff;
             }
 
             .topbar,
@@ -661,45 +1134,61 @@
             .filter-card,
             .stats-grid,
             .results-card,
-            .report-actions-bottom{
-                display:none !important;
+            .report-actions-bottom {
+                display:
+                    none !important;
             }
 
-            .page-container{
-                width:100%;
-                margin:0;
+            .page-container {
+                width: 100%;
+                margin: 0;
             }
 
-            .report-wrapper{
-                box-shadow:none;
-                border:none;
-                margin:0;
-                border-radius:0;
+            .report-wrapper {
+                box-shadow: none;
+                border: none;
+                margin: 0;
+                border-radius: 0;
             }
 
-            .report-card{
-                padding:15px;
+            .report-card {
+                padding: 15px;
             }
 
-            .report-table th{
-                background:var(--primary) !important;
-                color:#fff !important;
-                -webkit-print-color-adjust:exact;
-                print-color-adjust:exact;
+            .report-table th {
+                background:
+                    var(--primary)
+                    !important;
+
+                color:
+                    #fff
+                    !important;
+
+                -webkit-print-color-adjust:
+                    exact;
+
+                print-color-adjust:
+                    exact;
             }
 
             .student-info-item,
             .summary-box,
-            .remark-display{
-                -webkit-print-color-adjust:exact;
-                print-color-adjust:exact;
+            .remark-display {
+
+                -webkit-print-color-adjust:
+                    exact;
+
+                print-color-adjust:
+                    exact;
             }
         }
     </style>
 
 </head>
 
+
 <body>
+
 
 <header class="topbar">
 
@@ -711,29 +1200,45 @@
         >
 
         <div class="brand-text">
-            <h1>PACSA Student Portal</h1>
-            <p>Becoming Leaders Through Righteousness</p>
+
+            <h1>
+                PACSA Student Portal
+            </h1>
+
+            <p>
+                Becoming Leaders Through Righteousness
+            </p>
+
         </div>
 
     </div>
+
 
     <div class="topbar-right">
 
         <div class="student-mini">
 
             <img
-                src="images/Faith.jpg"
+                src="images/PACSA LOGO.png"
                 alt="Student Profile"
                 class="student-mini-avatar"
                 id="studentMiniAvatar"
             >
 
             <div class="student-mini-info">
-                <strong id="studentMiniName">Student</strong>
-                <span id="studentMiniId">--</span>
+
+                <strong id="studentMiniName">
+                    Student
+                </strong>
+
+                <span id="studentMiniId">
+                    --
+                </span>
+
             </div>
 
         </div>
+
 
         <button
             type="button"
@@ -750,6 +1255,7 @@
 
 <main class="page-container">
 
+
     <section class="welcome-card">
 
         <div>
@@ -765,6 +1271,7 @@
 
         </div>
 
+
         <div class="welcome-badge">
             Student Dashboard
         </div>
@@ -772,14 +1279,63 @@
     </section>
 
 
+    <!-- =====================================
+         STUDENT PROFILE
+    ====================================== -->
+
     <section class="profile-card">
 
-        <img
-            src="images/Faith.jpg"
-            alt="Student Profile"
-            class="profile-avatar"
-            id="studentAvatar"
-        >
+        <div class="profile-photo-section">
+
+            <div class="profile-avatar-wrapper">
+
+                <img
+                    src="images/PACSA LOGO.png"
+                    alt="Student Profile"
+                    class="profile-avatar"
+                    id="studentAvatar"
+                >
+
+                <div
+                    class="photo-loading"
+                    id="photoLoading"
+                >
+                    Uploading...
+                </div>
+
+            </div>
+
+
+            <input
+                type="file"
+                id="profilePhotoInput"
+                accept="image/jpeg,image/png,image/webp"
+                hidden
+            >
+
+
+            <button
+                type="button"
+                class="photo-upload-btn"
+                id="changePhotoBtn"
+            >
+                📷 Change Photo
+            </button>
+
+
+            <p class="photo-help">
+                JPG, PNG or WebP.
+                Maximum 2 MB.
+            </p>
+
+
+            <p
+                class="photo-message"
+                id="photoMessage"
+            ></p>
+
+        </div>
+
 
         <div class="profile-content">
 
@@ -787,21 +1343,30 @@
                 Student Name
             </h2>
 
+
             <div class="profile-meta">
 
                 <span>
                     ID:
-                    <strong id="studentId">--</strong>
+                    <strong id="studentId">
+                        --
+                    </strong>
                 </span>
+
 
                 <span>
                     Current Class:
-                    <strong id="studentClass">--</strong>
+                    <strong id="studentClass">
+                        --
+                    </strong>
                 </span>
+
 
                 <span>
                     Status:
-                    <strong id="studentStatus">Active</strong>
+                    <strong id="studentStatus">
+                        Active
+                    </strong>
                 </span>
 
             </div>
@@ -810,6 +1375,10 @@
 
     </section>
 
+
+    <!-- =====================================
+         RESULT FILTERS
+    ====================================== -->
 
     <section class="filter-card">
 
@@ -826,6 +1395,7 @@
 
         </div>
 
+
         <div class="filter-grid">
 
             <div class="field-group">
@@ -835,12 +1405,15 @@
                 </label>
 
                 <select id="sessionFilter">
+
                     <option value="">
                         Select Session
                     </option>
+
                 </select>
 
             </div>
+
 
             <div class="field-group">
 
@@ -849,12 +1422,15 @@
                 </label>
 
                 <select id="classFilter">
+
                     <option value="">
                         Select Class
                     </option>
+
                 </select>
 
             </div>
+
 
             <div class="field-group">
 
@@ -863,14 +1439,17 @@
                 </label>
 
                 <select id="termFilter">
+
                     <option value="">
                         Select Term
                     </option>
+
                 </select>
 
             </div>
 
         </div>
+
 
         <div
             class="result-message"
@@ -880,30 +1459,81 @@
     </section>
 
 
+    <!-- =====================================
+         STATISTICS
+    ====================================== -->
+
     <section class="stats-grid">
 
         <div class="stat-card">
-            <div class="stat-label">Average Score</div>
-            <div class="stat-value primary" id="average">0%</div>
+
+            <div class="stat-label">
+                Average Score
+            </div>
+
+            <div
+                class="stat-value primary"
+                id="average"
+            >
+                0%
+            </div>
+
         </div>
 
-        <div class="stat-card">
-            <div class="stat-label">Subjects</div>
-            <div class="stat-value blue" id="subjects">0</div>
-        </div>
 
         <div class="stat-card">
-            <div class="stat-label">Passed Subjects</div>
-            <div class="stat-value success" id="passedSubjects">0</div>
+
+            <div class="stat-label">
+                Subjects
+            </div>
+
+            <div
+                class="stat-value blue"
+                id="subjects"
+            >
+                0
+            </div>
+
         </div>
 
+
         <div class="stat-card">
-            <div class="stat-label">Position</div>
-            <div class="stat-value warning" id="position">N/A</div>
+
+            <div class="stat-label">
+                Passed Subjects
+            </div>
+
+            <div
+                class="stat-value success"
+                id="passedSubjects"
+            >
+                0
+            </div>
+
+        </div>
+
+
+        <div class="stat-card">
+
+            <div class="stat-label">
+                Position
+            </div>
+
+            <div
+                class="stat-value warning"
+                id="position"
+            >
+                N/A
+            </div>
+
         </div>
 
     </section>
 
+
+    <!-- =====================================
+         RESULT TABLE
+    ====================================== -->
 
     <section class="results-card">
 
@@ -919,11 +1549,13 @@
 
         </div>
 
+
         <div class="table-wrap">
 
             <table>
 
                 <thead>
+
                     <tr>
                         <th>Subject</th>
                         <th>CA</th>
@@ -931,14 +1563,21 @@
                         <th>Total</th>
                         <th>Grade</th>
                     </tr>
+
                 </thead>
+
 
                 <tbody id="resultsTable">
 
                     <tr>
-                        <td colspan="5" class="empty-row">
+
+                        <td
+                            colspan="5"
+                            class="empty-row"
+                        >
                             Select a class and term to view result.
                         </td>
+
                     </tr>
 
                 </tbody>
@@ -949,6 +1588,10 @@
 
     </section>
 
+
+    <!-- =====================================
+         REPORT CARD
+    ====================================== -->
 
     <section class="report-wrapper">
 
@@ -975,28 +1618,67 @@
             <div class="student-info-grid">
 
                 <div class="student-info-item">
-                    <span>Student Name</span>
-                    <strong id="reportStudentName">--</strong>
+
+                    <span>
+                        Student Name
+                    </span>
+
+                    <strong id="reportStudentName">
+                        --
+                    </strong>
+
                 </div>
 
-                <div class="student-info-item">
-                    <span>Student ID</span>
-                    <strong id="reportStudentId">--</strong>
-                </div>
 
                 <div class="student-info-item">
-                    <span>Class</span>
-                    <strong id="reportStudentClass">--</strong>
+
+                    <span>
+                        Student ID
+                    </span>
+
+                    <strong id="reportStudentId">
+                        --
+                    </strong>
+
                 </div>
 
-                <div class="student-info-item">
-                    <span>Session</span>
-                    <strong id="reportSession">--</strong>
-                </div>
 
                 <div class="student-info-item">
-                    <span>Term</span>
-                    <strong id="reportTerm">--</strong>
+
+                    <span>
+                        Class
+                    </span>
+
+                    <strong id="reportStudentClass">
+                        --
+                    </strong>
+
+                </div>
+
+
+                <div class="student-info-item">
+
+                    <span>
+                        Session
+                    </span>
+
+                    <strong id="reportSession">
+                        --
+                    </strong>
+
+                </div>
+
+
+                <div class="student-info-item">
+
+                    <span>
+                        Term
+                    </span>
+
+                    <strong id="reportTerm">
+                        --
+                    </strong>
+
                 </div>
 
             </div>
@@ -1007,6 +1689,7 @@
                 <table class="report-table">
 
                     <thead>
+
                         <tr>
                             <th>Subject</th>
                             <th>CA</th>
@@ -1014,14 +1697,21 @@
                             <th>Total</th>
                             <th>Grade</th>
                         </tr>
+
                     </thead>
+
 
                     <tbody id="reportResultsTable">
 
                         <tr>
-                            <td colspan="5" class="empty-row">
+
+                            <td
+                                colspan="5"
+                                class="empty-row"
+                            >
                                 No result selected.
                             </td>
+
                         </tr>
 
                     </tbody>
@@ -1034,23 +1724,54 @@
             <div class="report-summary">
 
                 <div class="summary-box">
-                    <span>Average</span>
-                    <strong id="reportAverage">0%</strong>
+
+                    <span>
+                        Average
+                    </span>
+
+                    <strong id="reportAverage">
+                        0%
+                    </strong>
+
                 </div>
 
-                <div class="summary-box">
-                    <span>Subjects</span>
-                    <strong id="reportSubjects">0</strong>
-                </div>
 
                 <div class="summary-box">
-                    <span>Position</span>
-                    <strong id="reportPosition">N/A</strong>
+
+                    <span>
+                        Subjects
+                    </span>
+
+                    <strong id="reportSubjects">
+                        0
+                    </strong>
+
                 </div>
 
+
                 <div class="summary-box">
-                    <span>Passed Subjects</span>
-                    <strong id="reportPassed">0</strong>
+
+                    <span>
+                        Position
+                    </span>
+
+                    <strong id="reportPosition">
+                        N/A
+                    </strong>
+
+                </div>
+
+
+                <div class="summary-box">
+
+                    <span>
+                        Passed Subjects
+                    </span>
+
+                    <strong id="reportPassed">
+                        0
+                    </strong>
+
                 </div>
 
             </div>
@@ -1089,8 +1810,11 @@
 
 
 <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+
 <script src="supabase.js"></script>
+
 <script src="student-dashboard.js"></script>
+
 
 </body>
 </html>

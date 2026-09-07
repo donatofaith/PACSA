@@ -3,120 +3,242 @@
 
 <head>
 
-<meta charset="UTF-8">
+    <meta charset="UTF-8">
 
-<meta name="viewport"
-content="width=device-width, initial-scale=1.0">
+    <meta
+        name="viewport"
+        content="width=device-width, initial-scale=1.0"
+    >
 
-<title>PACSA Student Portal</title>
+    <title>PACSA Student Portal</title>
 
-<link
-href="https://fonts.googleapis.com/css2?family=Outfit:wght@300;400;500;600;700;800&display=swap"
-rel="stylesheet">
+    <link
+        href="https://fonts.googleapis.com/css2?family=Outfit:wght@300;400;500;600;700;800&display=swap"
+        rel="stylesheet"
+    >
 
-<link
-rel="stylesheet"
-href="student-login.css">
+    <link
+        rel="stylesheet"
+        href="student-login.css"
+    >
+
+    <style>
+
+        .login-actions {
+            display: flex;
+            gap: 12px;
+            margin-top: 18px;
+        }
+
+        .login-actions .login-btn,
+        .create-account-btn {
+            flex: 1;
+            min-height: 52px;
+            border-radius: 12px;
+            font-family: inherit;
+            font-size: 15px;
+            font-weight: 700;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            text-decoration: none;
+            box-sizing: border-box;
+        }
+
+        .create-account-btn {
+            background: transparent;
+            border: 2px solid #6D28D9;
+            color: #6D28D9;
+            transition: 0.2s;
+        }
+
+        .create-account-btn:hover {
+            background: #6D28D9;
+            color: #FFFFFF;
+        }
+
+        .login-message {
+            display: none;
+            margin-top: 15px;
+            padding: 11px 13px;
+            border-radius: 9px;
+            font-size: 13px;
+        }
+
+        .login-message.error {
+            display: block;
+            background: #FEE2E2;
+            color: #B91C1C;
+        }
+
+        .portal-note {
+            margin-top: 18px;
+            text-align: center;
+            font-size: 13px;
+            color: rgba(255, 255, 255, 0.85);
+        }
+
+        @media (max-width: 520px) {
+
+            .login-actions {
+                flex-direction: column;
+            }
+
+        }
+
+    </style>
 
 </head>
 
+
 <body>
+
 
 <div class="overlay"></div>
 
+
 <div class="login-container">
 
-<div class="login-card">
 
-<img
-src="images/PACSA LOGO.png"
-alt="PACSA Logo"
-class="logo">
+    <div class="login-card">
 
-<h1>PACSA</h1>
 
-<p class="motto">
+        <img
+            src="images/PACSA LOGO.png"
+            alt="PACSA Logo"
+            class="logo"
+        >
 
-Becoming Leaders Through Righteousness
 
-</p>
+        <h1>
+            PACSA
+        </h1>
 
-<form id="studentLoginForm">
 
-<div class="input-group">
+        <p class="motto">
+            Becoming Leaders Through Righteousness
+        </p>
 
-<label>
-Student ID
-</label>
 
-<input
-type="text"
-id="studentId"
-placeholder="Enter Student ID"
-required>
+
+        <form id="studentLoginForm">
+
+
+            <div class="input-group">
+
+                <label for="email">
+                    Email Address
+                </label>
+
+                <input
+                    type="email"
+                    id="email"
+                    placeholder="Enter your registered email"
+                    required
+                >
+
+            </div>
+
+
+
+            <div class="input-group">
+
+                <label for="password">
+                    Password
+                </label>
+
+
+                <div class="password-box">
+
+                    <input
+                        type="password"
+                        id="password"
+                        placeholder="Enter Password"
+                        required
+                    >
+
+                    <span
+                        id="togglePassword"
+                        role="button"
+                        tabindex="0"
+                    >
+                        👁
+                    </span>
+
+                </div>
+
+            </div>
+
+
+
+            <div class="extras">
+
+                <span>
+                    Student Portal
+                </span>
+
+                <a
+                    href="#"
+                    id="forgotPasswordLink"
+                >
+                    Forgot Password?
+                </a>
+
+            </div>
+
+
+
+            <div class="login-actions">
+
+                <button
+                    type="submit"
+                    class="login-btn"
+                    id="loginBtn"
+                >
+                    Login
+                </button>
+
+
+                <a
+                    href="student-register.html"
+                    class="create-account-btn"
+                >
+                    Create Account
+                </a>
+
+            </div>
+
+
+        </form>
+
+
+
+        <div
+            id="loginMessage"
+            class="login-message"
+        >
+        </div>
+
+
+        <p class="portal-note">
+            First-time students should create an account using their registered school email.
+        </p>
+
+
+    </div>
+
 
 </div>
 
-<div class="input-group">
 
-<label>
-Password
-</label>
 
-<div class="password-box">
-
-<input
-type="password"
-id="password"
-placeholder="Enter Password"
-required>
-
-<span id="togglePassword">
-
-👁
-
-</span>
-
-</div>
-
-</div>
-
-<div class="extras">
-
-<label>
-
-<input type="checkbox">
-
-Remember Me
-
-</label>
-
-<a href="#">
-
-Forgot Password?
-
-</a>
-
-</div>
-
-<button
-type="submit"
-class="login-btn">
-
-Login
-
-</button>
-
-</form>
-
-</div>
-
-</div>
 <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
 
 <script src="supabase.js"></script>
 
 <script src="student-login.js"></script>
+
+
 </body>
 
 </html>

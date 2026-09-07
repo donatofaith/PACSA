@@ -9,6 +9,9 @@ const esc = v =>
         .replace(/"/g, "&quot;")
         .replace(/'/g, "&#039;");
 
+const personName = person =>
+    `${person?.first_name || ""} ${person?.last_name || ""}`.trim();
+
 const grade = total =>
     total >= 70 ? "A" :
     total >= 60 ? "B" :
@@ -16,242 +19,234 @@ const grade = total =>
     total >= 45 ? "D" :
     total >= 40 ? "E" : "F";
 
-const studentName = student =>
-    `${student?.first_name || ""} ${student?.last_name || ""}`.trim() ||
-    student?.fullname ||
-    "Unnamed Student";
 
-const teacherName = teacher =>
-    teacher?.fullname ||
-    teacher?.name ||
-    `${teacher?.first_name || ""} ${teacher?.last_name || ""}`.trim() ||
-    "Teacher";
-
-const initials = name =>
-    (
-        String(name || "T")
-            .trim()
-            .split(/\s+/)
-            .filter(Boolean)
-            .map(part => part[0])
-            .join("")
-            .slice(0, 2) || "T"
-    ).toUpperCase();
-
+const PROFILE_BUCKET = "profile-photos";
+const DEFAULT_PHOTO = "images/PACSA LOGO.png";
+const MAX_PHOTO_SIZE = 2 * 1024 * 1024;
 
 const state = {
     teacher: null,
+    user: null,
     assignments: [],
     classAssignments: [],
     students: [],
-    resultStudents: [],
+    studentSubjects: [],
     results: [],
-
+    currentSession: "",
     selectedAssignment: null,
     selectedClassAssignment: null,
     selectedClassStudent: null,
-
     classResults: [],
-    edit: null,
-
-    currentSession: ""
+    editingResult: null
 };
 
 
-/* =========================
-   LOGOUT
-========================= */
+/* =====================================================
+   AUTH
+===================================================== */
 
-function logout() {
+async function logout() {
 
-    [
-        "teacher",
-        "teacherAssignments",
-        "classTeacherAssignments"
-    ].forEach(key =>
-        localStorage.removeItem(key)
-    );
+    try {
+        await supabaseClient.auth.signOut();
+    } catch (error) {
+        console.error(error);
+    }
 
-    location.href =
-        "teacher-login.html";
+    localStorage.removeItem("teacher");
+    localStorage.removeItem("teacherAssignments");
+    localStorage.removeItem("classTeacherAssignments");
+
+    window.location.replace("teacher-login.html");
 }
 
 
-/* =========================
-   HELPERS
-========================= */
+function hasSubjectAssignment(className, subject) {
 
-function hasAssignment(className, subject) {
-
-    return state.assignments.some(
-        assignment =>
-            norm(assignment.class) === norm(className) &&
-            norm(assignment.subject) === norm(subject)
+    return state.assignments.some(a =>
+        norm(a.class) === norm(className) &&
+        norm(a.subject) === norm(subject)
     );
 }
 
 
 function isClassTeacher(className, session) {
 
-    return state.classAssignments.some(
-        assignment =>
-            norm(assignment.class) === norm(className) &&
-            norm(assignment.session) === norm(session)
+    return state.classAssignments.some(a =>
+        norm(a.class) === norm(className) &&
+        norm(a.session) === norm(session)
     );
 }
 
 
-function calculate(
-    caId,
-    examId,
-    totalId,
-    gradeId
-) {
+/* =====================================================
+   SESSION
+===================================================== */
 
-    const ca =
-        Number($(caId).value || 0);
+async function loadCurrentSession() {
 
-    const exam =
-        Number($(examId).value || 0);
+    const { data } = await supabaseClient
+        .from("sessions_terms")
+        .select("session")
+        .eq("is_current", true)
+        .limit(1)
+        .maybeSingle();
 
-    const total =
-        ca + exam;
+    if (data?.session) {
+        state.currentSession = data.session;
+        return;
+    }
 
-    $(totalId).value =
-        total;
+    const { data: latest } = await supabaseClient
+        .from("sessions_terms")
+        .select("session,created_at")
+        .order("created_at", { ascending: false })
+        .limit(1)
+        .maybeSingle();
 
-    $(gradeId).value =
-        grade(total);
+    state.currentSession =
+        latest?.session ||
+        state.classAssignments[0]?.session ||
+        "";
 }
 
 
-/* =========================
-   CURRENT SESSION
-========================= */
+async function loadStudentSubjects() {
 
-async function getCurrentSession() {
+    if (!state.currentSession) {
+        state.studentSubjects = [];
+        return;
+    }
 
-    const {
-        data,
-        error
-    } =
+    const { data, error } = await supabaseClient
+        .from("student_subjects")
+        .select("*")
+        .eq("session", state.currentSession);
+
+    if (error) {
+        console.error(error);
+        state.studentSubjects = [];
+        return;
+    }
+
+    state.studentSubjects = data || [];
+}
+
+
+/* =====================================================
+   LOAD TEACHER
+===================================================== */
+
+async function loadTeacherData() {
+
+    const { data, error } =
+        await supabaseClient.auth.getSession();
+
+    if (error) throw error;
+
+    const user = data?.session?.user;
+
+    if (!user) {
+        await logout();
+        return;
+    }
+
+    state.user = user;
+
+
+    const { data: teacher, error: teacherError } =
         await supabaseClient
-            .from("sessions_terms")
-            .select("session")
-            .eq("is_current", true)
-            .limit(1)
+            .from("Teachers")
+            .select(`
+                id,
+                teacher_id,
+                first_name,
+                last_name,
+                email,
+                phone,
+                subject,
+                class,
+                auth_user_id,
+                portal_status,
+                profile_photo_path
+            `)
+            .eq("auth_user_id", user.id)
             .maybeSingle();
 
 
-    if (
-        !error &&
-        data?.session
-    ) {
+    if (teacherError) throw teacherError;
 
-        return data.session;
+
+    if (!teacher) {
+        alert(
+            "This account is not linked to a PACSA teacher."
+        );
+
+        await logout();
+        return;
     }
 
 
-    return (
-        state.classAssignments[0]?.session ||
-        ""
-    );
-}
+    if (norm(teacher.portal_status) !== "active") {
+        alert(
+            "Your Teacher Portal account is not active."
+        );
 
-
-/* =========================
-   LOAD BASIC DATA
-========================= */
-
-async function loadBaseData() {
-
-    const stored =
-        localStorage.getItem("teacher");
-
-
-    if (!stored) {
-        return logout();
+        await logout();
+        return;
     }
 
 
-    try {
-
-        state.teacher =
-            JSON.parse(stored);
-
-    } catch {
-
-        return logout();
-    }
-
-
-    const teacherId =
-        state.teacher.teacher_id;
+    state.teacher = teacher;
 
 
     const [
-        assignmentsResponse,
+        subjectResponse,
         classResponse,
-        studentsResponse
-    ] =
-        await Promise.all([
+        studentResponse
+    ] = await Promise.all([
 
-            supabaseClient
-                .from("teacher_assignments")
-                .select("*")
-                .eq("teacher_id", teacherId)
-                .order("class"),
+        supabaseClient
+            .from("teacher_assignments")
+            .select("*")
+            .eq("teacher_id", teacher.teacher_id),
 
-            supabaseClient
-                .from("class_teacher_assignments")
-                .select("*")
-                .eq("teacher_id", teacherId)
-                .order("class"),
+        supabaseClient
+            .from("class_teacher_assignments")
+            .select("*")
+            .eq("teacher_id", teacher.teacher_id),
 
-            supabaseClient
-                .from("students")
-                .select(
-                    "student_id,first_name,last_name,fullname,class,status"
-                )
-                .order("student_id")
+        supabaseClient
+            .from("students")
+            .select(`
+                student_id,
+                first_name,
+                last_name,
+                class,
+                status
+            `)
+            .order("student_id")
+    ]);
 
-        ]);
 
-
-    if (assignmentsResponse.error)
-        throw assignmentsResponse.error;
+    if (subjectResponse.error)
+        throw subjectResponse.error;
 
     if (classResponse.error)
         throw classResponse.error;
 
-    if (studentsResponse.error)
-        throw studentsResponse.error;
+    if (studentResponse.error)
+        throw studentResponse.error;
 
 
     state.assignments =
-        assignmentsResponse.data || [];
+        subjectResponse.data || [];
 
     state.classAssignments =
         classResponse.data || [];
 
     state.students =
-        studentsResponse.data || [];
-
-
-    localStorage.setItem(
-        "teacherAssignments",
-        JSON.stringify(
-            state.assignments
-        )
-    );
-
-
-    localStorage.setItem(
-        "classTeacherAssignments",
-        JSON.stringify(
-            state.classAssignments
-        )
-    );
+        studentResponse.data || [];
 
 
     if (
@@ -260,138 +255,365 @@ async function loadBaseData() {
     ) {
 
         alert(
-            "No teaching assignment has been added to this account."
+            "No responsibility has been assigned to this teacher."
         );
 
-        return logout();
+        await logout();
+        return;
     }
 
 
-    state.currentSession =
-        await getCurrentSession();
+    localStorage.setItem(
+        "teacher",
+        JSON.stringify(state.teacher)
+    );
+
+    localStorage.setItem(
+        "teacherAssignments",
+        JSON.stringify(state.assignments)
+    );
+
+    localStorage.setItem(
+        "classTeacherAssignments",
+        JSON.stringify(state.classAssignments)
+    );
+
+
+    await loadCurrentSession();
+    await loadStudentSubjects();
+
+    renderProfile();
+    renderAssignments();
+    setupClassTeacherArea();
+
+    await loadProfilePhoto();
+    await loadTeacherResults();
 }
 
 
-/* =========================
+/* =====================================================
    PROFILE
-========================= */
+===================================================== */
 
 function renderProfile() {
 
-    const teacher =
-        state.teacher;
+    const teacher = state.teacher;
 
     const name =
-        teacherName(teacher);
-
-    const avatar =
-        initials(name);
+        personName(teacher) ||
+        "Teacher";
 
 
-    const subjects =
-        [
-            ...new Set(
-                state.assignments
-                    .map(a => a.subject)
-                    .filter(Boolean)
-            )
-        ];
+    const subjects = [
+        ...new Set(
+            state.assignments
+                .map(a => a.subject)
+                .filter(Boolean)
+        )
+    ];
 
 
-    const classes =
-        [
-            ...new Set(
-                [
-                    ...state.assignments,
-                    ...state.classAssignments
-                ]
-                    .map(a => a.class)
-                    .filter(Boolean)
-            )
-        ];
+    const classes = [
+        ...new Set(
+            [
+                ...state.assignments,
+                ...state.classAssignments
+            ]
+                .map(a => a.class)
+                .filter(Boolean)
+        )
+    ];
 
 
-    $("topTeacherName").textContent =
-        name;
+    if ($("topTeacherName"))
+        $("topTeacherName").textContent = name;
 
-    $("topTeacherId").textContent =
-        teacher.teacher_id ||
-        teacher.id ||
-        "--";
+    if ($("welcomeTeacherName"))
+        $("welcomeTeacherName").textContent = name;
 
-    $("miniAvatar").textContent =
-        avatar;
+    if ($("teacherName"))
+        $("teacherName").textContent = name;
 
-    $("welcomeTeacherName").textContent =
-        name;
+    if ($("topTeacherId"))
+        $("topTeacherId").textContent =
+            teacher.teacher_id || "--";
 
-    $("teacherName").textContent =
-        name;
+    if ($("teacherId"))
+        $("teacherId").textContent =
+            teacher.teacher_id || "--";
 
-    $("teacherId").textContent =
-        teacher.teacher_id ||
-        teacher.id ||
-        "--";
+    if ($("teacherEmail"))
+        $("teacherEmail").textContent =
+            teacher.email || "--";
 
-    $("teacherEmail").textContent =
-        teacher.email || "--";
+    if ($("teacherPhone"))
+        $("teacherPhone").textContent =
+            teacher.phone || "--";
 
-    $("teacherPhone").textContent =
-        teacher.phone || "--";
+    if ($("teacherSubject"))
+        $("teacherSubject").textContent =
+            subjects.join(", ") || "--";
 
-    $("teacherSubject").textContent =
-        subjects.join(", ") || "--";
+    if ($("teacherClass"))
+        $("teacherClass").textContent =
+            classes.join(", ") || "--";
 
-    $("teacherClass").textContent =
-        classes.join(", ") || "--";
+    if ($("teacherStatus"))
+        $("teacherStatus").textContent =
+            "Active Account";
 
-    $("teacherAvatar").textContent =
-        avatar;
+    if ($("assignmentCount"))
+        $("assignmentCount").textContent =
+            state.assignments.length;
 
-    $("assignmentCount").textContent =
-        state.assignments.length;
-
-    $("classCount").textContent =
-        classes.length;
+    if ($("classCount"))
+        $("classCount").textContent =
+            classes.length;
 
 
-    if (
-        state.classAssignments.length
-    ) {
+    if (state.classAssignments.length) {
 
-        $("classTeacherBadge").style.display =
-            "inline-flex";
+        if ($("classTeacherBadge"))
+            $("classTeacherBadge").style.display =
+                "inline-flex";
 
-        $("classTeacherProfileRow").style.display =
-            "flex";
+        if ($("classTeacherProfileRow"))
+            $("classTeacherProfileRow").style.display =
+                "flex";
 
-        $("teacherClassTeacher").textContent =
-            state.classAssignments
-                .map(
-                    a =>
-                        `${a.class} (${a.session})`
-                )
-                .join(", ");
+        if ($("teacherClassTeacher")) {
+
+            $("teacherClassTeacher").textContent =
+                state.classAssignments
+                    .map(
+                        a =>
+                            `${a.class} (${a.session})`
+                    )
+                    .join(", ");
+        }
     }
 }
 
 
-/* =========================
+/* =====================================================
+   PROFILE PHOTO
+===================================================== */
+
+function setProfilePhoto(url = DEFAULT_PHOTO) {
+
+    ["teacherAvatar", "miniAvatar"]
+        .forEach(id => {
+
+            const image = $(id);
+
+            if (!image) return;
+
+            image.src = url;
+
+            image.onerror = () => {
+                image.onerror = null;
+                image.src = DEFAULT_PHOTO;
+            };
+        });
+}
+
+
+async function loadProfilePhoto() {
+
+    const path =
+        state.teacher?.profile_photo_path;
+
+    if (!path) {
+        setProfilePhoto();
+        return;
+    }
+
+    const { data, error } =
+        await supabaseClient.storage
+            .from(PROFILE_BUCKET)
+            .createSignedUrl(
+                path,
+                3600
+            );
+
+    if (error) {
+        console.error(error);
+        setProfilePhoto();
+        return;
+    }
+
+    setProfilePhoto(
+        data?.signedUrl
+    );
+}
+
+
+async function uploadProfilePhoto(file) {
+
+    const message =
+        $("teacherPhotoMessage");
+
+    const loading =
+        $("teacherPhotoLoading");
+
+    const button =
+        $("changeTeacherPhotoBtn");
+
+
+    const allowed = [
+        "image/jpeg",
+        "image/png",
+        "image/webp"
+    ];
+
+
+    if (!allowed.includes(file.type)) {
+
+        if (message)
+            message.textContent =
+                "Choose a JPG, PNG or WebP image.";
+
+        return;
+    }
+
+
+    if (file.size > MAX_PHOTO_SIZE) {
+
+        if (message)
+            message.textContent =
+                "Profile photo must be 2 MB or smaller.";
+
+        return;
+    }
+
+
+    const extension =
+        file.type === "image/png"
+            ? "png"
+            : file.type === "image/webp"
+            ? "webp"
+            : "jpg";
+
+
+    const path =
+        `teachers/${state.user.id}/profile.${extension}`;
+
+
+    if (button)
+        button.disabled = true;
+
+    loading?.classList.add("show");
+
+    if (message)
+        message.textContent = "";
+
+
+    try {
+
+        const oldPath =
+            state.teacher.profile_photo_path;
+
+
+        const { error: uploadError } =
+            await supabaseClient.storage
+                .from(PROFILE_BUCKET)
+                .upload(
+                    path,
+                    file,
+                    {
+                        upsert: true,
+                        contentType: file.type
+                    }
+                );
+
+
+        if (uploadError)
+            throw uploadError;
+
+
+        const { error: updateError } =
+            await supabaseClient
+                .from("Teachers")
+                .update({
+                    profile_photo_path: path
+                })
+                .eq(
+                    "auth_user_id",
+                    state.user.id
+                );
+
+
+        if (updateError)
+            throw updateError;
+
+
+        if (
+            oldPath &&
+            oldPath !== path
+        ) {
+
+            await supabaseClient.storage
+                .from(PROFILE_BUCKET)
+                .remove([oldPath]);
+        }
+
+
+        state.teacher.profile_photo_path =
+            path;
+
+
+        await loadProfilePhoto();
+
+
+        if (message)
+            message.textContent =
+                "Profile photo updated.";
+
+
+    } catch (error) {
+
+        console.error(error);
+
+        if (message)
+            message.textContent =
+                `Could not upload photo: ${error.message}`;
+
+    } finally {
+
+        if (button)
+            button.disabled = false;
+
+        loading?.classList.remove("show");
+
+        if ($("teacherPhotoInput"))
+            $("teacherPhotoInput").value = "";
+    }
+}
+
+
+/* =====================================================
    ASSIGNMENTS
-========================= */
+===================================================== */
 
 function renderAssignments() {
 
-    $("assignmentCards").innerHTML =
-        state.assignments.length
+    const container =
+        $("assignmentCards");
 
-            ? state.assignments
-                .map(
-                    (assignment, index) => `
+
+    if (container) {
+
+        container.innerHTML =
+            state.assignments.length
+
+                ? state.assignments
+                    .map(
+                        (a, i) => `
+
                         <div class="assignment-card">
 
                             <div class="assignment-number">
-                                ${index + 1}
+                                ${i + 1}
                             </div>
 
                             <span>
@@ -399,105 +621,114 @@ function renderAssignments() {
                             </span>
 
                             <h3>
-                                ${esc(
-                                    assignment.subject || "--"
-                                )}
+                                ${esc(a.subject)}
                             </h3>
 
                             <div class="assignment-class">
                                 Class:
-                                ${esc(
-                                    assignment.class || "--"
-                                )}
+                                ${esc(a.class)}
                             </div>
 
                         </div>
                     `
-                )
-                .join("")
-
-            : `
-                <div class="empty-card">
-                    No subject assignment found.
-                </div>
-            `;
-
-
-    const visibleClasses =
-        [
-            ...new Set(
-                [
-                    ...state.assignments,
-                    ...state.classAssignments
-                ]
-                    .map(a =>
-                        norm(a.class)
                     )
-                    .filter(Boolean)
-            )
-        ];
+                    .join("")
+
+                : `
+                    <div class="empty-card">
+                        No subject assignment found.
+                    </div>
+                `;
+    }
 
 
-    $("studentCount").textContent =
-        state.students.filter(
-            student =>
-                visibleClasses.includes(
-                    norm(student.class)
-                )
-        ).length;
+    const classes = [
+        ...new Set(
+            [
+                ...state.assignments,
+                ...state.classAssignments
+            ].map(a => norm(a.class))
+        )
+    ];
+
+
+    if ($("studentCount")) {
+
+        $("studentCount").textContent =
+            state.students.filter(
+                student =>
+                    classes.includes(
+                        norm(student.class)
+                    )
+            ).length;
+    }
 }
 
 
-/* =========================
-   MY CLASS
-========================= */
+/* =====================================================
+   CLASS TEACHER
+===================================================== */
 
-function setupMyClass() {
+function setupClassTeacherArea() {
 
-    if (
-        !state.classAssignments.length
-    ) {
+    if (!state.classAssignments.length) {
 
-        $("myClassSection")
-            .classList
-            .remove("show");
+        if ($("myClassNavLink"))
+            $("myClassNavLink").style.display =
+                "none";
 
-        $("myClassNavLink").style.display =
-            "none";
+        if ($("myClassSection"))
+            $("myClassSection").style.display =
+                "none";
 
         return;
     }
 
 
-    $("myClassSection")
-        .classList
-        .add("show");
-
-    $("myClassNavLink").style.display =
-        "flex";
+    if ($("myClassNavLink"))
+        $("myClassNavLink").style.display =
+            "flex";
 
 
-    $("classTeacherCards").innerHTML =
-        state.classAssignments
-            .map(
-                assignment => `
+    const select =
+        $("classTeacherClassSelect");
+
+
+    if (select) {
+
+        select.innerHTML =
+            state.classAssignments
+                .map(
+                    (a, i) => `
+
+                    <option value="${i}">
+                        ${esc(a.class)}
+                        —
+                        ${esc(a.session)}
+                    </option>
+                `
+                )
+                .join("");
+    }
+
+
+    if ($("classTeacherCards")) {
+
+        $("classTeacherCards").innerHTML =
+            state.classAssignments
+                .map(
+                    a => `
 
                     <div class="class-teacher-card">
 
                         <div class="class-teacher-card-top">
 
                             <div>
-
-                                <p>
-                                    Class Teacher
-                                </p>
+                                <p>Class Teacher</p>
 
                                 <h3>
-                                    ${esc(
-                                        assignment.class || "--"
-                                    )}
+                                    ${esc(a.class)}
                                 </h3>
-
                             </div>
 
                             <div class="class-teacher-icon">
@@ -508,77 +739,92 @@ function setupMyClass() {
 
                         <div class="class-session">
 
-                            <span>
-                                Session
-                            </span>
+                            <span>Session</span>
 
                             <strong>
-                                ${esc(
-                                    assignment.session || "--"
-                                )}
+                                ${esc(a.session)}
                             </strong>
 
                         </div>
 
                     </div>
                 `
-            )
-            .join("");
+                )
+                .join("");
+    }
 
 
-    $("classTeacherClassSelect").innerHTML =
-        state.classAssignments
-            .map(
-                (assignment, index) =>
-                    `<option value="${index}">
-                        ${esc(assignment.class)}
-                        —
-                        ${esc(assignment.session)}
-                    </option>`
-            )
-            .join("");
-
-
-    $("classSelectorWrapper").style.display =
-        state.classAssignments.length > 1
-            ? "block"
-            : "none";
-
-
+    createSubmitButton();
     loadClassStudents();
 }
 
 
-/* =========================
-   CLASS STUDENTS
-========================= */
+function createSubmitButton() {
 
-function loadClassStudents() {
+    if ($("submitReportBtn"))
+        return;
 
-    const index =
-        Number(
-            $("classTeacherClassSelect").value ||
-            0
+
+    const save =
+        $("saveRemarkBtn");
+
+
+    if (!save)
+        return;
+
+
+    const button =
+        document.createElement(
+            "button"
         );
 
 
+    button.id =
+        "submitReportBtn";
+
+    button.type =
+        "button";
+
+    button.className =
+        "save-btn";
+
+    button.textContent =
+        "Submit to Admin";
+
+
+    save.insertAdjacentElement(
+        "afterend",
+        button
+    );
+
+
+    button.addEventListener(
+        "click",
+        submitReport
+    );
+}
+
+
+function loadClassStudents() {
+
+    const select =
+        $("classTeacherClassSelect");
+
+
+    if (
+        !select ||
+        !state.classAssignments.length
+    ) return;
+
+
     const assignment =
-        state.classAssignments[index];
-
-
-    if (!assignment) {
-        return;
-    }
+        state.classAssignments[
+            Number(select.value || 0)
+        ];
 
 
     state.selectedClassAssignment =
         assignment;
-
-    state.selectedClassStudent =
-        null;
-
-    state.classResults =
-        [];
 
 
     const students =
@@ -589,116 +835,101 @@ function loadClassStudents() {
         );
 
 
-    $("classStudentCount").textContent =
-        `${students.length} student${students.length === 1 ? "" : "s"}`;
+    if ($("classStudentCount")) {
+
+        $("classStudentCount").textContent =
+            `${students.length} student${
+                students.length === 1
+                    ? ""
+                    : "s"
+            }`;
+    }
 
 
-    $("classStudentsTable").innerHTML =
+    const table =
+        $("classStudentsTable");
+
+
+    if (!table)
+        return;
+
+
+    table.innerHTML =
         students.length
 
             ? students
                 .map(
                     (student, index) => `
 
-                        <tr>
+                    <tr>
 
-                            <td>
-                                ${esc(
-                                    student.student_id || "--"
-                                )}
-                            </td>
+                        <td>
+                            ${esc(student.student_id)}
+                        </td>
 
-                            <td>
-                                ${esc(
-                                    studentName(student)
-                                )}
-                            </td>
+                        <td>
+                            ${esc(
+                                personName(student) ||
+                                "Student"
+                            )}
+                        </td>
 
-                            <td>
-                                ${esc(
-                                    student.class || "--"
-                                )}
-                            </td>
+                        <td>
+                            ${esc(student.class)}
+                        </td>
 
-                            <td>
+                        <td>
+                            ${esc(
+                                student.status ||
+                                "Active"
+                            )}
+                        </td>
 
-                                <span class="class-account-badge">
-                                    ${esc(
-                                        student.status || "Active"
-                                    )}
-                                </span>
+                        <td>
 
-                            </td>
+                            <button
+                                type="button"
+                                class="class-view-btn"
+                                data-student="${index}"
+                            >
+                                View Result
+                            </button>
 
-                            <td>
+                        </td>
 
-                                <button
-                                    type="button"
-                                    class="class-view-btn"
-                                    data-class-student="${index}"
-                                >
-                                    View Result
-                                </button>
-
-                            </td>
-
-                        </tr>
-                    `
+                    </tr>
+                `
                 )
                 .join("")
 
             : `
                 <tr>
-
-                    <td
-                        colspan="5"
-                        class="class-empty"
-                    >
-                        No students found in
-                        ${esc(assignment.class)}.
+                    <td colspan="5">
+                        No students found.
                     </td>
-
                 </tr>
             `;
 
 
     document
         .querySelectorAll(
-            "[data-class-student]"
+            "[data-student]"
         )
-        .forEach(
-            button => {
+        .forEach(button => {
 
-                button.onclick =
-                    () => {
-
-                        const student =
-                            students[
-                                Number(
-                                    button.dataset
-                                        .classStudent
-                                )
-                            ];
-
-                        if (student) {
-                            openClassResult(
-                                student
-                            );
-                        }
-                    };
-
-            }
-        );
+            button.onclick = () =>
+                openClassResult(
+                    students[
+                        Number(
+                            button.dataset.student
+                        )
+                    ]
+                );
+        });
 }
 
 
-/* =========================
-   OPEN COMPLETE RESULT
-========================= */
-
-async function openClassResult(
-    student
-) {
+async function openClassResult(student) {
 
     const assignment =
         state.selectedClassAssignment;
@@ -713,7 +944,7 @@ async function openClassResult(
     ) {
 
         alert(
-            "Class teacher assignment was not found."
+            "You are not the class teacher for this class."
         );
 
         return;
@@ -724,44 +955,30 @@ async function openClassResult(
         student;
 
 
-    $("classResultStudentName").textContent =
-        studentName(student);
+    if ($("classResultStudentName"))
+        $("classResultStudentName").textContent =
+            personName(student) ||
+            "Student";
 
-    $("classResultStudentInfo").textContent =
-        "Complete class result - read only";
+    if ($("classResultStudentId"))
+        $("classResultStudentId").textContent =
+            student.student_id;
 
-    $("classResultStudentId").textContent =
-        student.student_id || "--";
+    if ($("classResultClass"))
+        $("classResultClass").textContent =
+            assignment.class;
 
-    $("classResultClass").textContent =
-        assignment.class || "--";
-
-    $("classResultSession").textContent =
-        assignment.session || "--";
-
-    $("classTeacherRemark").value =
-        "";
-
-    $("remarkMessage").textContent =
-        "";
+    if ($("classResultSession"))
+        $("classResultSession").textContent =
+            assignment.session;
 
 
     $("classResultView")
-        .classList
+        ?.classList
         .add("show");
 
 
-    $("classResultView")
-        .scrollIntoView({
-            behavior: "smooth",
-            block: "start"
-        });
-
-
-    const {
-        data,
-        error
-    } =
+    const { data, error } =
         await supabaseClient
             .from("results")
             .select("*")
@@ -782,16 +999,7 @@ async function openClassResult(
 
     if (error) {
 
-        $("classFullResultTable").innerHTML = `
-
-            <tr>
-
-                <td colspan="5">
-                    ${esc(error.message)}
-                </td>
-
-            </tr>
-        `;
+        console.error(error);
 
         return;
     }
@@ -805,69 +1013,74 @@ async function openClassResult(
 }
 
 
-/* =========================
-   TERMS
-========================= */
-
 function setupClassTerms() {
 
-    const terms =
-        [
-            ...new Set(
-                state.classResults
-                    .map(
-                        result =>
-                            result.term
-                    )
-                    .filter(Boolean)
-            )
-        ];
+    const select =
+        $("classResultTerm");
 
 
-    const order =
-        [
-            "First Term",
-            "Second Term",
-            "Third Term"
-        ];
+    if (!select)
+        return;
+
+
+    const termOrder = [
+        "First Term",
+        "Second Term",
+        "Third Term"
+    ];
+
+
+    const terms = [
+        ...new Set(
+            state.classResults
+                .map(r => r.term)
+                .filter(Boolean)
+        )
+    ];
 
 
     terms.sort(
         (a, b) =>
-            order.indexOf(a) -
-            order.indexOf(b)
+            termOrder.indexOf(a) -
+            termOrder.indexOf(b)
     );
 
 
-    $("classResultTerm").innerHTML =
-        `
-            <option value="">
-                Select Term
-            </option>
-        ` +
-        terms
+    select.innerHTML = `
+
+        <option value="">
+            Select Term
+        </option>
+
+        ${terms
             .map(
-                term =>
-                    `<option value="${esc(term)}">
-                        ${esc(term)}
-                    </option>`
+                term => `
+
+                <option value="${esc(term)}">
+                    ${esc(term)}
+                </option>
+            `
             )
-            .join("");
+            .join("")}
+    `;
 
 
     if (!terms.length) {
 
-        $("classFullResultTable").innerHTML = `
+        if ($("classFullResultTable")) {
 
-            <tr>
+            $("classFullResultTable")
+                .innerHTML = `
 
-                <td colspan="5">
-                    No results have been entered
-                    for this student in this session.
-                </td>
+                <tr>
 
-            </tr>
-        `;
+                    <td colspan="5">
+                        No result entered yet.
+                    </td>
+
+                </tr>
+            `;
+        }
 
         resetClassSummary();
 
@@ -875,7 +1088,7 @@ function setupClassTerms() {
     }
 
 
-    $("classResultTerm").value =
+    select.value =
         terms[0];
 
 
@@ -883,78 +1096,21 @@ function setupClassTerms() {
 }
 
 
-/* =========================
-   RESULT SUMMARY
-========================= */
-
-function resetClassSummary() {
-
-    $("classResultSubjectCount").textContent =
-        "0";
-
-    $("classResultAverage").textContent =
-        "0%";
-
-    $("classResultPassed").textContent =
-        "0";
-
-    $("classResultFailed").textContent =
-        "0";
-}
-
-
-/* =========================
-   RENDER COMPLETE RESULT
-========================= */
-
 function renderClassResult() {
 
     const term =
-        $("classResultTerm").value;
+        $("classResultTerm")?.value;
 
 
-    $("remarkMessage").textContent =
-        "";
-
-
-    if (!term) {
-
-        $("classFullResultTable").innerHTML = `
-
-            <tr>
-                <td colspan="5">
-                    Select a term to view the result.
-                </td>
-            </tr>
-        `;
-
-        $("classTeacherRemark").value =
-            "";
-
-        resetClassSummary();
-
-        return;
-    }
-
-
-    const results =
+    const rows =
         state.classResults.filter(
-            result =>
-                norm(result.term) ===
+            r =>
+                norm(r.term) ===
                 norm(term)
         );
 
 
-    if (!results.length) {
-
-        $("classFullResultTable").innerHTML = `
-
-            <tr>
-                <td colspan="5">
-                    No result found for this term.
-                </td>
-            </tr>
-        `;
+    if (!rows.length) {
 
         resetClassSummary();
 
@@ -962,123 +1118,107 @@ function renderClassResult() {
     }
 
 
-    let scoreSum =
-        0;
-
-    let passed =
-        0;
+    let totalScore = 0;
+    let passed = 0;
 
 
     $("classFullResultTable").innerHTML =
-        results
-            .map(
-                result => {
+        rows.map(result => {
 
-                    const ca =
-                        Number(
-                            result.ca
-                        ) || 0;
+            const ca =
+                Number(result.ca) || 0;
 
-                    const exam =
-                        Number(
-                            result.exam
-                        ) || 0;
+            const exam =
+                Number(result.exam) || 0;
+
+            const total =
+                Number(result.total) ||
+                ca + exam;
 
 
-                    const storedTotal =
-                        Number(
-                            result.total
-                        );
+            totalScore += total;
+
+            if (total >= 40)
+                passed++;
 
 
-                    const total =
-                        Number.isFinite(
-                            storedTotal
-                        )
-                            ? storedTotal
-                            : ca + exam;
+            return `
+
+                <tr>
+
+                    <td>
+                        ${esc(result.subject)}
+                    </td>
+
+                    <td>${ca}</td>
+
+                    <td>${exam}</td>
+
+                    <td>
+                        <strong>${total}</strong>
+                    </td>
+
+                    <td>
+                        <strong>
+                            ${esc(
+                                result.grade ||
+                                grade(total)
+                            )}
+                        </strong>
+                    </td>
+
+                </tr>
+            `;
+        }).join("");
 
 
-                    scoreSum +=
-                        total;
+    if ($("classResultSubjectCount"))
+        $("classResultSubjectCount").textContent =
+            rows.length;
 
+    if ($("classResultAverage"))
+        $("classResultAverage").textContent =
+            `${(
+                totalScore /
+                rows.length
+            ).toFixed(1)}%`;
 
-                    if (
-                        total >= 40
-                    ) {
+    if ($("classResultPassed"))
+        $("classResultPassed").textContent =
+            passed;
 
-                        passed++;
-                    }
-
-
-                    return `
-
-                        <tr>
-
-                            <td>
-                                ${esc(
-                                    result.subject || "--"
-                                )}
-                            </td>
-
-                            <td>
-                                ${ca}
-                            </td>
-
-                            <td>
-                                ${exam}
-                            </td>
-
-                            <td>
-                                <strong>
-                                    ${total}
-                                </strong>
-                            </td>
-
-                            <td>
-                                <strong>
-                                    ${esc(
-                                        result.grade ||
-                                        grade(total)
-                                    )}
-                                </strong>
-                            </td>
-
-                        </tr>
-                    `;
-
-                }
-            )
-            .join("");
-
-
-    $("classResultSubjectCount").textContent =
-        results.length;
-
-
-    $("classResultAverage").textContent =
-        `${(
-            scoreSum /
-            results.length
-        ).toFixed(1)}%`;
-
-
-    $("classResultPassed").textContent =
-        passed;
-
-
-    $("classResultFailed").textContent =
-        results.length -
-        passed;
+    if ($("classResultFailed"))
+        $("classResultFailed").textContent =
+            rows.length - passed;
 
 
     loadRemark();
 }
 
 
-/* =========================
-   LOAD REMARK
-========================= */
+function resetClassSummary() {
+
+    if ($("classResultSubjectCount"))
+        $("classResultSubjectCount").textContent =
+            "0";
+
+    if ($("classResultAverage"))
+        $("classResultAverage").textContent =
+            "0%";
+
+    if ($("classResultPassed"))
+        $("classResultPassed").textContent =
+            "0";
+
+    if ($("classResultFailed"))
+        $("classResultFailed").textContent =
+            "0";
+}
+
+
+/* =====================================================
+   REMARK
+===================================================== */
 
 async function loadRemark() {
 
@@ -1089,23 +1229,17 @@ async function loadRemark() {
         state.selectedClassAssignment;
 
     const term =
-        $("classResultTerm").value;
+        $("classResultTerm")?.value;
 
 
     if (
         !student ||
         !assignment ||
         !term
-    ) {
-
-        return;
-    }
+    ) return;
 
 
-    const {
-        data,
-        error
-    } =
+    const { data, error } =
         await supabaseClient
             .from("student_reports")
             .select("*")
@@ -1128,27 +1262,49 @@ async function loadRemark() {
             .maybeSingle();
 
 
-    $("classTeacherRemark").value =
-        error
-            ? ""
-            : data?.remark || "";
-
-
     if (error) {
 
         console.error(error);
 
+        return;
+    }
+
+
+    if ($("classTeacherRemark"))
+        $("classTeacherRemark").value =
+            data?.remark || "";
+
+
+    if (
+        $("remarkMessage") &&
+        data
+    ) {
+
         $("remarkMessage").textContent =
-            "Could not load remark.";
+            `Report status: ${
+                data.status || "draft"
+            }`;
     }
 }
 
 
-/* =========================
-   SAVE REMARK
-========================= */
-
 async function saveRemark() {
+
+    await saveReportStatus(
+        "draft"
+    );
+}
+
+
+async function submitReport() {
+
+    await saveReportStatus(
+        "pending"
+    );
+}
+
+
+async function saveReportStatus(status) {
 
     const student =
         state.selectedClassStudent;
@@ -1157,18 +1313,15 @@ async function saveRemark() {
         state.selectedClassAssignment;
 
     const term =
-        $("classResultTerm").value;
+        $("classResultTerm")?.value;
 
     const remark =
         $("classTeacherRemark")
-            .value
+            ?.value
             .trim();
 
     const message =
         $("remarkMessage");
-
-    const button =
-        $("saveRemarkBtn");
 
 
     if (
@@ -1176,9 +1329,9 @@ async function saveRemark() {
         !assignment
     ) {
 
-        alert(
-            "Select a student result first."
-        );
+        if (message)
+            message.textContent =
+                "Select a student.";
 
         return;
     }
@@ -1186,8 +1339,9 @@ async function saveRemark() {
 
     if (!term) {
 
-        message.textContent =
-            "Please select a term first.";
+        if (message)
+            message.textContent =
+                "Select a term.";
 
         return;
     }
@@ -1195,8 +1349,9 @@ async function saveRemark() {
 
     if (!remark) {
 
-        message.textContent =
-            "Please enter a remark.";
+        if (message)
+            message.textContent =
+                "Enter a class teacher remark.";
 
         return;
     }
@@ -1209,26 +1364,43 @@ async function saveRemark() {
         )
     ) {
 
-        message.textContent =
-            "You are not assigned as class teacher for this class.";
+        if (message)
+            message.textContent =
+                "You are not the class teacher.";
 
         return;
     }
 
 
-    button.disabled =
-        true;
+    if (
+        status === "pending" &&
+        !state.classResults.some(
+            r =>
+                norm(r.term) ===
+                norm(term)
+        )
+    ) {
 
-    button.textContent =
-        "Saving...";
+        if (message)
+            message.textContent =
+                "This student has no result yet.";
 
-    message.textContent =
-        "";
+        return;
+    }
 
 
-    const {
-        error
-    } =
+    if (
+        status === "pending" &&
+        !confirm(
+            `Submit ${
+                personName(student) ||
+                student.student_id
+            }'s complete ${term} report to Admin?`
+        )
+    ) return;
+
+
+    const { error } =
         await supabaseClient
             .from("student_reports")
             .upsert(
@@ -1246,8 +1418,7 @@ async function saveRemark() {
 
                     remark,
 
-                    status:
-                        "pending",
+                    status,
 
                     published_at:
                         null
@@ -1259,256 +1430,461 @@ async function saveRemark() {
             );
 
 
-    button.disabled =
-        false;
+    if (message) {
 
-    button.textContent =
-        "Save Remark";
+        message.textContent =
+            error
 
+                ? `Could not save: ${error.message}`
 
-    message.textContent =
-        error
-            ? `Could not save remark: ${error.message}`
-            : "Remark saved successfully.";
+                : status === "pending"
+
+                    ? "Complete report submitted to Admin."
+
+                    : "Remark saved as draft.";
+    }
 }
 
-
-/* =========================
-   CLOSE CLASS RESULT
-========================= */
 
 function closeClassResult() {
 
     $("classResultView")
-        .classList
+        ?.classList
         .remove("show");
-
 
     state.selectedClassStudent =
         null;
 
     state.classResults =
         [];
+}
 
 
-    $("classResultTerm").innerHTML = `
+/* =====================================================
+   RESULT ENTRY
+===================================================== */
+
+function openResultEntry() {
+
+    if (!state.assignments.length) {
+
+        alert(
+            "You have no subject assignment."
+        );
+
+        return;
+    }
+
+
+    const select =
+        $("resultAssignment");
+
+
+    select.innerHTML = `
 
         <option value="">
-            Select Term
+            Select Class & Subject
         </option>
+
+        ${state.assignments
+            .map(
+                (a, i) => `
+
+                <option value="${i}">
+                    ${esc(a.class)}
+                    —
+                    ${esc(a.subject)}
+                </option>
+            `
+            )
+            .join("")}
     `;
 
 
-    $("classTeacherRemark").value =
-        "";
-
-    $("remarkMessage").textContent =
-        "";
+    $("resultEntryPanel")
+        ?.classList
+        .add("show");
 }
 
 
-/* =========================
-   RESULT ASSIGNMENTS
-========================= */
+function closeResultEntry() {
 
-function renderResultAssignments() {
+    $("resultEntryPanel")
+        ?.classList
+        .remove("show");
 
-    $("resultAssignment").innerHTML =
-        `
-            <option value="">
-                Select Class & Subject
-            </option>
-        ` +
-        state.assignments
-            .map(
-                (assignment, index) =>
-                    `<option value="${index}">
-                        ${esc(assignment.class)}
-                        —
-                        ${esc(assignment.subject)}
-                    </option>`
-            )
-            .join("");
+    state.selectedAssignment =
+        null;
+}
 
 
-    if (
-        state.assignments.length === 1
-    ) {
+function handleAssignmentChange() {
 
-        $("resultAssignment").value =
-            "0";
+    const index =
+        $("resultAssignment")?.value;
 
-        handleAssignmentChange();
+
+    if (index === "") {
+
+        state.selectedAssignment =
+            null;
+
+        return;
     }
-}
 
 
-function resetStudentSelect() {
+    const assignment =
+        state.assignments[
+            Number(index)
+        ];
+
+
+    state.selectedAssignment =
+        assignment;
+
+
+    const registeredIds =
+        state.studentSubjects
+
+            .filter(
+                r =>
+                    norm(r.class) ===
+                        norm(assignment.class)
+
+                    &&
+
+                    norm(r.subject) ===
+                        norm(assignment.subject)
+
+                    &&
+
+                    norm(r.session) ===
+                        norm(state.currentSession)
+            )
+
+            .map(
+                r =>
+                    String(r.student_id)
+            );
+
+
+    const students =
+        state.students.filter(
+            student =>
+                norm(student.class) ===
+                    norm(assignment.class)
+
+                &&
+
+                registeredIds.includes(
+                    String(
+                        student.student_id
+                    )
+                )
+        );
+
 
     $("resultStudent").innerHTML = `
 
         <option value="">
             Select Student
         </option>
+
+        ${students
+            .map(
+                student => `
+
+                <option
+                    value="${esc(
+                        student.student_id
+                    )}"
+                >
+                    ${esc(
+                        student.student_id
+                    )}
+                    -
+                    ${esc(
+                        personName(student) ||
+                        "Student"
+                    )}
+                </option>
+            `
+            )
+            .join("")}
     `;
 }
 
 
-function handleAssignmentChange() {
+function calculateResult() {
 
-    const value =
-        $("resultAssignment").value;
+    const ca =
+        Number(
+            $("resultCA")?.value ||
+            0
+        );
+
+    const exam =
+        Number(
+            $("resultExam")?.value ||
+            0
+        );
+
+    const total =
+        ca + exam;
+
+
+    if ($("resultTotal"))
+        $("resultTotal").value =
+            total;
+
+    if ($("resultGrade"))
+        $("resultGrade").value =
+            grade(total);
+}
+
+
+async function submitResult() {
+
+    const assignment =
+        state.selectedAssignment;
+
+    const studentId =
+        $("resultStudent")?.value;
+
+    const term =
+        $("resultTerm")?.value;
+
+    const ca =
+        Number(
+            $("resultCA")?.value
+        );
+
+    const exam =
+        Number(
+            $("resultExam")?.value
+        );
+
+    const message =
+        $("resultMessage");
 
 
     if (
-        value === ""
+        !assignment ||
+        !studentId ||
+        !term
     ) {
 
-        state.selectedAssignment =
-            null;
-
-        state.resultStudents =
-            [];
-
-        resetStudentSelect();
+        if (message)
+            message.textContent =
+                "Complete all result fields.";
 
         return;
     }
 
 
-    state.selectedAssignment =
-        state.assignments[
-            Number(value)
-        ] || null;
+    if (
+        ca < 0 ||
+        ca > 40
+    ) {
+
+        if (message)
+            message.textContent =
+                "CA must be between 0 and 40.";
+
+        return;
+    }
 
 
-    state.resultStudents =
-        state.students.filter(
-            student =>
-                norm(student.class) ===
-                norm(
-                    state.selectedAssignment?.class
-                )
+    if (
+        exam < 0 ||
+        exam > 60
+    ) {
+
+        if (message)
+            message.textContent =
+                "Exam must be between 0 and 60.";
+
+        return;
+    }
+
+
+    if (
+        !hasSubjectAssignment(
+            assignment.class,
+            assignment.subject
+        )
+    ) {
+
+        if (message)
+            message.textContent =
+                "This subject is not assigned to you.";
+
+        return;
+    }
+
+
+    const registered =
+        state.studentSubjects.some(
+            r =>
+                String(r.student_id) ===
+                    String(studentId)
+
+                &&
+
+                norm(r.subject) ===
+                    norm(assignment.subject)
+
+                &&
+
+                norm(r.class) ===
+                    norm(assignment.class)
+
+                &&
+
+                norm(r.session) ===
+                    norm(state.currentSession)
         );
 
 
-    $("resultStudent").innerHTML =
-        `
-            <option value="">
-                Select Student
-            </option>
-        ` +
-        state.resultStudents
-            .map(
-                student =>
-                    `<option value="${esc(student.student_id)}">
-                        ${esc(student.student_id)}
-                        -
-                        ${esc(studentName(student))}
-                    </option>`
+    if (!registered) {
+
+        if (message)
+            message.textContent =
+                "Student is not registered for this subject.";
+
+        return;
+    }
+
+
+    const total =
+        ca + exam;
+
+
+    const { data: existing } =
+        await supabaseClient
+            .from("results")
+            .select("id")
+            .eq(
+                "student_id",
+                studentId
             )
-            .join("");
-}
+            .eq(
+                "subject",
+                assignment.subject
+            )
+            .eq(
+                "class",
+                assignment.class
+            )
+            .eq(
+                "term",
+                term
+            )
+            .eq(
+                "session",
+                state.currentSession
+            )
+            .maybeSingle();
 
 
-/* =========================
-   OPEN RESULT ENTRY
-========================= */
+    if (existing) {
 
-function openResultEntry() {
+        if (message)
+            message.textContent =
+                "A result already exists. Use Edit.";
 
-    if (
-        !state.assignments.length
-    ) {
+        return;
+    }
 
-        alert(
-            "You do not have a subject assignment for result entry."
-        );
+
+    const { error } =
+        await supabaseClient
+            .from("results")
+            .insert({
+                student_id:
+                    studentId,
+
+                subject:
+                    assignment.subject,
+
+                class:
+                    assignment.class,
+
+                term,
+
+                session:
+                    state.currentSession,
+
+                ca,
+
+                exam,
+
+                total,
+
+                grade:
+                    grade(total),
+
+                status:
+                    "pending"
+            });
+
+
+    if (error) {
+
+        if (message)
+            message.textContent =
+                error.message;
 
         return;
     }
 
 
-    $("resultEntryPanel")
-        .classList
-        .add("show");
+    await resetReportToDraft({
+        student_id:
+            studentId,
+
+        class:
+            assignment.class,
+
+        term,
+
+        session:
+            state.currentSession
+    });
 
 
-    $("resultMessage").textContent =
+    if (message)
+        message.textContent =
+            "Result saved successfully.";
+
+
+    $("resultCA").value =
+        "";
+
+    $("resultExam").value =
         "";
 
 
-    renderResultAssignments();
+    calculateResult();
 
-
-    $("resultEntryPanel")
-        .scrollIntoView({
-            behavior: "smooth",
-            block: "start"
-        });
+    await loadTeacherResults();
 }
 
 
-/* =========================
-   CLOSE RESULT ENTRY
-========================= */
+/* =====================================================
+   RESET REPORT
+===================================================== */
 
-function closeResultEntry() {
-
-    $("resultEntryPanel")
-        .classList
-        .remove("show");
-
-
-    [
-        "resultAssignment",
-        "resultTerm",
-        "resultCA",
-        "resultExam",
-        "resultTotal",
-        "resultGrade"
-    ].forEach(
-        id =>
-            $(id).value = ""
-    );
-
-
-    resetStudentSelect();
-
-
-    $("resultMessage").textContent =
-        "";
-
-
-    state.selectedAssignment =
-        null;
-
-    state.resultStudents =
-        [];
-}
-
-
-/* =========================
-   INVALIDATE REPORT
-========================= */
-
-async function invalidateReport(
-    result
-) {
-
-    if (
-        !result?.session
-    ) {
-
-        return;
-    }
-
+async function resetReportToDraft(result) {
 
     await supabaseClient
         .from("student_reports")
         .update({
-            status: "pending",
-            published_at: null
+            status:
+                "draft",
+
+            published_at:
+                null
         })
         .eq(
             "student_id",
@@ -1529,436 +1905,23 @@ async function invalidateReport(
 }
 
 
-/* =========================
-   SUBMIT RESULT
-========================= */
-
-async function submitResult() {
-
-    const message =
-        $("resultMessage");
-
-    const button =
-        $("submitResultBtn");
-
-    const studentId =
-        $("resultStudent").value;
-
-    const term =
-        $("resultTerm").value;
-
-    const caValue =
-        $("resultCA").value;
-
-    const examValue =
-        $("resultExam").value;
-
-    const assignment =
-        state.selectedAssignment;
-
-
-    if (!assignment) {
-
-        message.textContent =
-            "Please select a class and subject.";
-
-        return;
-    }
-
-
-    if (!studentId) {
-
-        message.textContent =
-            "Please select a student.";
-
-        return;
-    }
-
-
-    if (!term) {
-
-        message.textContent =
-            "Please select a term.";
-
-        return;
-    }
-
-
-    if (
-        caValue === "" ||
-        examValue === ""
-    ) {
-
-        message.textContent =
-            "Please enter both CA and Exam marks.";
-
-        return;
-    }
-
-
-    const ca =
-        Number(caValue);
-
-    const exam =
-        Number(examValue);
-
-
-    if (
-        !Number.isFinite(ca) ||
-        ca < 0 ||
-        ca > 40
-    ) {
-
-        message.textContent =
-            "CA mark must be between 0 and 40.";
-
-        return;
-    }
-
-
-    if (
-        !Number.isFinite(exam) ||
-        exam < 0 ||
-        exam > 60
-    ) {
-
-        message.textContent =
-            "Exam mark must be between 0 and 60.";
-
-        return;
-    }
-
-
-    if (
-        !hasAssignment(
-            assignment.class,
-            assignment.subject
-        )
-    ) {
-
-        message.textContent =
-            "You are not assigned to this class and subject.";
-
-        return;
-    }
-
-
-    /*
-     * IMPORTANT FIX:
-     * Every result must have a session.
-     */
-
-    const classSession =
-        state.classAssignments.find(
-            item =>
-                norm(item.class) ===
-                norm(assignment.class)
-        )?.session;
-
-
-    const session =
-        classSession ||
-        state.currentSession;
-
-
-    if (!session) {
-
-        message.textContent =
-            "No current school session was found.";
-
-        return;
-    }
-
-
-    button.disabled =
-        true;
-
-    button.textContent =
-        "Checking...";
-
-
-    try {
-
-        /*
-         * Duplicate now includes session.
-         */
-
-        const {
-            data: existing,
-            error: checkError
-        } =
-            await supabaseClient
-                .from("results")
-                .select("id")
-                .eq(
-                    "student_id",
-                    studentId
-                )
-                .eq(
-                    "subject",
-                    assignment.subject
-                )
-                .eq(
-                    "class",
-                    assignment.class
-                )
-                .eq(
-                    "term",
-                    term
-                )
-                .eq(
-                    "session",
-                    session
-                )
-                .limit(1);
-
-
-        if (checkError) {
-            throw checkError;
-        }
-
-
-        if (
-            existing?.length
-        ) {
-
-            message.textContent =
-                "A result already exists for this student, subject, class, term and session.";
-
-            return;
-        }
-
-
-        button.textContent =
-            "Submitting...";
-
-
-        const total =
-            ca + exam;
-
-
-        const {
-            error
-        } =
-            await supabaseClient
-                .from("results")
-                .insert([
-                    {
-                        student_id:
-                            studentId,
-
-                        subject:
-                            assignment.subject,
-
-                        class:
-                            assignment.class,
-
-                        ca,
-
-                        exam,
-
-                        total,
-
-                        grade:
-                            grade(total),
-
-                        term,
-
-                        session,
-
-                        status:
-                            "pending"
-                    }
-                ]);
-
-
-        if (error) {
-            throw error;
-        }
-
-
-        /*
-         * If this report had already been approved,
-         * adding/changing a score sends it back
-         * for admin review.
-         */
-
-        await invalidateReport({
-            student_id:
-                studentId,
-
-            class:
-                assignment.class,
-
-            term,
-
-            session
-        });
-
-
-        message.textContent =
-            "Result submitted successfully.";
-
-
-        await loadTeacherResults();
-
-
-        setTimeout(
-            closeResultEntry,
-            700
-        );
-
-
-    } catch (error) {
-
-        console.error(error);
-
-
-        message.textContent =
-            "Could not submit result: " +
-            error.message;
-
-    } finally {
-
-        button.disabled =
-            false;
-
-        button.textContent =
-            "Submit Result";
-    }
-}
-
-
-/* =========================
-   FIX OLD MISSING SESSIONS
-========================= */
-
-async function repairMissingSessions() {
-
-    if (
-        !state.currentSession
-    ) {
-
-        return;
-    }
-
-
-    const classes =
-        [
-            ...new Set(
-                state.assignments
-                    .map(a => a.class)
-                    .filter(Boolean)
-            )
-        ];
-
-
-    for (
-        const className
-        of classes
-    ) {
-
-        const classSession =
-            state.classAssignments.find(
-                assignment =>
-                    norm(assignment.class) ===
-                    norm(className)
-            )?.session ||
-            state.currentSession;
-
-
-        /*
-         * Null sessions
-         */
-
-        const nullResponse =
-            await supabaseClient
-                .from("results")
-                .select("id")
-                .eq(
-                    "class",
-                    className
-                )
-                .is(
-                    "session",
-                    null
-                );
-
-
-        if (
-            nullResponse.data?.length
-        ) {
-
-            await supabaseClient
-                .from("results")
-                .update({
-                    session:
-                        classSession
-                })
-                .in(
-                    "id",
-                    nullResponse.data.map(
-                        result =>
-                            result.id
-                    )
-                );
-        }
-
-
-        /*
-         * Empty string sessions
-         */
-
-        const emptyResponse =
-            await supabaseClient
-                .from("results")
-                .select("id")
-                .eq(
-                    "class",
-                    className
-                )
-                .eq(
-                    "session",
-                    ""
-                );
-
-
-        if (
-            emptyResponse.data?.length
-        ) {
-
-            await supabaseClient
-                .from("results")
-                .update({
-                    session:
-                        classSession
-                })
-                .in(
-                    "id",
-                    emptyResponse.data.map(
-                        result =>
-                            result.id
-                    )
-                );
-        }
-    }
-}
-
-
-/* =========================
-   LOAD TEACHER RESULTS
-========================= */
+/* =====================================================
+   LOAD RESULTS
+===================================================== */
 
 async function loadTeacherResults() {
 
-    const {
-        data,
-        error
-    } =
+    const { data, error } =
         await supabaseClient
             .from("results")
             .select("*")
-            .order("student_id");
+            .order(
+                "id",
+                {
+                    ascending:
+                        false
+                }
+            );
 
 
     if (error) {
@@ -1971,21 +1934,23 @@ async function loadTeacherResults() {
 
     state.results =
         (data || [])
+
             .filter(
                 result =>
-                    hasAssignment(
+                    hasSubjectAssignment(
                         result.class,
                         result.subject
                     )
             )
+
             .map(
                 result => {
 
                     const student =
                         state.students.find(
-                            item =>
+                            s =>
                                 String(
-                                    item.student_id
+                                    s.student_id
                                 ) ===
                                 String(
                                     result.student_id
@@ -1995,167 +1960,148 @@ async function loadTeacherResults() {
 
                     return {
                         ...result,
+
                         studentName:
-                            studentName(student)
+                            personName(student) ||
+                            result.student_id
                     };
                 }
             );
 
 
-    $("resultCount").textContent =
-        state.results.length;
-
-
-    $("pendingResultCount").textContent =
-        state.results.filter(
-            result =>
-                norm(
-                    result.status ||
-                    "pending"
-                ) ===
-                "pending"
-        ).length;
-
-
-    $("publishedResultCount").textContent =
-        state.results.filter(
-            result =>
-                norm(
-                    result.status
-                ) ===
-                "published"
-        ).length;
-
-
-    $("rejectedResultCount").textContent =
-        state.results.filter(
-            result =>
-                norm(
-                    result.status
-                ) ===
-                "rejected"
-        ).length;
-
-
-    populateResultFilters();
-
+    renderResultStatistics();
+    populateFilters();
     renderResultsTable();
 }
 
 
-/* =========================
-   RESULT FILTERS
-========================= */
+function renderResultStatistics() {
 
-function populateResultFilters() {
-
-    const classes =
-        [
-            ...new Set(
-                state.assignments
-                    .map(a => a.class)
-                    .filter(Boolean)
-            )
-        ];
+    const total =
+        state.results.length;
 
 
-    const subjects =
-        [
-            ...new Set(
-                state.assignments
-                    .map(a => a.subject)
-                    .filter(Boolean)
-            )
-        ];
+    if ($("resultCount"))
+        $("resultCount").textContent =
+            total;
 
 
-    const currentClass =
-        $("resultClassFilter").value;
-
-    const currentSubject =
-        $("resultSubjectFilter").value;
-
-
-    $("resultClassFilter").innerHTML =
-        `
-            <option value="">
-                All Classes
-            </option>
-        ` +
-        classes
-            .map(
-                value =>
-                    `<option value="${esc(value)}">
-                        ${esc(value)}
-                    </option>`
-            )
-            .join("");
+    if ($("pendingResultCount"))
+        $("pendingResultCount").textContent =
+            state.results.filter(
+                r =>
+                    norm(r.status) ===
+                    "pending"
+            ).length;
 
 
-    $("resultSubjectFilter").innerHTML =
-        `
-            <option value="">
-                All Subjects
-            </option>
-        ` +
-        subjects
-            .map(
-                value =>
-                    `<option value="${esc(value)}">
-                        ${esc(value)}
-                    </option>`
-            )
-            .join("");
+    if ($("publishedResultCount"))
+        $("publishedResultCount").textContent =
+            state.results.filter(
+                r =>
+                    norm(r.status) ===
+                    "published"
+            ).length;
 
 
-    if (
-        classes.includes(
-            currentClass
-        )
-    ) {
-
-        $("resultClassFilter").value =
-            currentClass;
-    }
-
-
-    if (
-        subjects.includes(
-            currentSubject
-        )
-    ) {
-
-        $("resultSubjectFilter").value =
-            currentSubject;
-    }
+    if ($("rejectedResultCount"))
+        $("rejectedResultCount").textContent =
+            state.results.filter(
+                r =>
+                    norm(r.status) ===
+                    "rejected"
+            ).length;
 }
 
 
-function getFilteredResults() {
+function populateFilters() {
+
+    if (
+        !$("resultClassFilter") ||
+        !$("resultSubjectFilter")
+    ) return;
+
+
+    const classes = [
+        ...new Set(
+            state.assignments.map(
+                a => a.class
+            )
+        )
+    ];
+
+
+    const subjects = [
+        ...new Set(
+            state.assignments.map(
+                a => a.subject
+            )
+        )
+    ];
+
+
+    $("resultClassFilter").innerHTML = `
+
+        <option value="">
+            All Classes
+        </option>
+
+        ${classes
+            .map(
+                item => `
+                <option value="${esc(item)}">
+                    ${esc(item)}
+                </option>
+            `
+            )
+            .join("")}
+    `;
+
+
+    $("resultSubjectFilter").innerHTML = `
+
+        <option value="">
+            All Subjects
+        </option>
+
+        ${subjects
+            .map(
+                item => `
+                <option value="${esc(item)}">
+                    ${esc(item)}
+                </option>
+            `
+            )
+            .join("")}
+    `;
+}
+
+
+function filteredResults() {
 
     const search =
         norm(
-            $("resultSearch").value
+            $("resultSearch")?.value
         );
 
-    const classFilter =
+    const className =
         norm(
-            $("resultClassFilter").value
+            $("resultClassFilter")?.value
         );
 
-    const subjectFilter =
+    const subject =
         norm(
-            $("resultSubjectFilter").value
+            $("resultSubjectFilter")?.value
         );
 
-    const termFilter =
+    const term =
         norm(
-            $("resultTermFilter").value
+            $("resultTermFilter")?.value
         );
 
-    const statusFilter =
+    const status =
         norm(
-            $("resultStatusFilter").value
+            $("resultStatusFilter")?.value
         );
 
 
@@ -2169,87 +2115,68 @@ function getFilteredResults() {
                         result.studentName,
                         result.class,
                         result.subject,
-                        result.term,
-                        result.status
+                        result.term
                     ].join(" ")
                 );
 
 
             return (
-
-                (
-                    !search ||
+                (!search ||
                     searchable.includes(
                         search
-                    )
-                )
+                    ))
 
                 &&
 
-                (
-                    !classFilter ||
-                    norm(
-                        result.class
-                    ) ===
-                    classFilter
-                )
+                (!className ||
+                    norm(result.class) ===
+                        className)
 
                 &&
 
-                (
-                    !subjectFilter ||
-                    norm(
-                        result.subject
-                    ) ===
-                    subjectFilter
-                )
+                (!subject ||
+                    norm(result.subject) ===
+                        subject)
 
                 &&
 
-                (
-                    !termFilter ||
-                    norm(
-                        result.term
-                    ) ===
-                    termFilter
-                )
+                (!term ||
+                    norm(result.term) ===
+                        term)
 
                 &&
 
-                (
-                    !statusFilter ||
-                    norm(
-                        result.status ||
-                        "pending"
-                    ) ===
-                    statusFilter
-                )
+                (!status ||
+                    norm(result.status) ===
+                        status)
             );
         }
     );
 }
 
 
-/* =========================
-   RESULT TABLE
-========================= */
-
 function renderResultsTable() {
 
-    const results =
-        getFilteredResults();
+    const table =
+        $("resultsTable");
 
 
-    if (!results.length) {
+    if (!table)
+        return;
 
-        $("resultsTable").innerHTML = `
+
+    const rows =
+        filteredResults();
+
+
+    if (!rows.length) {
+
+        table.innerHTML = `
 
             <tr>
-
                 <td colspan="11">
                     No results found.
                 </td>
-
             </tr>
         `;
 
@@ -2257,385 +2184,370 @@ function renderResultsTable() {
     }
 
 
-    $("resultsTable").innerHTML =
-        results
-            .map(
-                result => {
+    table.innerHTML =
+        rows.map(result => {
 
-                    const ca =
-                        Number(
-                            result.ca
-                        ) || 0;
+            const ca =
+                Number(result.ca) || 0;
 
-                    const exam =
-                        Number(
-                            result.exam
-                        ) || 0;
+            const exam =
+                Number(result.exam) || 0;
 
-                    const storedTotal =
-                        Number(
-                            result.total
-                        );
-
-                    const total =
-                        Number.isFinite(
-                            storedTotal
-                        )
-                            ? storedTotal
-                            : ca + exam;
+            const total =
+                Number(result.total) ||
+                ca + exam;
 
 
-                    return `
+            return `
 
-                        <tr>
+                <tr>
 
-                            <td>
-                                ${esc(
-                                    result.student_id || "--"
-                                )}
-                            </td>
+                    <td>
+                        ${esc(result.student_id)}
+                    </td>
 
-                            <td>
-                                ${esc(
-                                    result.studentName || "--"
-                                )}
-                            </td>
+                    <td>
+                        ${esc(result.studentName)}
+                    </td>
 
-                            <td>
-                                ${esc(
-                                    result.class || "--"
-                                )}
-                            </td>
+                    <td>
+                        ${esc(result.class)}
+                    </td>
 
-                            <td>
-                                ${esc(
-                                    result.subject || "--"
-                                )}
-                            </td>
+                    <td>
+                        ${esc(result.subject)}
+                    </td>
 
-                            <td>
-                                ${ca}
-                            </td>
+                    <td>${ca}</td>
 
-                            <td>
-                                ${exam}
-                            </td>
+                    <td>${exam}</td>
 
-                            <td>
-                                ${total}
-                            </td>
+                    <td>${total}</td>
 
-                            <td>
-                                ${esc(
-                                    result.grade ||
-                                    grade(total)
-                                )}
-                            </td>
+                    <td>
+                        ${esc(
+                            result.grade ||
+                            grade(total)
+                        )}
+                    </td>
 
-                            <td>
-                                ${esc(
-                                    result.term || "--"
-                                )}
-                            </td>
+                    <td>
+                        ${esc(result.term)}
+                    </td>
 
-                            <td>
+                    <td>
+                        ${esc(
+                            result.status ||
+                            "pending"
+                        )}
+                    </td>
 
-                                <span
-                                    class="status-badge status-${esc(
-                                        norm(
-                                            result.status ||
-                                            "pending"
-                                        )
-                                    )}"
-                                >
-                                    ${esc(
-                                        result.status ||
-                                        "pending"
-                                    )}
-                                </span>
+                    <td>
 
-                            </td>
+                        <button
+                            type="button"
+                            class="edit-btn"
+                            data-edit="${result.id}"
+                        >
+                            Edit
+                        </button>
 
-                            <td>
+                        <button
+                            type="button"
+                            class="delete-btn"
+                            data-delete="${result.id}"
+                        >
+                            Delete
+                        </button>
 
-                                <button
-                                    type="button"
-                                    class="edit-btn"
-                                    data-edit="${result.id}"
-                                >
-                                    Edit
-                                </button>
+                    </td>
 
-                            </td>
-
-                        </tr>
-                    `;
-
-                }
-            )
-            .join("");
+                </tr>
+            `;
+        }).join("");
 
 
     document
         .querySelectorAll(
             "[data-edit]"
         )
-        .forEach(
-            button => {
+        .forEach(button => {
 
-                button.onclick =
-                    () => {
+            button.onclick = () => {
 
-                        const result =
-                            state.results.find(
-                                item =>
-                                    String(item.id) ===
-                                    String(
-                                        button.dataset.edit
-                                    )
-                            );
+                const result =
+                    state.results.find(
+                        r =>
+                            String(r.id) ===
+                            button.dataset.edit
+                    );
+
+                if (result)
+                    openEditResult(result);
+            };
+        });
 
 
-                        if (result) {
+    document
+        .querySelectorAll(
+            "[data-delete]"
+        )
+        .forEach(button => {
 
-                            openEdit(
-                                result
-                            );
-                        }
-                    };
+            button.onclick = () => {
 
-            }
-        );
+                const result =
+                    state.results.find(
+                        r =>
+                            String(r.id) ===
+                            button.dataset.delete
+                    );
+
+                if (result)
+                    deleteResult(result);
+            };
+        });
 }
 
 
-/* =========================
+/* =====================================================
    EDIT RESULT
-========================= */
+===================================================== */
 
-function openEdit(
-    result
-) {
+function openEditResult(result) {
 
     if (
-        !result ||
-        !hasAssignment(
+        !hasSubjectAssignment(
             result.class,
             result.subject
         )
     ) {
 
         alert(
-            "You are not assigned to this result."
+            "You cannot edit another teacher's result."
         );
 
         return;
     }
 
 
-    state.edit =
+    state.editingResult =
         result;
 
 
-    $("editStudentName").textContent =
-        result.studentName || "--";
+    if ($("editStudentName"))
+        $("editStudentName").textContent =
+            result.studentName;
 
-    $("editStudentId").textContent =
-        result.student_id || "--";
+    if ($("editStudentId"))
+        $("editStudentId").textContent =
+            result.student_id;
 
-    $("editClass").textContent =
-        result.class || "--";
+    if ($("editClass"))
+        $("editClass").textContent =
+            result.class;
 
-    $("editSubject").textContent =
-        result.subject || "--";
+    if ($("editSubject"))
+        $("editSubject").textContent =
+            result.subject;
 
-    $("editTerm").textContent =
-        result.term || "--";
+    if ($("editTerm"))
+        $("editTerm").textContent =
+            result.term;
 
-    $("editCA").value =
-        result.ca ?? 0;
+    if ($("editCA"))
+        $("editCA").value =
+            result.ca ?? 0;
 
-    $("editExam").value =
-        result.exam ?? 0;
-
-    $("editMessage").textContent =
-        "";
+    if ($("editExam"))
+        $("editExam").value =
+            result.exam ?? 0;
 
 
-    calculate(
-        "editCA",
-        "editExam",
-        "editTotal",
-        "editGrade"
-    );
+    calculateEditResult();
 
 
     $("editPanel")
-        .classList
+        ?.classList
         .add("show");
+}
 
 
-    $("editPanel")
-        .scrollIntoView({
-            behavior: "smooth",
-            block: "start"
-        });
+function calculateEditResult() {
+
+    const ca =
+        Number(
+            $("editCA")?.value ||
+            0
+        );
+
+    const exam =
+        Number(
+            $("editExam")?.value ||
+            0
+        );
+
+    const total =
+        ca + exam;
+
+
+    if ($("editTotal"))
+        $("editTotal").value =
+            total;
+
+    if ($("editGrade"))
+        $("editGrade").value =
+            grade(total);
 }
 
 
 function cancelEdit() {
 
-    state.edit =
+    state.editingResult =
         null;
 
-
     $("editPanel")
-        .classList
+        ?.classList
         .remove("show");
-
-
-    $("editMessage").textContent =
-        "";
 }
 
 
-/* =========================
-   SAVE EDIT
-========================= */
-
-async function saveEdit() {
+async function saveEditedResult() {
 
     const result =
-        state.edit;
-
-    const message =
-        $("editMessage");
-
-    const button =
-        $("saveBtn");
+        state.editingResult;
 
 
-    if (!result) {
+    if (!result)
         return;
-    }
 
 
     const ca =
         Number(
-            $("editCA").value
+            $("editCA")?.value
         );
 
     const exam =
         Number(
-            $("editExam").value
+            $("editExam")?.value
         );
 
 
     if (
-        !Number.isFinite(ca) ||
         ca < 0 ||
         ca > 40
     ) {
 
-        message.textContent =
-            "CA mark must be between 0 and 40.";
+        $("editMessage").textContent =
+            "CA must be between 0 and 40.";
 
         return;
     }
 
 
     if (
-        !Number.isFinite(exam) ||
         exam < 0 ||
         exam > 60
     ) {
 
-        message.textContent =
-            "Exam mark must be between 0 and 60.";
+        $("editMessage").textContent =
+            "Exam must be between 0 and 60.";
 
         return;
     }
-
-
-    button.disabled =
-        true;
-
-    button.textContent =
-        "Saving...";
 
 
     const total =
         ca + exam;
 
 
-    try {
-
-        const {
-            error
-        } =
-            await supabaseClient
-                .from("results")
-                .update({
-                    ca,
-                    exam,
-                    total,
-                    grade:
-                        grade(total),
-                    status:
-                        "pending"
-                })
-                .eq(
-                    "id",
-                    result.id
-                );
+    const { error } =
+        await supabaseClient
+            .from("results")
+            .update({
+                ca,
+                exam,
+                total,
+                grade:
+                    grade(total),
+                status:
+                    "pending"
+            })
+            .eq(
+                "id",
+                result.id
+            );
 
 
-        if (error) {
-            throw error;
-        }
+    if (error) {
 
-
-        await invalidateReport(
-            result
-        );
-
-
-        message.textContent =
-            "Result updated successfully.";
-
-
-        await loadTeacherResults();
-
-
-        setTimeout(
-            cancelEdit,
-            700
-        );
-
-
-    } catch (error) {
-
-        console.error(error);
-
-
-        message.textContent =
-            "Could not update result: " +
+        $("editMessage").textContent =
             error.message;
 
-    } finally {
-
-        button.disabled =
-            false;
-
-        button.textContent =
-            "Save Changes";
+        return;
     }
+
+
+    await resetReportToDraft(
+        result
+    );
+
+
+    $("editMessage").textContent =
+        "Result updated successfully.";
+
+
+    await loadTeacherResults();
+
+
+    setTimeout(
+        cancelEdit,
+        500
+    );
 }
 
 
-/* =========================
-   CLEAR FILTERS
-========================= */
+async function deleteResult(result) {
+
+    if (
+        !confirm(
+            `Delete ${result.studentName}'s ${result.subject} result?`
+        )
+    ) return;
+
+
+    const { error } =
+        await supabaseClient
+            .from("results")
+            .delete()
+            .eq(
+                "id",
+                result.id
+            );
+
+
+    if (error) {
+
+        alert(
+            error.message
+        );
+
+        return;
+    }
+
+
+    await resetReportToDraft(
+        result
+    );
+
+
+    await loadTeacherResults();
+}
+
+
+/* =====================================================
+   FILTERS
+===================================================== */
 
 function clearFilters() {
 
@@ -2645,235 +2557,206 @@ function clearFilters() {
         "resultSubjectFilter",
         "resultTermFilter",
         "resultStatusFilter"
-    ].forEach(
-        id =>
-            $(id).value = ""
-    );
+    ].forEach(id => {
+
+        if ($(id))
+            $(id).value = "";
+    });
 
 
     renderResultsTable();
 }
 
 
-/* =========================
-   NAVIGATION
-========================= */
+/* =====================================================
+   AUTH WATCHER
+===================================================== */
 
-function setupNavigation() {
+supabaseClient.auth.onAuthStateChange(
+    (event, session) => {
 
-    document
-        .querySelectorAll(
-            ".nav-link"
-        )
-        .forEach(
-            link => {
+        if (
+            event === "SIGNED_OUT" ||
+            !session
+        ) {
 
-                link.onclick =
-                    () => {
+            localStorage.removeItem(
+                "teacher"
+            );
 
-                        document
-                            .querySelectorAll(
-                                ".nav-link"
-                            )
-                            .forEach(
-                                item =>
-                                    item.classList.remove(
-                                        "active"
-                                    )
-                            );
+            localStorage.removeItem(
+                "teacherAssignments"
+            );
 
-
-                        link.classList.add(
-                            "active"
-                        );
-
-
-                        $("sidebar")
-                            .classList
-                            .remove("open");
-
-
-                        $("sidebarOverlay")
-                            .classList
-                            .remove("show");
-                    };
-
-            }
-        );
-}
-
-
-/* =========================
-   LOAD DASHBOARD
-========================= */
-
-async function init() {
-
-    try {
-
-        await loadBaseData();
-
-        renderProfile();
-
-        renderAssignments();
-
-        setupMyClass();
-
-
-        /*
-         * Fix old results that did
-         * not save session.
-         */
-
-        await repairMissingSessions();
-
-
-        await loadTeacherResults();
-
-
-    } catch (error) {
-
-        console.error(error);
-
-
-        alert(
-            "Could not load teacher dashboard: " +
-            error.message
-        );
+            localStorage.removeItem(
+                "classTeacherAssignments"
+            );
+        }
     }
-}
+);
 
 
-/* =========================
+/* =====================================================
    EVENTS
-========================= */
+===================================================== */
 
 document.addEventListener(
     "DOMContentLoaded",
-    () => {
+    async () => {
+
+        $("logoutBtn")
+            ?.addEventListener(
+                "click",
+                logout
+            );
 
 
-        $("logoutBtn").onclick =
-            logout;
+        $("sidebarLogoutBtn")
+            ?.addEventListener(
+                "click",
+                logout
+            );
 
 
-        $("sidebarLogoutBtn").onclick =
-            logout;
+        $("menuBtn")
+            ?.addEventListener(
+                "click",
+                () => {
+
+                    $("sidebar")
+                        ?.classList
+                        .add("open");
+
+                    $("sidebarOverlay")
+                        ?.classList
+                        .add("show");
+                }
+            );
 
 
-        $("menuBtn").onclick =
-            () => {
+        $("sidebarOverlay")
+            ?.addEventListener(
+                "click",
+                () => {
 
-                $("sidebar")
-                    .classList
-                    .add("open");
+                    $("sidebar")
+                        ?.classList
+                        .remove("open");
 
-                $("sidebarOverlay")
-                    .classList
-                    .add("show");
-            };
-
-
-        $("sidebarOverlay").onclick =
-            () => {
-
-                $("sidebar")
-                    .classList
-                    .remove("open");
-
-                $("sidebarOverlay")
-                    .classList
-                    .remove("show");
-            };
+                    $("sidebarOverlay")
+                        ?.classList
+                        .remove("show");
+                }
+            );
 
 
-        $("classTeacherClassSelect").onchange =
-            () => {
+        $("classTeacherClassSelect")
+            ?.addEventListener(
+                "change",
+                () => {
 
-                closeClassResult();
-
-                loadClassStudents();
-            };
-
-
-        $("classResultTerm").onchange =
-            renderClassResult;
+                    closeClassResult();
+                    loadClassStudents();
+                }
+            );
 
 
-        $("closeClassResultBtn").onclick =
-            closeClassResult;
+        $("classResultTerm")
+            ?.addEventListener(
+                "change",
+                renderClassResult
+            );
 
 
-        $("saveRemarkBtn").onclick =
-            saveRemark;
+        $("closeClassResultBtn")
+            ?.addEventListener(
+                "click",
+                closeClassResult
+            );
 
 
-        $("addResultBtn").onclick =
-            openResultEntry;
+        $("saveRemarkBtn")
+            ?.addEventListener(
+                "click",
+                saveRemark
+            );
 
 
-        $("cancelResultBtn").onclick =
-            closeResultEntry;
+        $("addResultBtn")
+            ?.addEventListener(
+                "click",
+                openResultEntry
+            );
 
 
-        $("submitResultBtn").onclick =
-            submitResult;
+        $("cancelResultBtn")
+            ?.addEventListener(
+                "click",
+                closeResultEntry
+            );
 
 
-        $("resultAssignment").onchange =
-            handleAssignmentChange;
+        $("resultAssignment")
+            ?.addEventListener(
+                "change",
+                handleAssignmentChange
+            );
 
 
-        $("resultCA").oninput =
-            () =>
-                calculate(
-                    "resultCA",
-                    "resultExam",
-                    "resultTotal",
-                    "resultGrade"
-                );
+        $("resultCA")
+            ?.addEventListener(
+                "input",
+                calculateResult
+            );
 
 
-        $("resultExam").oninput =
-            () =>
-                calculate(
-                    "resultCA",
-                    "resultExam",
-                    "resultTotal",
-                    "resultGrade"
-                );
+        $("resultExam")
+            ?.addEventListener(
+                "input",
+                calculateResult
+            );
 
 
-        $("saveBtn").onclick =
-            saveEdit;
+        $("submitResultBtn")
+            ?.addEventListener(
+                "click",
+                submitResult
+            );
 
 
-        $("cancelBtn").onclick =
-            cancelEdit;
+        $("editCA")
+            ?.addEventListener(
+                "input",
+                calculateEditResult
+            );
 
 
-        $("editCA").oninput =
-            () =>
-                calculate(
-                    "editCA",
-                    "editExam",
-                    "editTotal",
-                    "editGrade"
-                );
+        $("editExam")
+            ?.addEventListener(
+                "input",
+                calculateEditResult
+            );
 
 
-        $("editExam").oninput =
-            () =>
-                calculate(
-                    "editCA",
-                    "editExam",
-                    "editTotal",
-                    "editGrade"
-                );
+        $("saveBtn")
+            ?.addEventListener(
+                "click",
+                saveEditedResult
+            );
 
 
-        $("resultSearch").oninput =
-            renderResultsTable;
+        $("cancelBtn")
+            ?.addEventListener(
+                "click",
+                cancelEdit
+            );
+
+
+        $("resultSearch")
+            ?.addEventListener(
+                "input",
+                renderResultsTable
+            );
 
 
         [
@@ -2881,22 +2764,63 @@ document.addEventListener(
             "resultSubjectFilter",
             "resultTermFilter",
             "resultStatusFilter"
-        ].forEach(
-            id => {
+        ].forEach(id => {
 
-                $(id).onchange =
-                    renderResultsTable;
-            }
-        );
-
-
-        $("clearResultFilters").onclick =
-            clearFilters;
+            $(id)?.addEventListener(
+                "change",
+                renderResultsTable
+            );
+        });
 
 
-        setupNavigation();
+        $("clearResultFilters")
+            ?.addEventListener(
+                "click",
+                clearFilters
+            );
 
-        init();
 
+        $("changeTeacherPhotoBtn")
+            ?.addEventListener(
+                "click",
+                () => {
+
+                    $("teacherPhotoInput")
+                        ?.click();
+                }
+            );
+
+
+        $("teacherPhotoInput")
+            ?.addEventListener(
+                "change",
+                async event => {
+
+                    const file =
+                        event.target.files?.[0];
+
+                    if (file)
+                        await uploadProfilePhoto(
+                            file
+                        );
+                }
+            );
+
+
+        try {
+
+            await loadTeacherData();
+
+        } catch (error) {
+
+            console.error(error);
+
+            alert(
+                "Could not load teacher dashboard: " +
+                error.message
+            );
+
+            await logout();
+        }
     }
 );

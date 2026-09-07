@@ -1,35 +1,39 @@
-const student =
-    JSON.parse(
-        localStorage.getItem("student")
-    );
+/* =========================================
+   PACSA STUDENT DASHBOARD
+   AUTH + PUBLISHED RESULTS + PROFILE PHOTO
+========================================= */
 
-
-if (!student) {
-    window.location.href =
-        "student-login.html";
-}
-
+let student = null;
+let authUser = null;
 
 let publishedReports = [];
 let allResults = [];
 let filteredResults = [];
 let currentReport = null;
 
+const PROFILE_BUCKET =
+    "profile-photos";
+
+const DEFAULT_AVATAR =
+    "images/PACSA LOGO.png";
+
+const MAX_PHOTO_SIZE =
+    2 * 1024 * 1024;
+
+const ALLOWED_PHOTO_TYPES = [
+    "image/jpeg",
+    "image/png",
+    "image/webp"
+];
+
 
 const $ = id =>
     document.getElementById(id);
 
 
-function escapeHtml(value) {
-
-    return String(value ?? "")
-        .replaceAll("&", "&amp;")
-        .replaceAll("<", "&lt;")
-        .replaceAll(">", "&gt;")
-        .replaceAll('"', "&quot;")
-        .replaceAll("'", "&#039;");
-}
-
+/* =========================================
+   HELPERS
+========================================= */
 
 function normalize(value) {
 
@@ -39,13 +43,27 @@ function normalize(value) {
 }
 
 
+function escapeHtml(value) {
+
+    return String(value ?? "")
+        .replace(/&/g, "&amp;")
+        .replace(/</g, "&lt;")
+        .replace(/>/g, "&gt;")
+        .replace(/"/g, "&quot;")
+        .replace(/'/g, "&#039;");
+}
+
+
 function uniqueValues(values) {
 
     return [
         ...new Set(
             values
-                .map(value =>
-                    String(value ?? "").trim()
+                .map(
+                    value =>
+                        String(
+                            value ?? ""
+                        ).trim()
                 )
                 .filter(Boolean)
         )
@@ -53,15 +71,35 @@ function uniqueValues(values) {
 }
 
 
+function getStudentLoginUrl() {
+
+    return new URL(
+        "student-login.html",
+        window.location.href
+    ).href;
+}
+
+
 function getStudentName() {
 
-    if (student.fullname) {
+    if (!student) {
+        return "Student";
+    }
+
+
+    if (
+        student.fullname
+    ) {
+
         return student.fullname;
     }
 
+
     return (
-        `${student.first_name || ""} ${student.last_name || ""}`.trim()
-        || "Student"
+        `${student.first_name || ""} ${student.last_name || ""}`
+            .trim()
+        ||
+        "Student"
     );
 }
 
@@ -71,11 +109,27 @@ function getGradeClass(grade) {
     const value =
         normalize(grade);
 
-    if (value === "a") return "grade-a";
-    if (value === "b") return "grade-b";
-    if (value === "c") return "grade-c";
-    if (value === "d") return "grade-d";
-    if (value === "e") return "grade-e";
+
+    if (value === "a") {
+        return "grade-a";
+    }
+
+    if (value === "b") {
+        return "grade-b";
+    }
+
+    if (value === "c") {
+        return "grade-c";
+    }
+
+    if (value === "d") {
+        return "grade-d";
+    }
+
+    if (value === "e") {
+        return "grade-e";
+    }
+
 
     return "grade-f";
 }
@@ -84,94 +138,474 @@ function getGradeClass(grade) {
 function getResultTotal(result) {
 
     const stored =
-        Number(result.total);
+        Number(
+            result.total
+        );
 
-    if (Number.isFinite(stored)) {
+
+    if (
+        Number.isFinite(stored)
+    ) {
+
         return stored;
     }
 
+
     return (
-        (Number(result.ca) || 0) +
+        (Number(result.ca) || 0)
+        +
         (Number(result.exam) || 0)
     );
 }
 
+
+/* =========================================
+   RESULT MESSAGE
+========================================= */
 
 function showMessage(
     message,
     type = "info"
 ) {
 
-    $("resultMessage").textContent =
+    const element =
+        $("resultMessage");
+
+
+    if (!element) {
+        return;
+    }
+
+
+    element.textContent =
         message;
 
-    $("resultMessage").className =
+
+    element.className =
         `result-message show ${type}`;
 }
 
 
 function hideMessage() {
 
-    $("resultMessage").textContent = "";
+    const element =
+        $("resultMessage");
 
-    $("resultMessage").className =
+
+    if (!element) {
+        return;
+    }
+
+
+    element.textContent =
+        "";
+
+
+    element.className =
         "result-message";
 }
 
 
-/* =========================
-   PROFILE
-========================= */
+/* =========================================
+   PHOTO MESSAGE
+========================================= */
 
-function displayStudentProfile() {
+function showPhotoMessage(
+    message,
+    type
+) {
+
+    const element =
+        $("photoMessage");
+
+
+    if (!element) {
+        return;
+    }
+
+
+    element.textContent =
+        message;
+
+
+    element.className =
+        `photo-message show ${type}`;
+}
+
+
+function hidePhotoMessage() {
+
+    const element =
+        $("photoMessage");
+
+
+    if (!element) {
+        return;
+    }
+
+
+    element.textContent =
+        "";
+
+
+    element.className =
+        "photo-message";
+}
+
+
+/* =========================================
+   AUTH GUARD
+========================================= */
+
+async function verifyStudentSession() {
+
+    try {
+
+        const {
+            data:
+            sessionData,
+
+            error:
+            sessionError
+        } =
+            await supabaseClient
+                .auth
+                .getSession();
+
+
+        if (sessionError) {
+            throw sessionError;
+        }
+
+
+        const user =
+            sessionData?.session?.user;
+
+
+        if (!user) {
+
+            localStorage.removeItem(
+                "student"
+            );
+
+
+            window.location.replace(
+                getStudentLoginUrl()
+            );
+
+
+            return false;
+        }
+
+
+        authUser =
+            user;
+
+
+        const {
+            data:
+            studentData,
+
+            error:
+            studentError
+        } =
+            await supabaseClient
+                .from("students")
+                .select(`
+                    student_id,
+                    first_name,
+                    last_name,
+                    fullname,
+                    email,
+                    phone,
+                    class,
+                    status,
+                    auth_user_id,
+                    portal_status,
+                    profile_photo_path
+                `)
+                .eq(
+                    "auth_user_id",
+                    user.id
+                )
+                .maybeSingle();
+
+
+        if (studentError) {
+            throw studentError;
+        }
+
+
+        if (!studentData) {
+
+            await supabaseClient
+                .auth
+                .signOut();
+
+
+            localStorage.removeItem(
+                "student"
+            );
+
+
+            alert(
+                "This account is not linked to a PACSA student record."
+            );
+
+
+            window.location.replace(
+                getStudentLoginUrl()
+            );
+
+
+            return false;
+        }
+
+
+        if (
+            normalize(
+                studentData.status ||
+                "active"
+            )
+            !==
+            "active"
+        ) {
+
+            await supabaseClient
+                .auth
+                .signOut();
+
+
+            localStorage.removeItem(
+                "student"
+            );
+
+
+            alert(
+                "Your student account is inactive. Contact the school administrator."
+            );
+
+
+            window.location.replace(
+                getStudentLoginUrl()
+            );
+
+
+            return false;
+        }
+
+
+        if (
+            studentData.portal_status ===
+            "pending_verification"
+        ) {
+
+            const {
+                error:
+                portalError
+            } =
+                await supabaseClient
+                    .from("students")
+                    .update({
+                        portal_status:
+                            "active"
+                    })
+                    .eq(
+                        "student_id",
+                        studentData.student_id
+                    );
+
+
+            if (!portalError) {
+
+                studentData.portal_status =
+                    "active";
+
+            } else {
+
+                console.error(
+                    "Portal status update error:",
+                    portalError
+                );
+            }
+        }
+
+
+        student =
+            studentData;
+
+
+        localStorage.setItem(
+            "student",
+            JSON.stringify(
+                studentData
+            )
+        );
+
+
+        return true;
+
+
+    } catch (error) {
+
+        console.error(
+            "Student authentication error:",
+            error
+        );
+
+
+        localStorage.removeItem(
+            "student"
+        );
+
+
+        try {
+
+            await supabaseClient
+                .auth
+                .signOut();
+
+        } catch (_) {}
+
+
+        window.location.replace(
+            getStudentLoginUrl()
+        );
+
+
+        return false;
+    }
+}
+
+
+/* =========================================
+   PROFILE DISPLAY
+========================================= */
+
+async function displayStudentProfile() {
+
+    if (!student) {
+        return;
+    }
+
 
     const name =
         getStudentName();
 
+
     $("studentName").textContent =
         name;
+
 
     $("studentId").textContent =
         student.student_id || "--";
 
+
     $("studentClass").textContent =
         student.class || "--";
+
 
     $("studentStatus").textContent =
         student.status || "Active";
 
+
     $("studentMiniName").textContent =
         name;
+
 
     $("studentMiniId").textContent =
         student.student_id || "--";
 
+
     $("welcomeName").textContent =
         `Welcome, ${name}`;
 
-    $("studentAvatar").src =
-        "images/Faith.jpg";
-
-    $("studentMiniAvatar").src =
-        "images/Faith.jpg";
 
     $("reportStudentName").textContent =
         name;
 
+
     $("reportStudentId").textContent =
         student.student_id || "--";
+
+
+    setProfileImage(
+        DEFAULT_AVATAR
+    );
+
+
+    await loadStudentProfilePhoto();
 }
 
 
-/* =========================
-   LOAD PUBLISHED REPORTS
-========================= */
+/* =========================================
+   PROFILE IMAGE DISPLAY
+========================================= */
 
-async function loadPublishedReports() {
+function setProfileImage(url) {
 
-    showMessage(
-        "Loading your published results..."
-    );
+    const mainAvatar =
+        $("studentAvatar");
+
+
+    const miniAvatar =
+        $("studentMiniAvatar");
+
+
+    if (mainAvatar) {
+
+        mainAvatar.src =
+            url || DEFAULT_AVATAR;
+
+
+        mainAvatar.onerror =
+            () => {
+
+                mainAvatar.onerror =
+                    null;
+
+                mainAvatar.src =
+                    DEFAULT_AVATAR;
+            };
+    }
+
+
+    if (miniAvatar) {
+
+        miniAvatar.src =
+            url || DEFAULT_AVATAR;
+
+
+        miniAvatar.onerror =
+            () => {
+
+                miniAvatar.onerror =
+                    null;
+
+                miniAvatar.src =
+                    DEFAULT_AVATAR;
+            };
+    }
+}
+
+
+/* =========================================
+   LOAD PRIVATE PROFILE PHOTO
+========================================= */
+
+async function loadStudentProfilePhoto() {
+
+    if (
+        !student?.profile_photo_path
+    ) {
+
+        setProfileImage(
+            DEFAULT_AVATAR
+        );
+
+        return;
+    }
+
 
     try {
 
@@ -180,8 +614,457 @@ async function loadPublishedReports() {
             error
         } =
             await supabaseClient
-                .from("student_reports")
-                .select("*")
+                .storage
+                .from(
+                    PROFILE_BUCKET
+                )
+                .createSignedUrl(
+                    student.profile_photo_path,
+                    60 * 60
+                );
+
+
+        if (error) {
+            throw error;
+        }
+
+
+        if (
+            data?.signedUrl
+        ) {
+
+            setProfileImage(
+                data.signedUrl
+            );
+
+        } else {
+
+            setProfileImage(
+                DEFAULT_AVATAR
+            );
+        }
+
+
+    } catch (error) {
+
+        console.error(
+            "Profile photo load error:",
+            error
+        );
+
+
+        setProfileImage(
+            DEFAULT_AVATAR
+        );
+    }
+}
+
+
+/* =========================================
+   PHOTO PATH
+========================================= */
+
+function getPhotoExtension(file) {
+
+    if (
+        file.type ===
+        "image/png"
+    ) {
+
+        return "png";
+    }
+
+
+    if (
+        file.type ===
+        "image/webp"
+    ) {
+
+        return "webp";
+    }
+
+
+    return "jpg";
+}
+
+
+function buildStudentPhotoPath(file) {
+
+    const extension =
+        getPhotoExtension(file);
+
+
+    return (
+        `students/${authUser.id}/profile.${extension}`
+    );
+}
+
+
+/* =========================================
+   DELETE OLD PHOTO IF PATH CHANGES
+========================================= */
+
+async function removeOldProfilePhoto(
+    oldPath,
+    newPath
+) {
+
+    if (
+        !oldPath ||
+        oldPath === newPath
+    ) {
+
+        return;
+    }
+
+
+    const {
+        error
+    } =
+        await supabaseClient
+            .storage
+            .from(
+                PROFILE_BUCKET
+            )
+            .remove([
+                oldPath
+            ]);
+
+
+    if (
+        error
+    ) {
+
+        console.warn(
+            "Old profile photo cleanup failed:",
+            error
+        );
+    }
+}
+
+
+/* =========================================
+   UPLOAD PROFILE PHOTO
+========================================= */
+
+async function uploadStudentProfilePhoto(
+    file
+) {
+
+    if (
+        !student ||
+        !authUser
+    ) {
+
+        showPhotoMessage(
+            "Your account session is unavailable.",
+            "error"
+        );
+
+        return;
+    }
+
+
+    if (
+        !ALLOWED_PHOTO_TYPES.includes(
+            file.type
+        )
+    ) {
+
+        showPhotoMessage(
+            "Please choose a JPG, PNG or WebP image.",
+            "error"
+        );
+
+        return;
+    }
+
+
+    if (
+        file.size >
+        MAX_PHOTO_SIZE
+    ) {
+
+        showPhotoMessage(
+            "Profile photo must be 2 MB or smaller.",
+            "error"
+        );
+
+        return;
+    }
+
+
+    const button =
+        $("changePhotoBtn");
+
+
+    const loading =
+        $("photoLoading");
+
+
+    const input =
+        $("profilePhotoInput");
+
+
+    const oldPath =
+        student.profile_photo_path ||
+        null;
+
+
+    const newPath =
+        buildStudentPhotoPath(
+            file
+        );
+
+
+    button.disabled =
+        true;
+
+
+    loading
+        ?.classList
+        .add(
+            "show"
+        );
+
+
+    hidePhotoMessage();
+
+
+    try {
+
+        const {
+            error:
+            uploadError
+        } =
+            await supabaseClient
+                .storage
+                .from(
+                    PROFILE_BUCKET
+                )
+                .upload(
+                    newPath,
+                    file,
+                    {
+                        cacheControl:
+                            "3600",
+
+                        upsert:
+                            true,
+
+                        contentType:
+                            file.type
+                    }
+                );
+
+
+        if (
+            uploadError
+        ) {
+
+            throw uploadError;
+        }
+
+
+        const {
+            data:
+            updatedStudent,
+
+            error:
+            updateError
+        } =
+            await supabaseClient
+                .from(
+                    "students"
+                )
+                .update({
+                    profile_photo_path:
+                        newPath
+                })
+                .eq(
+                    "student_id",
+                    student.student_id
+                )
+                .eq(
+                    "auth_user_id",
+                    authUser.id
+                )
+                .select(`
+                    student_id,
+                    first_name,
+                    last_name,
+                    fullname,
+                    email,
+                    phone,
+                    class,
+                    status,
+                    auth_user_id,
+                    portal_status,
+                    profile_photo_path
+                `)
+                .maybeSingle();
+
+
+        if (
+            updateError
+        ) {
+
+            throw updateError;
+        }
+
+
+        if (
+            !updatedStudent
+        ) {
+
+            throw new Error(
+                "Could not update the student profile record."
+            );
+        }
+
+
+        student =
+            updatedStudent;
+
+
+        localStorage.setItem(
+            "student",
+            JSON.stringify(
+                updatedStudent
+            )
+        );
+
+
+        await removeOldProfilePhoto(
+            oldPath,
+            newPath
+        );
+
+
+        await loadStudentProfilePhoto();
+
+
+        showPhotoMessage(
+            "Profile photo updated.",
+            "success"
+        );
+
+
+    } catch (error) {
+
+        console.error(
+            "Profile photo upload error:",
+            error
+        );
+
+
+        showPhotoMessage(
+            "Could not upload profile photo: " +
+            error.message,
+            "error"
+        );
+
+
+    } finally {
+
+        button.disabled =
+            false;
+
+
+        loading
+            ?.classList
+            .remove(
+                "show"
+            );
+
+
+        if (
+            input
+        ) {
+
+            input.value =
+                "";
+        }
+    }
+}
+
+
+/* =========================================
+   PROFILE PHOTO EVENTS
+========================================= */
+
+$("changePhotoBtn")
+    ?.addEventListener(
+        "click",
+        () => {
+
+            hidePhotoMessage();
+
+
+            $("profilePhotoInput")
+                ?.click();
+        }
+    );
+
+
+$("profilePhotoInput")
+    ?.addEventListener(
+        "change",
+        async event => {
+
+            const file =
+                event.target
+                    .files?.[0];
+
+
+            if (!file) {
+                return;
+            }
+
+
+            await uploadStudentProfilePhoto(
+                file
+            );
+        }
+    );
+
+
+/* =========================================
+   LOAD PUBLISHED REPORTS
+========================================= */
+
+async function loadPublishedReports() {
+
+    if (!student) {
+        return;
+    }
+
+
+    showMessage(
+        "Loading your published results..."
+    );
+
+
+    try {
+
+        const {
+            data,
+            error
+        } =
+            await supabaseClient
+                .from(
+                    "student_reports"
+                )
+                .select(`
+                    id,
+                    student_id,
+                    class,
+                    term,
+                    session,
+                    remark,
+                    status,
+                    published_at
+                `)
                 .eq(
                     "student_id",
                     student.student_id
@@ -193,7 +1076,8 @@ async function loadPublishedReports() {
                 .order(
                     "published_at",
                     {
-                        ascending: false
+                        ascending:
+                            false
                     }
                 );
 
@@ -211,14 +1095,29 @@ async function loadPublishedReports() {
             !publishedReports.length
         ) {
 
+            allResults =
+                [];
+
+
+            filteredResults =
+                [];
+
+
+            currentReport =
+                null;
+
+
             showMessage(
                 "No approved result is available yet.",
                 "warning"
             );
 
+
             renderEmptyState();
 
+
             populateFilters();
+
 
             return;
         }
@@ -226,9 +1125,12 @@ async function loadPublishedReports() {
 
         await loadResultRows();
 
+
         populateFilters();
 
+
         hideMessage();
+
 
         applyFilters();
 
@@ -240,20 +1142,21 @@ async function loadPublishedReports() {
             error
         );
 
+
         showMessage(
             "Unable to load your published results.",
             "warning"
         );
 
-        renderEmptyState();
 
+        renderEmptyState();
     }
 }
 
 
-/* =========================
+/* =========================================
    LOAD RESULT ROWS
-========================= */
+========================================= */
 
 async function loadResultRows() {
 
@@ -263,14 +1166,22 @@ async function loadResultRows() {
     } =
         await supabaseClient
             .from("results")
-            .select("*")
+            .select(`
+                id,
+                student_id,
+                subject,
+                ca,
+                exam,
+                total,
+                grade,
+                term,
+                session,
+                class,
+                status
+            `)
             .eq(
                 "student_id",
                 student.student_id
-            )
-            .eq(
-                "status",
-                "published"
             );
 
 
@@ -284,9 +1195,9 @@ async function loadResultRows() {
 }
 
 
-/* =========================
+/* =========================================
    POPULATE FILTERS
-========================= */
+========================================= */
 
 function populateFilters() {
 
@@ -327,12 +1238,24 @@ function populateFilters() {
     sessions.forEach(
         session => {
 
-            $("sessionFilter").innerHTML += `
-                <option value="${escapeHtml(session)}">
-                    ${escapeHtml(session)}
-                </option>
-            `;
+            const option =
+                document.createElement(
+                    "option"
+                );
 
+
+            option.value =
+                session;
+
+
+            option.textContent =
+                session;
+
+
+            $("sessionFilter")
+                .appendChild(
+                    option
+                );
         }
     );
 
@@ -347,12 +1270,24 @@ function populateFilters() {
     classes.forEach(
         className => {
 
-            $("classFilter").innerHTML += `
-                <option value="${escapeHtml(className)}">
-                    ${escapeHtml(className)}
-                </option>
-            `;
+            const option =
+                document.createElement(
+                    "option"
+                );
 
+
+            option.value =
+                className;
+
+
+            option.textContent =
+                className;
+
+
+            $("classFilter")
+                .appendChild(
+                    option
+                );
         }
     );
 
@@ -367,17 +1302,32 @@ function populateFilters() {
     terms.forEach(
         term => {
 
-            $("termFilter").innerHTML += `
-                <option value="${escapeHtml(term)}">
-                    ${escapeHtml(term)}
-                </option>
-            `;
+            const option =
+                document.createElement(
+                    "option"
+                );
 
+
+            option.value =
+                term;
+
+
+            option.textContent =
+                term;
+
+
+            $("termFilter")
+                .appendChild(
+                    option
+                );
         }
     );
 
 
-    if (!publishedReports.length) {
+    if (
+        !publishedReports.length
+    ) {
+
         return;
     }
 
@@ -396,21 +1346,22 @@ function populateFilters() {
 
     $("termFilter").value =
         firstReport.term || "";
-
 }
 
 
-/* =========================
+/* =========================================
    APPLY FILTERS
-========================= */
+========================================= */
 
 function applyFilters() {
 
     const selectedSession =
         $("sessionFilter").value;
 
+
     const selectedClass =
         $("classFilter").value;
+
 
     const selectedTerm =
         $("termFilter").value;
@@ -425,12 +1376,15 @@ function applyFilters() {
         currentReport =
             null;
 
+
         filteredResults =
             [];
+
 
         renderEmptyState(
             "Select a session, class and term to view your result."
         );
+
 
         return;
     }
@@ -440,35 +1394,63 @@ function applyFilters() {
         publishedReports.find(
             report =>
 
-                normalize(report.session) ===
-                normalize(selectedSession)
+                normalize(
+                    report.session
+                )
+                ===
+                normalize(
+                    selectedSession
+                )
 
                 &&
 
-                normalize(report.class) ===
-                normalize(selectedClass)
+                normalize(
+                    report.class
+                )
+                ===
+                normalize(
+                    selectedClass
+                )
 
                 &&
 
-                normalize(report.term) ===
-                normalize(selectedTerm)
+                normalize(
+                    report.term
+                )
+                ===
+                normalize(
+                    selectedTerm
+                )
+
+                &&
+
+                normalize(
+                    report.status
+                )
+                ===
+                "published"
         )
         || null;
 
 
-    if (!currentReport) {
+    if (
+        !currentReport
+    ) {
 
         filteredResults =
             [];
+
 
         showMessage(
             "This report has not been approved for publication.",
             "warning"
         );
 
+
         renderEmptyState(
             "No published result found for this selection."
         );
+
 
         return;
     }
@@ -478,23 +1460,43 @@ function applyFilters() {
         allResults.filter(
             result =>
 
-                normalize(result.session) ===
-                normalize(selectedSession)
+                normalize(
+                    result.student_id
+                )
+                ===
+                normalize(
+                    student.student_id
+                )
 
                 &&
 
-                normalize(result.class) ===
-                normalize(selectedClass)
+                normalize(
+                    result.session
+                )
+                ===
+                normalize(
+                    selectedSession
+                )
 
                 &&
 
-                normalize(result.term) ===
-                normalize(selectedTerm)
+                normalize(
+                    result.class
+                )
+                ===
+                normalize(
+                    selectedClass
+                )
 
                 &&
 
-                normalize(result.status) ===
-                "published"
+                normalize(
+                    result.term
+                )
+                ===
+                normalize(
+                    selectedTerm
+                )
         );
 
 
@@ -519,13 +1521,15 @@ function applyFilters() {
     ) {
 
         showMessage(
-            "This report is published, but no result rows were found.",
+            "This report is published, but no subject results were found.",
             "warning"
         );
 
+
         renderEmptyState(
-            "No published subject results were found."
+            "No subject results were found for this report."
         );
+
 
         return;
     }
@@ -533,26 +1537,30 @@ function applyFilters() {
 
     hideMessage();
 
+
     renderResults(
         filteredResults
     );
-
 }
 
 
-/* =========================
+/* =========================================
    RENDER RESULTS
-========================= */
+========================================= */
 
 function renderResults(results) {
 
-    $("resultsTable").innerHTML = "";
+    $("resultsTable").innerHTML =
+        "";
 
-    $("reportResultsTable").innerHTML = "";
+
+    $("reportResultsTable").innerHTML =
+        "";
 
 
     let totalScore =
         0;
+
 
     let passed =
         0;
@@ -562,18 +1570,26 @@ function renderResults(results) {
         result => {
 
             const total =
-                getResultTotal(result);
+                getResultTotal(
+                    result
+                );
+
 
             const grade =
-                result.grade || "--";
+                result.grade ||
+                "--";
+
 
             const gradeClass =
-                getGradeClass(grade);
+                getGradeClass(
+                    grade
+                );
 
 
             if (
                 total >= 40
             ) {
+
                 passed++;
             }
 
@@ -583,7 +1599,6 @@ function renderResults(results) {
 
 
             const row = `
-
                 <tr>
 
                     <td>
@@ -623,29 +1638,38 @@ function renderResults(results) {
                     </td>
 
                 </tr>
-
             `;
 
 
-            $("resultsTable").innerHTML +=
-                row;
+            $("resultsTable")
+                .insertAdjacentHTML(
+                    "beforeend",
+                    row
+                );
 
 
-            $("reportResultsTable").innerHTML +=
-                row;
-
+            $("reportResultsTable")
+                .insertAdjacentHTML(
+                    "beforeend",
+                    row
+                );
         }
     );
 
 
     const average =
         results.length
-            ? totalScore / results.length
+
+            ? totalScore /
+              results.length
+
             : 0;
 
 
     const roundedAverage =
-        Math.round(average);
+        Math.round(
+            average
+        );
 
 
     $("average").textContent =
@@ -681,32 +1705,33 @@ function renderResults(results) {
 
 
     $("reportRemark").textContent =
-        currentReport?.remark || "--";
-
+        currentReport?.remark ||
+        "--";
 }
 
 
-/* =========================
+/* =========================================
    EMPTY STATE
-========================= */
+========================================= */
 
 function renderEmptyState(
-    message = "No published results available."
+    message =
+        "No published results available."
 ) {
 
     const row = `
-
         <tr>
 
             <td
                 colspan="5"
                 class="empty-row"
             >
-                ${escapeHtml(message)}
+                ${escapeHtml(
+                    message
+                )}
             </td>
 
         </tr>
-
     `;
 
 
@@ -752,39 +1777,42 @@ function renderEmptyState(
 
     $("reportRemark").textContent =
         "--";
-
 }
 
 
-/* =========================
-   EVENTS
-========================= */
+/* =========================================
+   FILTER EVENTS
+========================================= */
 
 $("sessionFilter")
-    .addEventListener(
+    ?.addEventListener(
         "change",
         applyFilters
     );
 
 
 $("classFilter")
-    .addEventListener(
+    ?.addEventListener(
         "change",
         applyFilters
     );
 
 
 $("termFilter")
-    .addEventListener(
+    ?.addEventListener(
         "change",
         applyFilters
     );
 
 
+/* =========================================
+   PRINT RESULT
+========================================= */
+
 $("printResultBtn")
-    .addEventListener(
+    ?.addEventListener(
         "click",
-        function () {
+        () => {
 
             if (
                 !currentReport ||
@@ -796,32 +1824,98 @@ $("printResultBtn")
                     "warning"
                 );
 
+
                 return;
             }
 
 
             window.print();
-
         }
     );
 
+
+/* =========================================
+   LOGOUT
+========================================= */
 
 $("logoutBtn")
-    .addEventListener(
+    ?.addEventListener(
         "click",
-        function () {
+        async () => {
 
-            localStorage.removeItem(
-                "student"
-            );
+            try {
 
-            window.location.href =
-                "student-login.html";
+                await supabaseClient
+                    .auth
+                    .signOut();
 
+            } catch (error) {
+
+                console.error(
+                    "Logout error:",
+                    error
+                );
+
+            } finally {
+
+                localStorage.removeItem(
+                    "student"
+                );
+
+
+                window.location.replace(
+                    getStudentLoginUrl()
+                );
+            }
         }
     );
 
 
-displayStudentProfile();
+/* =========================================
+   AUTH WATCHER
+========================================= */
 
-loadPublishedReports();
+supabaseClient
+    .auth
+    .onAuthStateChange(
+        (
+            event,
+            session
+        ) => {
+
+            if (
+                event === "SIGNED_OUT" ||
+                !session
+            ) {
+
+                localStorage.removeItem(
+                    "student"
+                );
+            }
+        }
+    );
+
+
+/* =========================================
+   START DASHBOARD
+========================================= */
+
+async function startStudentDashboard() {
+
+    const allowed =
+        await verifyStudentSession();
+
+
+    if (!allowed) {
+        return;
+    }
+
+
+    await displayStudentProfile();
+
+
+    await loadPublishedReports();
+}
+
+
+startStudentDashboard();

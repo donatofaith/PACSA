@@ -1,367 +1,708 @@
-```html
 <!DOCTYPE html>
 <html lang="en">
+
 <head>
     <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+
+    <meta
+        name="viewport"
+        content="width=device-width, initial-scale=1.0"
+    >
+
     <title>PACSA | Sessions & Terms</title>
-    <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Outfit:wght@300;400;500;600;700;800&display=swap">
-    <link rel="stylesheet" href="admin-dashboard.css">
+
+    <link
+        rel="stylesheet"
+        href="https://fonts.googleapis.com/css2?family=Outfit:wght@300;400;500;600;700;800&display=swap"
+    >
+
+    <link
+        rel="stylesheet"
+        href="admin-dashboard.css"
+    >
 </head>
+
 
 <body>
 
-<button class="menu-btn" id="menuBtn">☰</button>
+<button
+    class="menu-btn"
+    id="menuBtn"
+>
+    ☰
+</button>
 
-<aside class="sidebar" id="sidebar">
+
+<aside
+    class="sidebar"
+    id="sidebar"
+>
+
     <div class="brand">
-        <img src="images/PACSA LOGO.png" alt="PACSA Logo">
+
+        <img
+            src="images/PACSA LOGO.png"
+            alt="PACSA Logo"
+        >
+
         <div class="brand-text">
             <h2>PACSA</h2>
             <p>Admin Portal</p>
         </div>
+
     </div>
+
 
     <nav class="sidebar-nav">
 
-        <p class="nav-label">MAIN MENU</p>
-        <a href="admin-dashboard.html" class="nav-link">
-            <span class="nav-icon">⌂</span> Dashboard
+        <p class="nav-label">
+            MAIN MENU
+        </p>
+
+        <a
+            href="admin-dashboard.html"
+            class="nav-link"
+        >
+            <span class="nav-icon">⌂</span>
+            Dashboard
         </a>
 
-        <p class="nav-label">STUDENT MANAGEMENT</p>
-        <a href="students.html" class="nav-link">
-            <span class="nav-icon">🎓</span> Students
+
+        <p class="nav-label">
+            STUDENT MANAGEMENT
+        </p>
+
+        <a
+            href="students.html"
+            class="nav-link"
+        >
+            <span class="nav-icon">🎓</span>
+            Students
         </a>
 
-        <p class="nav-label">ACADEMIC MANAGEMENT</p>
-        <a href="teachers.html" class="nav-link">
-            <span class="nav-icon">👨‍🏫</span> Teachers
-        </a>
-        <a href="subjects.html" class="nav-link">
-            <span class="nav-icon">📚</span> Subjects
-        </a>
-        <a href="classes.html" class="nav-link">
-            <span class="nav-icon">🏫</span> Classes
-        </a>
-        <a href="sessions.html" class="nav-link active">
-            <span class="nav-icon">📅</span> Sessions & Terms
+
+        <p class="nav-label">
+            ACADEMIC MANAGEMENT
+        </p>
+
+        <a
+            href="teachers.html"
+            class="nav-link"
+        >
+            <span class="nav-icon">👨‍🏫</span>
+            Teachers
         </a>
 
-        <p class="nav-label">RESULT MANAGEMENT</p>
-        <a href="results.html" class="nav-link">
-            <span class="nav-icon">📑</span> Results
-        </a>
-        <a href="reports.html" class="nav-link">
-            <span class="nav-icon">📊</span> Reports & Analytics
+        <a
+            href="subjects.html"
+            class="nav-link"
+        >
+            <span class="nav-icon">📚</span>
+            Subjects
         </a>
 
-        <p class="nav-label">ADMINISTRATION</p>
-        <a href="applications.html" class="nav-link">
-            <span class="nav-icon">📝</span> Applications
+        <a
+            href="classes.html"
+            class="nav-link"
+        >
+            <span class="nav-icon">🏫</span>
+            Classes
         </a>
-        <a href="settings.html" class="nav-link">
-            <span class="nav-icon">⚙</span> Settings
+
+        <a
+            href="sessions.html"
+            class="nav-link active"
+        >
+            <span class="nav-icon">📅</span>
+            Sessions & Terms
+        </a>
+
+
+        <p class="nav-label">
+            RESULT MANAGEMENT
+        </p>
+
+        <a
+            href="results.html"
+            class="nav-link"
+        >
+            <span class="nav-icon">📑</span>
+            Results
+        </a>
+
+        <a
+            href="reports.html"
+            class="nav-link"
+        >
+            <span class="nav-icon">📊</span>
+            Reports & Analytics
+        </a>
+
+
+        <p class="nav-label">
+            ADMINISTRATION
+        </p>
+
+        <a
+            href="applications.html"
+            class="nav-link"
+        >
+            <span class="nav-icon">📝</span>
+            Applications
+        </a>
+
+        <a
+            href="settings.html"
+            class="nav-link"
+        >
+            <span class="nav-icon">⚙</span>
+            Settings
         </a>
 
     </nav>
 
+
     <div class="sidebar-footer">
-        <a href="#" class="logout-link" id="logoutBtn">
-            <span>🚪</span> Logout
+
+        <a
+            href="#"
+            class="logout-link"
+            id="logoutBtn"
+        >
+            <span>🚪</span>
+            Logout
         </a>
+
     </div>
+
 </aside>
 
 
 <main class="main-content">
 
-    <header class="topbar">
 
-        <div class="page-title">
-            <p class="breadcrumb">
-                Administration / Academic Management / Sessions & Terms
-            </p>
-            <h1>Sessions & Terms</h1>
-        </div>
+<header class="topbar">
 
-        <div class="topbar-right">
+    <div class="page-title">
 
-            <button class="notification-btn" aria-label="Notifications">
-                🔔
-                <span class="notification-dot"></span>
-            </button>
+        <p class="breadcrumb">
+            Administration /
+            Academic Management /
+            Sessions & Terms
+        </p>
 
-            <div class="admin-profile">
-                <img src="images/Faith.jpg" alt="Administrator">
-                <div class="admin-info">
-                    <strong>Administrator</strong>
-                    <span>System Administrator</span>
-                </div>
-            </div>
+        <h1>
+            Sessions & Terms
+        </h1>
 
-        </div>
-
-    </header>
+    </div>
 
 
-    <section class="management-hero">
+    <div class="topbar-right">
 
-        <div>
-            <p class="section-subtitle">ACADEMIC CALENDAR</p>
-            <h2>Manage Sessions & Terms</h2>
-            <p>
-                Create and manage academic sessions and school terms.
-            </p>
-        </div>
-
-        <button class="btn btn-primary" id="addSessionBtn">
-            <span>+</span> Add New Session
+        <button
+            class="notification-btn"
+            aria-label="Notifications"
+        >
+            🔔
+            <span class="notification-dot"></span>
         </button>
 
-    </section>
 
+        <div class="admin-profile">
 
-    <section class="teacher-stats-grid">
+            <img
+                src="images/Faith.jpg"
+                alt="Administrator"
+            >
 
-        <div class="mini-stat-card">
-            <div class="mini-stat-icon">📅</div>
-            <div>
-                <p>Total Sessions</p>
-                <h3 id="totalSessions">0</h3>
-            </div>
-        </div>
-
-        <div class="mini-stat-card">
-            <div class="mini-stat-icon green-icon">✓</div>
-            <div>
-                <p>Active Session</p>
-                <h3 id="activeSession">-</h3>
-            </div>
-        </div>
-
-        <div class="mini-stat-card">
-            <div class="mini-stat-icon orange-icon">📚</div>
-            <div>
-                <p>Current Term</p>
-                <h3 id="currentTerm">-</h3>
-            </div>
-        </div>
-
-        <div class="mini-stat-card">
-            <div class="mini-stat-icon blue-icon">✓</div>
-            <div>
-                <p>Completed Sessions</p>
-                <h3 id="completedSessions">0</h3>
-            </div>
-        </div>
-
-    </section>
-
-
-    <section class="management-page-card">
-
-        <div class="management-card-header">
-
-            <div>
-                <h2>Academic Sessions</h2>
-                <p>Manage school years, terms and their status.</p>
-            </div>
-
-            <div class="teacher-count">
-                <span id="sessionCount">0</span> Sessions
+            <div class="admin-info">
+                <strong>Administrator</strong>
+                <span>System Administrator</span>
             </div>
 
         </div>
 
+    </div>
 
-        <div class="teacher-controls">
+</header>
 
-            <div class="search-wrapper">
-                <span class="search-icon">🔍</span>
-                <input
-                    type="text"
-                    id="sessionSearch"
-                    placeholder="Search session..."
-                >
-            </div>
 
-            <select id="statusFilter" class="filter-select">
-                <option value="">All Status</option>
-                <option value="active">Active</option>
-                <option value="completed">Completed</option>
-                <option value="upcoming">Upcoming</option>
-            </select>
+<section class="management-hero">
 
-            <button class="btn btn-light" id="clearFiltersBtn">
-                Clear
-            </button>
+    <div>
 
+        <p class="section-subtitle">
+            ACADEMIC CALENDAR
+        </p>
+
+        <h2>
+            Manage Sessions & Terms
+        </h2>
+
+        <p>
+            Create academic terms and control the
+            exact term currently active across PACSA.
+        </p>
+
+    </div>
+
+
+    <button
+        type="button"
+        class="btn btn-primary"
+        id="addSessionBtn"
+    >
+        <span>+</span>
+        Add Session / Term
+    </button>
+
+</section>
+
+
+<section class="teacher-stats-grid">
+
+    <div class="mini-stat-card">
+
+        <div class="mini-stat-icon">
+            📅
+        </div>
+
+        <div>
+            <p>Total Sessions</p>
+            <h3 id="totalSessions">0</h3>
+        </div>
+
+    </div>
+
+
+    <div class="mini-stat-card">
+
+        <div class="mini-stat-icon green-icon">
+            ✓
+        </div>
+
+        <div>
+            <p>Current Session</p>
+            <h3 id="activeSession">-</h3>
+        </div>
+
+    </div>
+
+
+    <div class="mini-stat-card">
+
+        <div class="mini-stat-icon orange-icon">
+            📚
+        </div>
+
+        <div>
+            <p>Current Term</p>
+            <h3 id="currentTerm">-</h3>
+        </div>
+
+    </div>
+
+
+    <div class="mini-stat-card">
+
+        <div class="mini-stat-icon blue-icon">
+            ✓
+        </div>
+
+        <div>
+            <p>Completed Sessions</p>
+            <h3 id="completedSessions">0</h3>
+        </div>
+
+    </div>
+
+</section>
+
+
+<section class="management-page-card">
+
+    <div class="management-card-header">
+
+        <div>
+            <h2>Academic Terms</h2>
+
+            <p>
+                Each row represents one term
+                within an academic session.
+            </p>
         </div>
 
 
-        <div class="table-wrapper">
+        <div class="teacher-count">
 
-            <table class="professional-table">
+            <span id="sessionCount">
+                0
+            </span>
 
-                <thead>
-                    <tr>
-                        <th>Session</th>
-                        <th>Start Date</th>
-                        <th>End Date</th>
-                        <th>Current Term</th>
-                        <th>Status</th>
-                        <th class="action-column">Action</th>
-                    </tr>
-                </thead>
-
-                <tbody id="sessionsTableBody"></tbody>
-
-            </table>
-
-        </div>
-
-
-        <div class="empty-state" id="emptySessionState">
-
-            <div class="empty-icon">📅</div>
-
-            <h3>No Sessions Found</h3>
-
-            <p>Create an academic session to get started.</p>
-
-            <button class="btn btn-primary" id="emptyAddSessionBtn">
-                + Add First Session
-            </button>
-
-        </div>
-
-    </section>
-
-
-    <section class="teacher-management-info">
-
-        <div class="info-card">
-            <div class="info-icon purple-info">📅</div>
-            <div>
-                <h3>Academic Sessions</h3>
-                <p>Manage school years and their academic periods.</p>
-            </div>
-        </div>
-
-        <div class="info-card">
-            <div class="info-icon green-info">📚</div>
-            <div>
-                <h3>Terms</h3>
-                <p>Track First, Second and Third Term within each session.</p>
-            </div>
-        </div>
-
-        <div class="info-card">
-            <div class="info-icon orange-info">✓</div>
-            <div>
-                <h3>Session Control</h3>
-                <p>Set the active session used across the school system.</p>
-            </div>
-        </div>
-
-    </section>
-
-
-    <div class="modal-overlay" id="sessionModal">
-
-        <div class="modal-box">
-
-            <div class="modal-header">
-
-                <div>
-                    <p class="section-subtitle">SESSION INFORMATION</p>
-                    <h2 id="sessionModalTitle">Add New Session</h2>
-                </div>
-
-                <button class="modal-close" id="closeSessionModal">×</button>
-
-            </div>
-
-
-            <form id="sessionForm">
-
-                <input type="hidden" id="sessionRecordId">
-
-                <div class="form-grid">
-
-                    <div class="form-group">
-                        <label>Session Name</label>
-                        <input type="text" id="sessionName"
-                            placeholder="e.g. 2026/2027" required>
-                    </div>
-
-                    <div class="form-group">
-                        <label>Current Term</label>
-                        <select id="sessionTerm">
-                            <option value="First Term">First Term</option>
-                            <option value="Second Term">Second Term</option>
-                            <option value="Third Term">Third Term</option>
-                        </select>
-                    </div>
-
-                    <div class="form-group">
-                        <label>Start Date</label>
-                        <input type="date" id="startDate" required>
-                    </div>
-
-                    <div class="form-group">
-                        <label>End Date</label>
-                        <input type="date" id="endDate" required>
-                    </div>
-
-                    <div class="form-group">
-                        <label>Status</label>
-                        <select id="sessionStatus">
-                            <option value="upcoming">Upcoming</option>
-                            <option value="active">Active</option>
-                            <option value="completed">Completed</option>
-                        </select>
-                    </div>
-
-                </div>
-
-
-                <div class="modal-actions">
-
-                    <button type="button"
-                        class="btn btn-light"
-                        id="cancelSessionBtn">
-                        Cancel
-                    </button>
-
-                    <button type="submit"
-                        class="btn btn-primary">
-                        Save Session
-                    </button>
-
-                </div>
-
-            </form>
+            Terms
 
         </div>
 
     </div>
 
 
-    <footer class="dashboard-footer">
+    <div class="teacher-controls">
+
+        <div class="search-wrapper">
+
+            <span class="search-icon">
+                🔍
+            </span>
+
+            <input
+                type="text"
+                id="sessionSearch"
+                placeholder="Search session or term..."
+            >
+
+        </div>
+
+
+        <select
+            id="statusFilter"
+            class="filter-select"
+        >
+
+            <option value="">
+                All Status
+            </option>
+
+            <option value="active">
+                Active
+            </option>
+
+            <option value="completed">
+                Completed
+            </option>
+
+            <option value="upcoming">
+                Upcoming
+            </option>
+
+        </select>
+
+
+        <button
+            type="button"
+            class="btn btn-light"
+            id="clearFiltersBtn"
+        >
+            Clear
+        </button>
+
+    </div>
+
+
+    <div class="table-wrapper">
+
+        <table class="professional-table">
+
+            <thead>
+
+                <tr>
+                    <th>Session</th>
+                    <th>Term</th>
+                    <th>Start Date</th>
+                    <th>End Date</th>
+                    <th>Status</th>
+                    <th>Current</th>
+                    <th class="action-column">Action</th>
+                </tr>
+
+            </thead>
+
+
+            <tbody id="sessionsTableBody">
+            </tbody>
+
+        </table>
+
+    </div>
+
+
+    <div
+        class="empty-state"
+        id="emptySessionState"
+    >
+
+        <div class="empty-icon">
+            📅
+        </div>
+
+        <h3>
+            No Sessions Found
+        </h3>
+
         <p>
-            © 2026 PACSA School Management System.
-            All rights reserved.
+            Create your first academic term.
         </p>
-    </footer>
+
+        <button
+            type="button"
+            class="btn btn-primary"
+            id="emptyAddSessionBtn"
+        >
+            + Add First Term
+        </button>
+
+    </div>
+
+</section>
+
+
+<section class="teacher-management-info">
+
+    <div class="info-card">
+
+        <div class="info-icon purple-info">
+            📅
+        </div>
+
+        <div>
+            <h3>Academic Sessions</h3>
+
+            <p>
+                Keep academic years organised
+                across the whole system.
+            </p>
+        </div>
+
+    </div>
+
+
+    <div class="info-card">
+
+        <div class="info-icon green-info">
+            📚
+        </div>
+
+        <div>
+            <h3>Three Terms</h3>
+
+            <p>
+                First, Second and Third Term can
+                each have their own dates and status.
+            </p>
+        </div>
+
+    </div>
+
+
+    <div class="info-card">
+
+        <div class="info-icon orange-info">
+            ✓
+        </div>
+
+        <div>
+            <h3>One Current Term</h3>
+
+            <p>
+                Only one exact session and term
+                can be current at a time.
+            </p>
+        </div>
+
+    </div>
+
+</section>
+
+
+<div
+    class="modal-overlay"
+    id="sessionModal"
+>
+
+    <div class="modal-box">
+
+        <div class="modal-header">
+
+            <div>
+
+                <p class="section-subtitle">
+                    SESSION INFORMATION
+                </p>
+
+                <h2 id="sessionModalTitle">
+                    Add Session / Term
+                </h2>
+
+            </div>
+
+
+            <button
+                type="button"
+                class="modal-close"
+                id="closeSessionModal"
+            >
+                ×
+            </button>
+
+        </div>
+
+
+        <form id="sessionForm">
+
+            <input
+                type="hidden"
+                id="sessionRecordId"
+            >
+
+
+            <div class="form-grid">
+
+                <div class="form-group">
+
+                    <label for="sessionName">
+                        Session Name
+                    </label>
+
+                    <input
+                        type="text"
+                        id="sessionName"
+                        placeholder="e.g. 2026/2027"
+                        required
+                    >
+
+                </div>
+
+
+                <div class="form-group">
+
+                    <label for="sessionTerm">
+                        Term
+                    </label>
+
+                    <select id="sessionTerm">
+
+                        <option value="First Term">
+                            First Term
+                        </option>
+
+                        <option value="Second Term">
+                            Second Term
+                        </option>
+
+                        <option value="Third Term">
+                            Third Term
+                        </option>
+
+                    </select>
+
+                </div>
+
+
+                <div class="form-group">
+
+                    <label for="startDate">
+                        Start Date
+                    </label>
+
+                    <input
+                        type="date"
+                        id="startDate"
+                        required
+                    >
+
+                </div>
+
+
+                <div class="form-group">
+
+                    <label for="endDate">
+                        End Date
+                    </label>
+
+                    <input
+                        type="date"
+                        id="endDate"
+                        required
+                    >
+
+                </div>
+
+
+                <div class="form-group">
+
+                    <label for="sessionStatus">
+                        Status
+                    </label>
+
+                    <select id="sessionStatus">
+
+                        <option value="upcoming">
+                            Upcoming
+                        </option>
+
+                        <option value="active">
+                            Active
+                        </option>
+
+                        <option value="completed">
+                            Completed
+                        </option>
+
+                    </select>
+
+                </div>
+
+            </div>
+
+
+            <div class="modal-actions">
+
+                <button
+                    type="button"
+                    class="btn btn-light"
+                    id="cancelSessionBtn"
+                >
+                    Cancel
+                </button>
+
+                <button
+                    type="submit"
+                    class="btn btn-primary"
+                    id="saveSessionBtn"
+                >
+                    Save Term
+                </button>
+
+            </div>
+
+        </form>
+
+    </div>
+
+</div>
+
+
+<footer class="dashboard-footer">
+
+    <p>
+        © 2026 PACSA School Management System.
+        All rights reserved.
+    </p>
+
+</footer>
+
 
 </main>
 
+
 <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+
 <script src="supabase.js"></script>
+
+<script src="admin-auth.js"></script>
+
 <script src="sessions.js"></script>
+
 
 </body>
 </html>
-```

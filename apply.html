@@ -1,19 +1,32 @@
 <!DOCTYPE html>
 <html lang="en">
+
 <head>
     <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+
+    <meta
+        name="viewport"
+        content="width=device-width, initial-scale=1.0"
+    >
 
     <title>PACSA Admission Form</title>
 
-    <link href="https://fonts.googleapis.com/css2?family=Outfit:wght@300;400;500;600;700;800&display=swap" rel="stylesheet">
+    <link
+        href="https://fonts.googleapis.com/css2?family=Outfit:wght@300;400;500;600;700;800&display=swap"
+        rel="stylesheet"
+    >
 
-    <link rel="stylesheet" href="apply.css">
+    <link
+        rel="stylesheet"
+        href="apply.css"
+    >
 </head>
+
 
 <body>
 
 <div class="overlay"></div>
+
 
 <div class="form-container">
 
@@ -25,82 +38,231 @@
             class="logo"
         >
 
-        <h1>PACSA Admission Form</h1>
+
+        <h1>
+            PACSA Admission Form
+        </h1>
+
 
         <p class="subtitle">
             Complete the form below and our admissions team will contact you.
         </p>
 
+
         <form id="applicationForm">
 
             <div class="form-group">
-                <label>Applicant Full Name</label>
-                <input type="text" id="fullName" required>
+
+                <label for="fullName">
+                    Applicant Full Name
+                </label>
+
+                <input
+                    type="text"
+                    id="fullName"
+                    required
+                >
+
             </div>
 
-            <div class="form-group">
-                <label>Date of Birth</label>
-                <input type="date" id="dateOfBirth" required>
-            </div>
 
             <div class="form-group">
-                <label>Gender</label>
-                <select id="gender" required>
-                    <option value="">Select Gender</option>
-                    <option value="Male">Male</option>
-                    <option value="Female">Female</option>
+
+                <label for="dateOfBirth">
+                    Date of Birth
+                </label>
+
+                <input
+                    type="date"
+                    id="dateOfBirth"
+                    required
+                >
+
+                <small
+                    id="ageHelp"
+                    style="
+                        display:block;
+                        margin-top:6px;
+                        color:#6b7280;
+                        font-size:13px;
+                    "
+                >
+                    Applicant must be at least 9 years old.
+                </small>
+
+            </div>
+
+
+            <div class="form-group">
+
+                <label for="gender">
+                    Gender
+                </label>
+
+                <select
+                    id="gender"
+                    required
+                >
+                    <option value="">
+                        Select Gender
+                    </option>
+
+                    <option value="Male">
+                        Male
+                    </option>
+
+                    <option value="Female">
+                        Female
+                    </option>
                 </select>
+
             </div>
 
+
             <div class="form-group">
-                <label>Class Applying For</label>
-                <select id="classApplying" required>
-                    <option value="">Select Class</option>
-                    <option value="JSS1">JSS1</option>
-                    <option value="JSS2">JSS2</option>
-                    <option value="JSS3">JSS3</option>
-                    <option value="SS1">SS1</option>
-                    <option value="SS2">SS2</option>
-                    <option value="SS3">SS3</option>
+
+                <label for="classApplying">
+                    Class Applying For
+                </label>
+
+                <select
+                    id="classApplying"
+                    required
+                >
+                    <option value="">
+                        Select Class
+                    </option>
+
+                    <option value="JSS1">
+                        JSS1
+                    </option>
+
+                    <option value="JSS2">
+                        JSS2
+                    </option>
+
+                    <option value="JSS3">
+                        JSS3
+                    </option>
+
+                    <option value="SS1">
+                        SS1
+                    </option>
+
+                    <option value="SS2">
+                        SS2
+                    </option>
+
+                    <option value="SS3">
+                        SS3
+                    </option>
                 </select>
+
             </div>
+
 
             <div class="form-group">
-                <label>Parent/Guardian Name</label>
-                <input type="text" id="parentName" required>
+
+                <label for="parentName">
+                    Parent/Guardian Name
+                </label>
+
+                <input
+                    type="text"
+                    id="parentName"
+                    required
+                >
+
             </div>
+
 
             <div class="form-group">
-                <label>Phone Number</label>
-                <input type="tel" id="phone" required>
+
+                <label for="phone">
+                    Phone Number
+                </label>
+
+                <input
+                    type="tel"
+                    id="phone"
+                    required
+                >
+
             </div>
+
 
             <div class="form-group">
-                <label>Email Address</label>
-                <input type="email" id="email" required>
+
+                <label for="email">
+                    Email Address
+                </label>
+
+                <input
+                    type="email"
+                    id="email"
+                    required
+                >
+
             </div>
+
 
             <div class="form-group">
-                <label>Home Address</label>
-                <textarea id="address" rows="3" required></textarea>
+
+                <label for="address">
+                    Home Address
+                </label>
+
+                <textarea
+                    id="address"
+                    rows="3"
+                    required
+                ></textarea>
+
             </div>
+
 
             <div class="form-group">
-                <label>Previous School</label>
-                <input type="text" id="previousSchool">
+
+                <label for="previousSchool">
+                    Previous School
+                </label>
+
+                <input
+                    type="text"
+                    id="previousSchool"
+                >
+
             </div>
+
 
             <div class="form-group">
-                <label>Additional Information</label>
-                <textarea id="additionalInformation" rows="4"></textarea>
+
+                <label for="additionalInformation">
+                    Additional Information
+                </label>
+
+                <textarea
+                    id="additionalInformation"
+                    rows="4"
+                ></textarea>
+
             </div>
 
-            <p id="formMessage"></p>
+
+            <p
+                id="formMessage"
+                style="
+                    margin-top:12px;
+                    font-weight:500;
+                "
+            ></p>
+
 
             <button
                 type="submit"
                 class="submit-btn"
-                id="submitBtn">
+                id="submitBtn"
+            >
                 Submit Application
             </button>
 
@@ -110,63 +272,446 @@
 
 </div>
 
+
 <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+
 <script src="supabase.js"></script>
 
+
 <script>
-const form = document.getElementById("applicationForm");
-const submitBtn = document.getElementById("submitBtn");
-const message = document.getElementById("formMessage");
 
-form.addEventListener("submit", async function(e) {
+/* =========================================
+   PACSA ADMISSION FORM
+   MINIMUM AGE: 9 YEARS
+========================================= */
 
-    e.preventDefault();
+const form =
+    document.getElementById(
+        "applicationForm"
+    );
 
-    submitBtn.disabled = true;
-    submitBtn.textContent = "Submitting...";
-    message.textContent = "";
 
-    const application = {
-        full_name: document.getElementById("fullName").value.trim(),
-        date_of_birth: document.getElementById("dateOfBirth").value,
-        gender: document.getElementById("gender").value,
-        class: document.getElementById("classApplying").value,
-        parent_name: document.getElementById("parentName").value.trim(),
-        phone: document.getElementById("phone").value.trim(),
-        email: document.getElementById("email").value.trim(),
-        address: document.getElementById("address").value.trim(),
-        previous_school: document.getElementById("previousSchool").value.trim(),
-        additional_information:
-            document.getElementById("additionalInformation").value.trim(),
-        status: "pending"
-    };
+const submitBtn =
+    document.getElementById(
+        "submitBtn"
+    );
 
-    const { error } = await supabaseClient
-        .from("applications")
-        .insert([application]);
 
-    if (error) {
+const message =
+    document.getElementById(
+        "formMessage"
+    );
 
-        console.error(error);
 
-        message.textContent =
-            "Could not submit application: " + error.message;
+const dateOfBirthInput =
+    document.getElementById(
+        "dateOfBirth"
+    );
 
-        submitBtn.disabled = false;
-        submitBtn.textContent = "Submit Application";
 
-        return;
+/* =========================================
+   CALCULATE MAXIMUM DOB
+   Applicant must already be 9 years old
+========================================= */
+
+function getMinimumAgeDate() {
+
+    const today =
+        new Date();
+
+
+    const maximumBirthDate =
+        new Date(
+            today.getFullYear() - 9,
+            today.getMonth(),
+            today.getDate()
+        );
+
+
+    const year =
+        maximumBirthDate
+            .getFullYear();
+
+
+    const month =
+        String(
+            maximumBirthDate
+                .getMonth() + 1
+        )
+            .padStart(
+                2,
+                "0"
+            );
+
+
+    const day =
+        String(
+            maximumBirthDate
+                .getDate()
+        )
+            .padStart(
+                2,
+                "0"
+            );
+
+
+    return (
+        `${year}-${month}-${day}`
+    );
+}
+
+
+/* =========================================
+   SET DATE LIMIT
+========================================= */
+
+const maximumAllowedDOB =
+    getMinimumAgeDate();
+
+
+dateOfBirthInput.max =
+    maximumAllowedDOB;
+
+
+/* =========================================
+   CHECK AGE
+========================================= */
+
+function isAtLeastNineYearsOld(
+    dateString
+) {
+
+    if (!dateString) {
+        return false;
     }
 
-    message.textContent =
-        "Application submitted successfully! Our admissions team will contact you.";
 
-    form.reset();
+    const birthDate =
+        new Date(
+            `${dateString}T00:00:00`
+        );
 
-    submitBtn.disabled = false;
-    submitBtn.textContent = "Submit Application";
-});
+
+    const today =
+        new Date();
+
+
+    let age =
+        today.getFullYear()
+        -
+        birthDate.getFullYear();
+
+
+    const monthDifference =
+        today.getMonth()
+        -
+        birthDate.getMonth();
+
+
+    if (
+        monthDifference < 0
+        ||
+        (
+            monthDifference === 0
+            &&
+            today.getDate()
+            <
+            birthDate.getDate()
+        )
+    ) {
+
+        age--;
+    }
+
+
+    return age >= 9;
+}
+
+
+/* =========================================
+   LIVE DOB VALIDATION
+========================================= */
+
+dateOfBirthInput
+    .addEventListener(
+        "change",
+        () => {
+
+            const value =
+                dateOfBirthInput.value;
+
+
+            dateOfBirthInput
+                .setCustomValidity(
+                    ""
+                );
+
+
+            if (
+                value
+                &&
+                !isAtLeastNineYearsOld(
+                    value
+                )
+            ) {
+
+                dateOfBirthInput
+                    .setCustomValidity(
+                        "Applicant must be at least 9 years old."
+                    );
+
+
+                dateOfBirthInput
+                    .reportValidity();
+            }
+        }
+    );
+
+
+/* =========================================
+   SUBMIT APPLICATION
+========================================= */
+
+form.addEventListener(
+    "submit",
+    async function(event) {
+
+        event.preventDefault();
+
+
+        message.textContent =
+            "";
+
+
+        message.style.color =
+            "";
+
+
+        /*
+            AGE CHECK AGAIN BEFORE SUBMISSION
+        */
+
+        const dateOfBirth =
+            dateOfBirthInput.value;
+
+
+        if (
+            !isAtLeastNineYearsOld(
+                dateOfBirth
+            )
+        ) {
+
+            message.style.color =
+                "#dc2626";
+
+
+            message.textContent =
+                "Applicant must be at least 9 years old.";
+
+
+            dateOfBirthInput
+                .setCustomValidity(
+                    "Applicant must be at least 9 years old."
+                );
+
+
+            dateOfBirthInput
+                .reportValidity();
+
+
+            return;
+        }
+
+
+        dateOfBirthInput
+            .setCustomValidity(
+                ""
+            );
+
+
+        if (
+            !form.checkValidity()
+        ) {
+
+            form.reportValidity();
+
+            return;
+        }
+
+
+        submitBtn.disabled =
+            true;
+
+
+        submitBtn.textContent =
+            "Submitting...";
+
+
+        const application = {
+
+            full_name:
+                document
+                    .getElementById(
+                        "fullName"
+                    )
+                    .value
+                    .trim(),
+
+            date_of_birth:
+                dateOfBirth,
+
+            gender:
+                document
+                    .getElementById(
+                        "gender"
+                    )
+                    .value,
+
+            class:
+                document
+                    .getElementById(
+                        "classApplying"
+                    )
+                    .value,
+
+            parent_name:
+                document
+                    .getElementById(
+                        "parentName"
+                    )
+                    .value
+                    .trim(),
+
+            phone:
+                document
+                    .getElementById(
+                        "phone"
+                    )
+                    .value
+                    .trim(),
+
+            email:
+                document
+                    .getElementById(
+                        "email"
+                    )
+                    .value
+                    .trim(),
+
+            address:
+                document
+                    .getElementById(
+                        "address"
+                    )
+                    .value
+                    .trim(),
+
+            previous_school:
+                document
+                    .getElementById(
+                        "previousSchool"
+                    )
+                    .value
+                    .trim(),
+
+            additional_information:
+                document
+                    .getElementById(
+                        "additionalInformation"
+                    )
+                    .value
+                    .trim(),
+
+            status:
+                "pending"
+        };
+
+
+        try {
+
+            const {
+                error
+            } =
+                await supabaseClient
+                    .from(
+                        "applications"
+                    )
+                    .insert([
+                        application
+                    ]);
+
+
+            if (error) {
+                throw error;
+            }
+
+
+            message.style.color =
+                "#15803d";
+
+
+            message.textContent =
+                "Application submitted successfully! Our admissions team will contact you.";
+
+
+            form.reset();
+
+
+            /*
+                Reset max date after form reset
+            */
+
+            dateOfBirthInput.max =
+                getMinimumAgeDate();
+
+
+        } catch (error) {
+
+            console.error(
+                "Application submission error:",
+                error
+            );
+
+
+            message.style.color =
+                "#dc2626";
+
+
+            if (
+                String(
+                    error.message || ""
+                )
+                    .toLowerCase()
+                    .includes(
+                        "9 years"
+                    )
+            ) {
+
+                message.textContent =
+                    "Applicant must be at least 9 years old.";
+
+            } else {
+
+                message.textContent =
+                    "Could not submit application: " +
+                    error.message;
+            }
+
+
+        } finally {
+
+            submitBtn.disabled =
+                false;
+
+
+            submitBtn.textContent =
+                "Submit Application";
+        }
+    }
+);
+
 </script>
+
 
 </body>
 </html>

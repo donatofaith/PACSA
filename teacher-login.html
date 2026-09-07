@@ -3,21 +3,96 @@
 
 <head>
 
-<meta charset="UTF-8">
+    <meta charset="UTF-8">
 
-<meta
-name="viewport"
-content="width=device-width, initial-scale=1.0">
+    <meta
+        name="viewport"
+        content="width=device-width, initial-scale=1.0"
+    >
 
-<title>PACSA Teacher Login</title>
+    <title>PACSA Teacher Login</title>
 
-<link
-href="https://fonts.googleapis.com/css2?family=Outfit:wght@300;400;500;600;700;800&display=swap"
-rel="stylesheet">
+    <link
+        href="https://fonts.googleapis.com/css2?family=Outfit:wght@300;400;500;600;700;800&display=swap"
+        rel="stylesheet"
+    >
 
-<link
-rel="stylesheet"
-href="teacher-login.css">
+    <link
+        rel="stylesheet"
+        href="teacher-login.css"
+    >
+
+    <style>
+
+        .login-actions {
+            display: flex;
+            gap: 12px;
+            margin-top: 18px;
+        }
+
+        .login-actions .login-btn,
+        .activate-account-btn {
+            flex: 1;
+            min-height: 52px;
+            border-radius: 12px;
+            font-family: inherit;
+            font-size: 15px;
+            font-weight: 700;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            text-decoration: none;
+            box-sizing: border-box;
+        }
+
+        .activate-account-btn {
+            background: transparent;
+            border: 2px solid #6D28D9;
+            color: #6D28D9;
+            transition: 0.2s;
+        }
+
+        .activate-account-btn:hover {
+            background: #6D28D9;
+            color: #FFFFFF;
+        }
+
+        .login-message {
+            display: none;
+            margin-top: 15px;
+            padding: 12px;
+            border-radius: 9px;
+            font-size: 13px;
+            line-height: 1.5;
+        }
+
+        .login-message.error {
+            display: block;
+            background: #FEE2E2;
+            color: #B91C1C;
+        }
+
+        .login-message.success {
+            display: block;
+            background: #DCFCE7;
+            color: #166534;
+        }
+
+        .teacher-note {
+            margin-top: 18px;
+            text-align: center;
+            font-size: 13px;
+        }
+
+        @media (max-width: 520px) {
+
+            .login-actions {
+                flex-direction: column;
+            }
+
+        }
+
+    </style>
 
 </head>
 
@@ -35,9 +110,10 @@ href="teacher-login.css">
 
 
         <img
-        src="images/PACSA LOGO.png"
-        alt="PACSA Logo"
-        class="logo">
+            src="images/PACSA LOGO.png"
+            alt="PACSA Logo"
+            class="logo"
+        >
 
 
         <h1>
@@ -55,27 +131,31 @@ href="teacher-login.css">
         </p>
 
 
+
         <form id="teacherLoginForm">
 
 
             <div class="input-group">
 
-                <label>
+                <label for="teacherId">
                     Teacher ID
                 </label>
 
                 <input
-                type="text"
-                id="teacherId"
-                placeholder="Enter Teacher ID"
-                required>
+                    type="text"
+                    id="teacherId"
+                    placeholder="Enter Teacher ID"
+                    autocomplete="username"
+                    required
+                >
 
             </div>
 
 
+
             <div class="input-group">
 
-                <label>
+                <label for="password">
                     Password
                 </label>
 
@@ -83,12 +163,18 @@ href="teacher-login.css">
                 <div class="password-box">
 
                     <input
-                    type="password"
-                    id="password"
-                    placeholder="Enter Password"
-                    required>
+                        type="password"
+                        id="password"
+                        placeholder="Enter Password"
+                        autocomplete="current-password"
+                        required
+                    >
 
-                    <span id="togglePassword">
+                    <span
+                        id="togglePassword"
+                        role="button"
+                        tabindex="0"
+                    >
                         👁
                     </span>
 
@@ -97,43 +183,66 @@ href="teacher-login.css">
             </div>
 
 
+
             <div class="extras">
 
-                <label>
+                <span>
+                    Teacher Portal
+                </span>
 
-                    <input
-                    type="checkbox">
-
-                    Remember Me
-
-                </label>
-
-
-                <a href="#">
+                <a
+                    href="#"
+                    id="forgotPasswordLink"
+                >
                     Forgot Password?
                 </a>
 
             </div>
 
 
-            <button
-            type="submit"
-            class="login-btn">
 
-                Login
+            <div class="login-actions">
 
-            </button>
+                <button
+                    type="submit"
+                    class="login-btn"
+                    id="loginBtn"
+                >
+                    Login
+                </button>
+
+
+                <a
+                    href="teacher-register.html"
+                    class="activate-account-btn"
+                >
+                    Activate Account
+                </a>
+
+            </div>
 
 
         </form>
 
 
+
+        <div
+            id="loginMessage"
+            class="login-message"
+        >
+        </div>
+
+
+        <p class="teacher-note">
+            First-time teachers should activate their account using the email registered by the administrator.
+        </p>
+
+
         <a
-        href="index.html"
-        class="back-link">
-
+            href="index.html"
+            class="back-link"
+        >
             ← Back to Home
-
         </a>
 
 
@@ -142,15 +251,10 @@ href="teacher-login.css">
 </div>
 
 
-<!-- SUPABASE -->
 
-<script
-src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2">
-</script>
-
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
 
 <script src="supabase.js"></script>
-
 
 <script src="teacher-login.js"></script>
 

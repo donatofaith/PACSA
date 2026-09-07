@@ -1,38 +1,85 @@
 <!DOCTYPE html>
-
 <html lang="en">
+
 <head>
     <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
 
-```
-<title>PACSA | Classes</title>
+    <meta
+        name="viewport"
+        content="width=device-width, initial-scale=1.0"
+    >
 
-<link rel="stylesheet"
-    href="https://fonts.googleapis.com/css2?family=Outfit:wght@300;400;500;600;700;800&display=swap">
+    <title>PACSA | Classes Management</title>
 
-<link rel="stylesheet" href="admin-dashboard.css">
-<link rel="stylesheet" href="classes.css">
-```
+    <link
+        rel="stylesheet"
+        href="https://fonts.googleapis.com/css2?family=Outfit:wght@300;400;500;600;700;800&display=swap"
+    >
 
+    <link
+        rel="stylesheet"
+        href="admin-dashboard.css"
+    >
+
+    <link
+        rel="stylesheet"
+        href="classes.css"
+    >
+
+    <style>
+        .class-teacher-badge {
+            display: inline-flex;
+            align-items: center;
+            gap: 6px;
+            padding: 6px 9px;
+            border-radius: 8px;
+            background: #F3E8FF;
+            color: #5B21B6;
+            font-size: 12px;
+            font-weight: 600;
+        }
+
+        .class-no-teacher {
+            color: #9CA3AF;
+            font-size: 13px;
+        }
+
+        .class-session-note {
+            margin: 12px 0 0;
+            padding: 11px 13px;
+            border-radius: 9px;
+            background: #F9FAFB;
+            color: #6B7280;
+            font-size: 12px;
+        }
+    </style>
 </head>
+
 
 <body>
 
-```
-<!-- MOBILE MENU -->
-<button class="menu-btn" id="menuBtn" aria-label="Open Menu">
+<button
+    class="menu-btn"
+    id="menuBtn"
+    aria-label="Open navigation"
+>
     ☰
 </button>
 
 
-<!-- ================= SIDEBAR ================= -->
+<!-- SIDEBAR -->
 
-<aside class="sidebar" id="sidebar">
+<aside
+    class="sidebar"
+    id="sidebar"
+>
 
     <div class="brand">
 
-        <img src="images/PACSA LOGO.png" alt="PACSA Logo">
+        <img
+            src="images/PACSA LOGO.png"
+            alt="PACSA Logo"
+        >
 
         <div class="brand-text">
             <h2>PACSA</h2>
@@ -44,66 +91,106 @@
 
     <nav class="sidebar-nav">
 
-        <p class="nav-label">MAIN MENU</p>
+        <p class="nav-label">
+            MAIN MENU
+        </p>
 
-        <a href="admin-dashboard.html" class="nav-link">
+        <a
+            href="admin-dashboard.html"
+            class="nav-link"
+        >
             <span class="nav-icon">⌂</span>
             Dashboard
         </a>
 
 
-        <p class="nav-label">STUDENT MANAGEMENT</p>
+        <p class="nav-label">
+            STUDENT MANAGEMENT
+        </p>
 
-        <a href="students.html" class="nav-link">
+        <a
+            href="students.html"
+            class="nav-link"
+        >
             <span class="nav-icon">🎓</span>
             Students
         </a>
 
 
-        <p class="nav-label">ACADEMIC MANAGEMENT</p>
+        <p class="nav-label">
+            ACADEMIC MANAGEMENT
+        </p>
 
-        <a href="teachers.html" class="nav-link">
+        <a
+            href="teachers.html"
+            class="nav-link"
+        >
             <span class="nav-icon">👨‍🏫</span>
             Teachers
         </a>
 
-        <a href="subjects.html" class="nav-link">
+        <a
+            href="subjects.html"
+            class="nav-link"
+        >
             <span class="nav-icon">📚</span>
             Subjects
         </a>
 
-        <a href="classes.html" class="nav-link active">
+        <a
+            href="classes.html"
+            class="nav-link active"
+        >
             <span class="nav-icon">🏫</span>
             Classes
         </a>
 
-        <a href="sessions.html" class="nav-link">
+        <a
+            href="sessions.html"
+            class="nav-link"
+        >
             <span class="nav-icon">📅</span>
             Sessions & Terms
         </a>
 
 
-        <p class="nav-label">RESULT MANAGEMENT</p>
+        <p class="nav-label">
+            RESULT MANAGEMENT
+        </p>
 
-        <a href="results.html" class="nav-link">
+        <a
+            href="results.html"
+            class="nav-link"
+        >
             <span class="nav-icon">📑</span>
             Results
         </a>
 
-        <a href="reports.html" class="nav-link">
+        <a
+            href="reports.html"
+            class="nav-link"
+        >
             <span class="nav-icon">📊</span>
             Reports & Analytics
         </a>
 
 
-        <p class="nav-label">ADMINISTRATION</p>
+        <p class="nav-label">
+            ADMINISTRATION
+        </p>
 
-        <a href="applications.html" class="nav-link">
+        <a
+            href="applications.html"
+            class="nav-link"
+        >
             <span class="nav-icon">📝</span>
             Applications
         </a>
 
-        <a href="settings.html" class="nav-link">
+        <a
+            href="settings.html"
+            class="nav-link"
+        >
             <span class="nav-icon">⚙</span>
             Settings
         </a>
@@ -113,7 +200,11 @@
 
     <div class="sidebar-footer">
 
-        <a href="#" class="logout-link" id="logoutBtn">
+        <a
+            href="#"
+            class="logout-link"
+            id="logoutBtn"
+        >
             <span>🚪</span>
             Logout
         </a>
@@ -123,284 +214,308 @@
 </aside>
 
 
-
-<!-- ================= MAIN CONTENT ================= -->
+<!-- MAIN -->
 
 <main class="main-content">
 
 
-    <!-- TOPBAR -->
+<header class="topbar">
 
-    <header class="topbar">
+    <div class="page-title">
 
-        <div class="page-title">
+        <p class="breadcrumb">
+            Administration /
+            Academic Management /
+            Classes
+        </p>
 
-            <p class="breadcrumb">
-                Administration / Academic Management / Classes
-            </p>
+        <h1>
+            Classes Management
+        </h1>
 
-            <h1>Classes</h1>
-
-        </div>
-
-
-        <div class="topbar-right">
-
-            <button class="notification-btn" aria-label="Notifications">
-                🔔
-                <span class="notification-dot"></span>
-            </button>
+    </div>
 
 
-            <div class="admin-profile">
+    <div class="topbar-right">
 
-                <img
-                    src="images/Faith.jpg"
-                    alt="Administrator">
+        <button
+            class="notification-btn"
+            aria-label="Notifications"
+        >
+            🔔
+            <span class="notification-dot"></span>
+        </button>
 
-                <div class="admin-info">
 
-                    <strong>Administrator</strong>
+        <div class="admin-profile">
 
-                    <span>System Administrator</span>
+            <img
+                src="images/Faith.jpg"
+                alt="Administrator"
+            >
 
-                </div>
-
+            <div class="admin-info">
+                <strong>Administrator</strong>
+                <span>System Administrator</span>
             </div>
 
         </div>
 
-    </header>
+    </div>
+
+</header>
 
 
+<!-- HERO -->
 
-    <!-- ================= PAGE INTRO ================= -->
+<section class="classes-hero">
 
-    <section class="classes-hero">
+    <div>
+
+        <p class="section-subtitle">
+            ACADEMIC MANAGEMENT
+        </p>
+
+        <h2>
+            Class Management
+        </h2>
+
+        <p>
+            Manage school classes, student numbers
+            and class-teacher responsibilities.
+        </p>
+
+    </div>
+
+
+    <button
+        type="button"
+        class="primary-btn"
+        id="addClassBtn"
+    >
+        + Add New Class
+    </button>
+
+</section>
+
+
+<!-- STATS -->
+
+<section class="stats-grid classes-stats">
+
+    <div class="stat-card">
+
+        <div class="stat-icon classes-icon">
+            🏫
+        </div>
+
+        <div class="stat-info">
+
+            <p>Total Classes</p>
+
+            <h2 id="totalClasses">
+                0
+            </h2>
+
+            <span class="stat-change">
+                School classes
+            </span>
+
+        </div>
+
+    </div>
+
+
+    <div class="stat-card">
+
+        <div class="stat-icon students-icon">
+            🎓
+        </div>
+
+        <div class="stat-info">
+
+            <p>Total Students</p>
+
+            <h2 id="totalStudents">
+                0
+            </h2>
+
+            <span class="stat-change">
+                Across all classes
+            </span>
+
+        </div>
+
+    </div>
+
+
+    <div class="stat-card">
+
+        <div class="stat-icon teachers-icon">
+            👨‍🏫
+        </div>
+
+        <div class="stat-info">
+
+            <p>Classes With Teachers</p>
+
+            <h2 id="assignedClasses">
+                0
+            </h2>
+
+            <span class="stat-change">
+                Current session
+            </span>
+
+        </div>
+
+    </div>
+
+
+    <div class="stat-card">
+
+        <div class="stat-icon subjects-icon">
+            ✓
+        </div>
+
+        <div class="stat-info">
+
+            <p>Active Classes</p>
+
+            <h2 id="activeClasses">
+                0
+            </h2>
+
+            <span class="stat-change positive">
+                Currently active
+            </span>
+
+        </div>
+
+    </div>
+
+</section>
+
+
+<!-- CLASS DIRECTORY -->
+
+<section class="dashboard-card class-management-card">
+
+    <div class="card-header">
 
         <div>
 
             <p class="section-subtitle">
-                ACADEMIC MANAGEMENT
+                CLASS DIRECTORY
             </p>
 
-            <h2>Class Management</h2>
+            <h2>
+                All Classes
+            </h2>
 
-            <p>
-                Manage school classes and view the students assigned to each class.
-            </p>
+        </div>
+
+    </div>
+
+
+    <div class="class-controls">
+
+        <div class="search-box">
+
+            <span>🔎</span>
+
+            <input
+                type="text"
+                id="classSearch"
+                placeholder="Search class or teacher..."
+            >
 
         </div>
 
 
-        <button class="primary-btn" id="addClassBtn">
-            + Add New Class
-        </button>
+        <select id="levelFilter">
 
-    </section>
+            <option value="all">
+                All Levels
+            </option>
 
+            <option value="JSS">
+                JSS
+            </option>
 
+            <option value="SSS">
+                SSS
+            </option>
 
-    <!-- ================= STATISTICS ================= -->
+        </select>
 
-    <section class="stats-grid classes-stats">
 
-        <div class="stat-card">
+        <select id="statusFilter">
 
-            <div class="stat-icon classes-icon">
-                🏫
-            </div>
+            <option value="all">
+                All Status
+            </option>
 
-            <div class="stat-info">
+            <option value="Active">
+                Active
+            </option>
 
-                <p>Total Classes</p>
+            <option value="Inactive">
+                Inactive
+            </option>
 
-                <h2 id="totalClasses">0</h2>
+        </select>
 
-                <span class="stat-change">
-                    School classes
-                </span>
+    </div>
 
-            </div>
 
-        </div>
+    <div class="table-wrapper">
 
+        <table class="data-table classes-table">
 
-        <div class="stat-card">
+            <thead>
 
-            <div class="stat-icon students-icon">
-                🎓
-            </div>
+                <tr>
+                    <th>Class</th>
+                    <th>Level</th>
+                    <th>Students</th>
+                    <th>Class Teacher</th>
+                    <th>Status</th>
+                    <th>Action</th>
+                </tr>
 
-            <div class="stat-info">
+            </thead>
 
-                <p>Total Students</p>
 
-                <h2 id="totalStudents">0</h2>
+            <tbody id="classesTableBody">
+            </tbody>
 
-                <span class="stat-change">
-                    Across all classes
-                </span>
+        </table>
 
-            </div>
+    </div>
 
-        </div>
+</section>
 
 
-        <div class="stat-card">
+<footer class="dashboard-footer">
 
-            <div class="stat-icon teachers-icon">
-                👨‍🏫
-            </div>
+    <p>
+        © 2026 PACSA School Management System.
+        All rights reserved.
+    </p>
 
-            <div class="stat-info">
+</footer>
 
-                <p>Classes With Teachers</p>
-
-                <h2 id="assignedClasses">0</h2>
-
-                <span class="stat-change">
-                    Teacher assigned
-                </span>
-
-            </div>
-
-        </div>
-
-
-        <div class="stat-card">
-
-            <div class="stat-icon subjects-icon">
-                ✓
-            </div>
-
-            <div class="stat-info">
-
-                <p>Active Classes</p>
-
-                <h2 id="activeClasses">0</h2>
-
-                <span class="stat-change positive">
-                    Currently active
-                </span>
-
-            </div>
-
-        </div>
-
-    </section>
-
-
-
-    <!-- ================= CLASS LIST ================= -->
-
-    <section class="dashboard-card class-management-card">
-
-        <div class="card-header">
-
-            <div>
-
-                <p class="section-subtitle">
-                    CLASS DIRECTORY
-                </p>
-
-                <h2>All Classes</h2>
-
-            </div>
-
-        </div>
-
-
-        <!-- SEARCH & FILTER -->
-
-        <div class="class-controls">
-
-            <div class="search-box">
-
-                <span>🔎</span>
-
-                <input
-                    type="text"
-                    id="classSearch"
-                    placeholder="Search class..."
-                >
-
-            </div>
-
-
-            <select id="levelFilter">
-
-                <option value="all">All Levels</option>
-                <option value="JSS">JSS</option>
-                <option value="SSS">SSS</option>
-
-            </select>
-
-
-            <select id="statusFilter">
-
-                <option value="all">All Status</option>
-                <option value="Active">Active</option>
-                <option value="Inactive">Inactive</option>
-
-            </select>
-
-        </div>
-
-
-
-        <!-- TABLE -->
-
-        <div class="table-wrapper">
-
-            <table class="data-table classes-table">
-
-                <thead>
-
-                    <tr>
-
-                        <th>Class</th>
-                        <th>Level</th>
-                        <th>Students</th>
-                        <th>Class Teacher</th>
-                        <th>Status</th>
-                        <th>Action</th>
-
-                    </tr>
-
-                </thead>
-
-
-                <tbody id="classesTableBody">
-                    <!-- Javascript loads classes here -->
-                </tbody>
-
-            </table>
-
-        </div>
-
-    </section>
-
-
-
-    <!-- ================= FOOTER ================= -->
-
-    <footer class="dashboard-footer">
-
-        <p>
-            © 2026 PACSA School Management System.
-            All rights reserved.
-        </p>
-
-    </footer>
 
 </main>
 
 
+<!-- ADD / EDIT MODAL -->
 
-<!-- ================= ADD / EDIT MODAL ================= -->
-
-<div class="modal-overlay" id="classModal">
+<div
+    class="modal-overlay"
+    id="classModal"
+>
 
     <div class="class-modal">
 
@@ -418,7 +533,12 @@
 
             </div>
 
-            <button class="modal-close" id="closeModal">
+
+            <button
+                type="button"
+                class="modal-close"
+                id="closeModal"
+            >
                 ×
             </button>
 
@@ -427,7 +547,10 @@
 
         <form id="classForm">
 
-            <input type="hidden" id="classId">
+            <input
+                type="hidden"
+                id="classId"
+            >
 
 
             <div class="form-group">
@@ -439,7 +562,7 @@
                 <input
                     type="text"
                     id="className"
-                    placeholder="e.g. JSS1A"
+                    placeholder="e.g. SS2"
                     required
                 >
 
@@ -454,7 +577,10 @@
                         Level
                     </label>
 
-                    <select id="classLevel" required>
+                    <select
+                        id="classLevel"
+                        required
+                    >
 
                         <option value="">
                             Select level
@@ -482,8 +608,7 @@
                     <input
                         type="text"
                         id="classArm"
-                        placeholder="e.g. A"
-                        required
+                        placeholder="e.g. A or leave blank"
                     >
 
                 </div>
@@ -500,9 +625,25 @@
                 <input
                     type="text"
                     id="academicSession"
-                    value="2025/2026"
-                    required
+                    readonly
                 >
+
+            </div>
+
+
+            <div class="form-group">
+
+                <label for="classTeacher">
+                    Class Teacher
+                </label>
+
+                <select id="classTeacher">
+
+                    <option value="">
+                        Not Assigned
+                    </option>
+
+                </select>
 
             </div>
 
@@ -528,18 +669,30 @@
             </div>
 
 
+            <p class="class-session-note">
+
+                Class-teacher responsibility is separate
+                from subject teaching assignments and applies
+                to the current academic session.
+
+            </p>
+
+
             <div class="modal-actions">
 
                 <button
                     type="button"
                     class="secondary-btn"
-                    id="cancelModal">
+                    id="cancelModal"
+                >
                     Cancel
                 </button>
 
                 <button
                     type="submit"
-                    class="primary-btn">
+                    class="primary-btn"
+                    id="saveClassBtn"
+                >
                     Save Class
                 </button>
 
@@ -552,8 +705,14 @@
 </div>
 
 
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+
+<script src="supabase.js"></script>
+
+<script src="admin-auth.js"></script>
+
 <script src="classes.js"></script>
-```
+
 
 </body>
 </html>

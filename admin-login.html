@@ -1,72 +1,176 @@
 <!DOCTYPE html>
 <html lang="en">
-<head>
-<meta charset="UTF-8">
-<meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>PACSA Admin Portal</title>
 
-<link href="https://fonts.googleapis.com/css2?family=Outfit:wght@300;400;500;600;700;800&display=swap" rel="stylesheet">
-<link rel="stylesheet" href="admin-login.css">
+<head>
+    <meta charset="UTF-8">
+
+    <meta
+        name="viewport"
+        content="width=device-width, initial-scale=1.0"
+    >
+
+    <title>PACSA Admin Portal</title>
+
+    <link
+        href="https://fonts.googleapis.com/css2?family=Outfit:wght@300;400;500;600;700;800&display=swap"
+        rel="stylesheet"
+    >
+
+    <link
+        rel="stylesheet"
+        href="admin-login.css"
+    >
+
+    <style>
+        .login-message {
+            display: none;
+            margin-top: 15px;
+            padding: 12px;
+            border-radius: 9px;
+            font-size: 13px;
+        }
+
+        .login-message.error {
+            display: block;
+            background: #FEE2E2;
+            color: #B91C1C;
+        }
+
+        .login-message.success {
+            display: block;
+            background: #DCFCE7;
+            color: #166534;
+        }
+
+        .admin-note {
+            text-align: center;
+            font-size: 12px;
+            margin-top: 18px;
+            opacity: 0.75;
+        }
+    </style>
 </head>
+
 
 <body>
 
 <div class="overlay"></div>
 
+
 <div class="container">
 
-<div class="login-card">
+    <div class="login-card">
 
-<img src="images/PACSA LOGO.png" alt="PACSA Logo" class="logo">
+        <img
+            src="images/PACSA LOGO.png"
+            alt="PACSA Logo"
+            class="logo"
+        >
 
-<h1>PACSA</h1>
+        <h1>PACSA</h1>
 
-<p class="subtitle">
-School Management Portal
-</p>
+        <p class="subtitle">
+            School Management Portal
+        </p>
 
-<form id="loginForm">
 
-<div class="input-box">
-<label>Username</label>
-<input type="text" id="username" placeholder="Enter Username" required>
+        <form id="loginForm">
+
+            <div class="input-box">
+
+                <label for="email">
+                    Admin Email
+                </label>
+
+                <input
+                    type="email"
+                    id="email"
+                    placeholder="Enter Admin Email"
+                    autocomplete="username"
+                    required
+                >
+
+            </div>
+
+
+            <div class="input-box">
+
+                <label for="password">
+                    Password
+                </label>
+
+                <div class="password-wrapper">
+
+                    <input
+                        type="password"
+                        id="password"
+                        placeholder="Enter Password"
+                        autocomplete="current-password"
+                        required
+                    >
+
+                    <span
+                        id="togglePassword"
+                        role="button"
+                        tabindex="0"
+                    >
+                        👁
+                    </span>
+
+                </div>
+
+            </div>
+
+
+            <div class="options">
+
+                <span>
+                    Admin Portal
+                </span>
+
+                <a
+                    href="#"
+                    id="forgotPasswordLink"
+                >
+                    Forgot Password?
+                </a>
+
+            </div>
+
+
+            <button
+                type="submit"
+                class="login-btn"
+                id="loginBtn"
+            >
+                Login
+            </button>
+
+        </form>
+
+
+        <div
+            id="loginMessage"
+            class="login-message"
+        ></div>
+
+
+        <p class="admin-note">
+            Administrator accounts are created internally by PACSA.
+        </p>
+
+    </div>
+
 </div>
 
-<div class="input-box">
-<label>Password</label>
 
-<div class="password-wrapper">
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
 
-<input type="password" id="password" placeholder="Enter Password" required>
-
-<span id="togglePassword">👁</span>
-
-</div>
-
-</div>
-
-<div class="options">
-
-<label>
-<input type="checkbox">
-Remember Me
-</label>
-
-<a href="#">Forgot Password?</a>
-
-</div>
-
-<button type="submit" class="login-btn">
-Login
-</button>
-
-</form>
-
-</div>
-
-</div>
+<script src="supabase.js"></script>
 
 <script src="admin-login.js"></script>
 
+
 </body>
+
 </html>

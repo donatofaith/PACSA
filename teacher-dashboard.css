@@ -1959,3 +1959,57 @@ tbody tr:hover {
     }
 
 }
+/* =========================================
+   RESULT ACTION BUTTONS
+========================================= */
+
+.edit-btn,
+.delete-btn {
+    border: none;
+    padding: 9px 14px;
+    border-radius: 9px;
+    font-family: inherit;
+    font-size: 14px;
+    font-weight: 600;
+    cursor: pointer;
+    transition: all 0.2s ease;
+}
+
+
+/* EDIT */
+
+.edit-btn {
+    background: #F3E8FF;
+    color: #5B21B6;
+}
+
+.edit-btn:hover {
+    background: #5B21B6;
+    color: #FFFFFF;
+}
+
+
+/* DELETE */
+
+.delete-btn {
+    background: #FEE2E2;
+    color: #DC2626;
+    margin-left: 6px;
+}
+
+.delete-btn:hover {
+    background: #DC2626;
+    color: #FFFFFF;
+}
+
+.edit-btn:active,
+.delete-btn:active {
+    transform: scale(0.97);
+}
+#myClassSection {
+    display: block;
+}
+
+#myClassSection.show {
+    display: block;
+}

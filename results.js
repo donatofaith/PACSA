@@ -1,60 +1,117 @@
+/* =========================================
+   PACSA RESULTS MANAGEMENT
+   ADMIN AUTH + COMPLETE REPORT REVIEW
+========================================= */
+
 let results = [];
 let students = [];
 let studentReports = [];
 let reports = [];
+
 let currentReport = null;
 
 
-function $(id) {
-    return document.getElementById(id);
-}
+const $ = id =>
+    document.getElementById(id);
 
+
+/* =========================================
+   HELPERS
+========================================= */
 
 function normalize(value) {
-    return String(value || "")
+
+    return String(
+        value || ""
+    )
         .trim()
         .toLowerCase();
 }
 
 
 function escapeHtml(value) {
-    return String(value ?? "")
-        .replaceAll("&", "&amp;")
-        .replaceAll("<", "&lt;")
-        .replaceAll(">", "&gt;")
-        .replaceAll('"', "&quot;")
-        .replaceAll("'", "&#039;");
+
+    return String(
+        value ?? ""
+    )
+        .replace(/&/g, "&amp;")
+        .replace(/</g, "&lt;")
+        .replace(/>/g, "&gt;")
+        .replace(/"/g, "&quot;")
+        .replace(/'/g, "&#039;");
 }
 
+
+function capitalize(value) {
+
+    const text =
+        String(
+            value || ""
+        );
+
+
+    return (
+        text.charAt(0).toUpperCase() +
+        text.slice(1)
+    );
+}
+
+
+/* =========================================
+   STUDENT HELPERS
+========================================= */
 
 function getStudent(studentId) {
 
     return students.find(
         student =>
-            String(student.student_id) ===
-            String(studentId)
+            String(
+                student.student_id
+            )
+            ===
+            String(
+                studentId
+            )
     );
-
 }
 
 
 function getStudentName(studentId) {
 
     const student =
-        getStudent(studentId);
+        getStudent(
+            studentId
+        );
+
 
     if (!student) {
-        return studentId || "Unknown Student";
+
+        return (
+            studentId ||
+            "Unknown Student"
+        );
     }
 
+
     return (
-        `${student.first_name || ""} ${student.last_name || ""}`.trim() ||
-        student.fullname ||
+
+        `${student.first_name || ""} ${student.last_name || ""}`
+            .trim()
+
+        ||
+
+        student.fullname
+
+        ||
+
         student.student_id
     );
-
 }
 
+
+/* =========================================
+   REPORT KEY
+========================================= */
 
 function getReportKey(
     studentId,
@@ -71,224 +128,261 @@ function getReportKey(
     ]
         .map(normalize)
         .join("|");
-
 }
 
+
+/* =========================================
+   RESULT HELPERS
+========================================= */
 
 function getGrade(total) {
 
     if (total >= 70) return "A";
+
     if (total >= 60) return "B";
+
     if (total >= 50) return "C";
+
     if (total >= 45) return "D";
+
     if (total >= 40) return "E";
 
     return "F";
-
 }
 
 
 function getResultTotal(result) {
 
-    const saved =
-        Number(result.total);
+    const savedTotal =
+        Number(
+            result.total
+        );
+
 
     if (
-        Number.isFinite(saved)
+        Number.isFinite(
+            savedTotal
+        )
     ) {
-        return saved;
+
+        return savedTotal;
     }
 
+
     return (
-        (Number(result.ca) || 0) +
+
+        (Number(result.ca) || 0)
+
+        +
+
         (Number(result.exam) || 0)
     );
-
 }
 
 
-
-// ============================================
-// BUILD COMPLETE REPORTS
-// ============================================
+/* =========================================
+   BUILD ADMIN REPORT LIST
+========================================= */
 
 function buildReports() {
 
-    const grouped = {};
+    /*
+        IMPORTANT WORKFLOW:
+
+        Admin does NOT review raw subject
+        result groups.
+
+        Admin only reviews rows that exist in
+        student_reports and have been submitted.
+
+        draft = still with Class Teacher
+        pending = submitted to Admin
+        published = approved
+        rejected = rejected by Admin
+    */
 
 
-    results.forEach(result => {
+    const visibleReportRecords =
+        studentReports.filter(
+            report => {
 
-        const key =
-            getReportKey(
-                result.student_id,
-                result.class,
-                result.term,
-                result.session
-            );
-
-
-        if (!grouped[key]) {
-
-            grouped[key] = {
-
-                key,
-
-                student_id:
-                    result.student_id,
-
-                class:
-                    result.class,
-
-                term:
-                    result.term,
-
-                session:
-                    result.session,
-
-                results: []
-
-            };
-
-        }
+                const status =
+                    normalize(
+                        report.status
+                    );
 
 
-        grouped[key].results.push(
-            result
+                return (
+                    status === "pending"
+                    ||
+                    status === "published"
+                    ||
+                    status === "rejected"
+                );
+            }
         );
-
-    });
 
 
     reports =
-        Object.values(grouped)
-            .map(group => {
+        visibleReportRecords
+            .map(
+                reportRecord => {
 
-                const reportRecord =
-                    studentReports.find(
-                        report =>
-                            getReportKey(
-                                report.student_id,
-                                report.class,
-                                report.term,
-                                report.session
-                            )
-                            ===
-                            group.key
-                    );
-
-
-                const totals =
-                    group.results.map(
-                        getResultTotal
-                    );
-
-
-                const average =
-                    totals.length
-                        ? totals.reduce(
-                            (sum, value) =>
-                                sum + value,
-                            0
-                        ) / totals.length
-                        : 0;
-
-
-                let status =
-                    reportRecord?.status ||
-                    "pending";
-
-
-                if (!reportRecord) {
-
-                    const statuses =
-                        group.results.map(
+                    const matchingResults =
+                        results.filter(
                             result =>
-                                normalize(
-                                    result.status ||
-                                    "pending"
+
+                                getReportKey(
+                                    result.student_id,
+                                    result.class,
+                                    result.term,
+                                    result.session
+                                )
+
+                                ===
+
+                                getReportKey(
+                                    reportRecord.student_id,
+                                    reportRecord.class,
+                                    reportRecord.term,
+                                    reportRecord.session
                                 )
                         );
 
 
-                    if (
-                        statuses.length &&
-                        statuses.every(
-                            value =>
-                                value === "published"
-                        )
-                    ) {
+                    const totals =
+                        matchingResults.map(
+                            getResultTotal
+                        );
 
-                        status =
-                            "published";
 
-                    }
+                    const average =
+                        totals.length
 
-                    else if (
-                        statuses.length &&
-                        statuses.every(
-                            value =>
-                                value === "rejected"
-                        )
-                    ) {
+                            ? totals.reduce(
+                                (
+                                    sum,
+                                    value
+                                ) =>
+                                    sum + value,
+                                0
+                            )
+                            /
+                            totals.length
 
-                        status =
-                            "rejected";
+                            : 0;
 
-                    }
 
+                    return {
+
+                        key:
+                            getReportKey(
+                                reportRecord.student_id,
+                                reportRecord.class,
+                                reportRecord.term,
+                                reportRecord.session
+                            ),
+
+                        student_id:
+                            reportRecord.student_id,
+
+                        class:
+                            reportRecord.class,
+
+                        term:
+                            reportRecord.term,
+
+                        session:
+                            reportRecord.session,
+
+                        remark:
+                            reportRecord.remark ||
+                            "",
+
+                        status:
+                            normalize(
+                                reportRecord.status
+                            ),
+
+                        published_at:
+                            reportRecord.published_at ||
+                            null,
+
+                        reportRecord,
+
+                        results:
+                            matchingResults,
+
+                        average,
+
+                        passed:
+                            totals.filter(
+                                score =>
+                                    score >= 40
+                            )
+                                .length,
+
+                        failed:
+                            totals.filter(
+                                score =>
+                                    score < 40
+                            )
+                                .length
+
+                    };
                 }
+            )
 
 
-                return {
+            /*
+                Do not show an empty report
+                if there are no result rows.
+            */
 
-                    ...group,
+            .filter(
+                report =>
+                    report.results.length > 0
+            )
 
-                    average,
 
-                    passed:
-                        totals.filter(
-                            score =>
-                                score >= 40
-                        ).length,
-
-                    failed:
-                        totals.filter(
-                            score =>
-                                score < 40
-                        ).length,
-
-                    remark:
-                        reportRecord?.remark ||
-                        "",
-
-                    status,
-
-                    reportRecord:
-                        reportRecord || null
-
-                };
-
-            })
             .sort(
-                (a, b) =>
-                    String(
-                        b.student_id
+                (a, b) => {
+
+                    const sessionCompare =
+                        String(
+                            b.session
+                        )
+                            .localeCompare(
+                                String(
+                                    a.session
+                                )
+                            );
+
+
+                    if (
+                        sessionCompare !== 0
+                    ) {
+
+                        return sessionCompare;
+                    }
+
+
+                    return String(
+                        a.student_id
                     )
                         .localeCompare(
                             String(
-                                a.student_id
+                                b.student_id
                             )
-                        )
+                        );
+                }
             );
-
 }
 
 
-
-// ============================================
-// SESSION FILTER
-// ============================================
+/* =========================================
+   SESSION FILTER
+========================================= */
 
 function populateSessionFilter() {
 
@@ -296,13 +390,19 @@ function populateSessionFilter() {
         $("sessionFilter");
 
 
-    const current =
+    if (!select) {
+        return;
+    }
+
+
+    const oldValue =
         select.value;
 
 
-    const sessions =
+    const sessionsList =
         [
             ...new Set(
+
                 reports
                     .map(
                         report =>
@@ -318,11 +418,10 @@ function populateSessionFilter() {
         <option value="">
             All Sessions
         </option>
-
     `;
 
 
-    sessions.forEach(
+    sessionsList.forEach(
         session => {
 
             const option =
@@ -342,53 +441,53 @@ function populateSessionFilter() {
             select.appendChild(
                 option
             );
-
         }
     );
 
 
     if (
-        sessions.includes(
-            current
+        sessionsList.includes(
+            oldValue
         )
     ) {
 
         select.value =
-            current;
-
+            oldValue;
     }
-
 }
 
 
-
-// ============================================
-// RENDER REPORT LIST
-// ============================================
+/* =========================================
+   RENDER REPORT LIST
+========================================= */
 
 function renderReports() {
 
     const search =
         normalize(
-            $("reportSearch").value
+            $("reportSearch")
+                ?.value
         );
 
 
     const term =
         normalize(
-            $("termFilter").value
+            $("termFilter")
+                ?.value
         );
 
 
     const session =
         normalize(
-            $("sessionFilter").value
+            $("sessionFilter")
+                ?.value
         );
 
 
     const status =
         normalize(
-            $("statusFilter").value
+            $("statusFilter")
+                ?.value
         );
 
 
@@ -406,14 +505,18 @@ function renderReports() {
                             report.class,
                             report.term,
                             report.session
-                        ].join(" ")
+                        ]
+                            .join(" ")
                     );
 
 
                 return (
 
                     (
-                        !search ||
+                        !search
+
+                        ||
+
                         searchable.includes(
                             search
                         )
@@ -422,49 +525,75 @@ function renderReports() {
                     &&
 
                     (
-                        !term ||
+                        !term
+
+                        ||
+
                         normalize(
                             report.term
                         )
-                        === term
+                        ===
+                        term
                     )
 
                     &&
 
                     (
-                        !session ||
+                        !session
+
+                        ||
+
                         normalize(
                             report.session
                         )
-                        === session
+                        ===
+                        session
                     )
 
                     &&
 
                     (
-                        !status ||
+                        !status
+
+                        ||
+
                         normalize(
                             report.status
                         )
-                        === status
+                        ===
+                        status
                     )
-
                 );
-
             }
         );
 
 
-    $("reportsTableBody").innerHTML =
+    const tableBody =
+        $("reportsTableBody");
+
+
+    if (!tableBody) {
+        return;
+    }
+
+
+    tableBody.innerHTML =
         filtered
             .map(
                 report => {
 
                     const statusClass =
-                        report.status === "published"
+
+                        report.status ===
+                        "published"
+
                             ? "active-status"
-                            : report.status === "rejected"
+
+                            : report.status ===
+                                "rejected"
+
                                 ? "rejected-status"
+
                                 : "pending";
 
 
@@ -531,7 +660,9 @@ function renderReports() {
 
                                 ${
                                     report.remark
+
                                         ? "Added"
+
                                         : `
                                             <span class="missing-remark">
                                                 Missing
@@ -548,7 +679,9 @@ function renderReports() {
                                     class="status-badge ${statusClass}"
                                 >
                                     ${escapeHtml(
-                                        report.status
+                                        capitalize(
+                                            report.status
+                                        )
                                     )}
                                 </span>
 
@@ -570,9 +703,7 @@ function renderReports() {
                             </td>
 
                         </tr>
-
                     `;
-
                 }
             )
             .join("");
@@ -593,66 +724,107 @@ function renderReports() {
                             this.dataset
                                 .reportKey
                         );
-
                     }
                 );
-
             }
         );
 
 
-    $("totalReports").textContent =
-        reports.length;
+    if (
+        $("totalReports")
+    ) {
+
+        $("totalReports")
+            .textContent =
+            reports.length;
+    }
 
 
-    $("publishedReports").textContent =
-        reports.filter(
-            report =>
-                report.status ===
-                "published"
-        ).length;
+    if (
+        $("publishedReports")
+    ) {
 
+        $("publishedReports")
+            .textContent =
 
-    $("pendingReports").textContent =
-        reports.filter(
-            report =>
-                report.status ===
-                "pending"
-        ).length;
-
-
-    $("studentCount").textContent =
-        new Set(
-            reports.map(
+            reports.filter(
                 report =>
-                    report.student_id
+                    report.status ===
+                    "published"
             )
-        ).size;
+                .length;
+    }
 
 
-    $("reportCount").textContent =
-        filtered.length;
+    if (
+        $("pendingReports")
+    ) {
+
+        $("pendingReports")
+            .textContent =
+
+            reports.filter(
+                report =>
+                    report.status ===
+                    "pending"
+            )
+                .length;
+    }
 
 
-    $("emptyReportState").style.display =
-        filtered.length
-            ? "none"
-            : "block";
+    if (
+        $("studentCount")
+    ) {
 
+        $("studentCount")
+            .textContent =
+
+            new Set(
+                reports.map(
+                    report =>
+                        report.student_id
+                )
+            )
+                .size;
+    }
+
+
+    if (
+        $("reportCount")
+    ) {
+
+        $("reportCount")
+            .textContent =
+            filtered.length;
+    }
+
+
+    if (
+        $("emptyReportState")
+    ) {
+
+        $("emptyReportState")
+            .style
+            .display =
+
+            filtered.length
+                ? "none"
+                : "block";
+    }
 }
 
 
-
-// ============================================
-// OPEN COMPLETE REPORT
-// ============================================
+/* =========================================
+   OPEN REPORT
+========================================= */
 
 function openReport(key) {
 
     currentReport =
         reports.find(
             report =>
-                report.key === key
+                report.key ===
+                key
         );
 
 
@@ -661,42 +833,53 @@ function openReport(key) {
     }
 
 
-    $("reviewStudentName").textContent =
+    $("reviewStudentName")
+        .textContent =
         getStudentName(
             currentReport.student_id
         );
 
 
-    $("reviewStudentInfo").textContent =
+    $("reviewStudentInfo")
+        .textContent =
         "Complete academic result";
 
 
-    $("reviewStudentId").textContent =
+    $("reviewStudentId")
+        .textContent =
         currentReport.student_id ||
         "--";
 
 
-    $("reviewClass").textContent =
+    $("reviewClass")
+        .textContent =
         currentReport.class ||
         "--";
 
 
-    $("reviewTerm").textContent =
+    $("reviewTerm")
+        .textContent =
         currentReport.term ||
         "--";
 
 
-    $("reviewSession").textContent =
+    $("reviewSession")
+        .textContent =
         currentReport.session ||
         "--";
 
 
-    $("reviewStatus").textContent =
-        currentReport.status ||
-        "pending";
+    $("reviewStatus")
+        .textContent =
+        capitalize(
+            currentReport.status ||
+            "pending"
+        );
 
 
-    $("reviewResultBody").innerHTML =
+    $("reviewResultBody")
+        .innerHTML =
+
         currentReport.results
             .map(
                 result => {
@@ -718,11 +901,13 @@ function openReport(key) {
                                 )}
                             </td>
 
+
                             <td>
                                 ${Number(
                                     result.ca
                                 ) || 0}
                             </td>
+
 
                             <td>
                                 ${Number(
@@ -730,45 +915,54 @@ function openReport(key) {
                                 ) || 0}
                             </td>
 
+
                             <td>
+
                                 <strong>
                                     ${total}
                                 </strong>
+
                             </td>
 
+
                             <td>
+
                                 <strong>
                                     ${escapeHtml(
-                                        result.grade ||
+                                        result.grade
+                                        ||
                                         getGrade(
                                             total
                                         )
                                     )}
                                 </strong>
+
                             </td>
 
                         </tr>
-
                     `;
-
                 }
             )
             .join("");
 
 
-    $("reviewSubjects").textContent =
+    $("reviewSubjects")
+        .textContent =
         currentReport.results.length;
 
 
-    $("reviewAverage").textContent =
+    $("reviewAverage")
+        .textContent =
         `${currentReport.average.toFixed(1)}%`;
 
 
-    $("reviewPassed").textContent =
+    $("reviewPassed")
+        .textContent =
         currentReport.passed;
 
 
-    $("reviewFailed").textContent =
+    $("reviewFailed")
+        .textContent =
         currentReport.failed;
 
 
@@ -776,7 +970,8 @@ function openReport(key) {
         currentReport.remark
     ) {
 
-        $("reviewRemark").textContent =
+        $("reviewRemark")
+            .textContent =
             currentReport.remark;
 
 
@@ -786,9 +981,11 @@ function openReport(key) {
                 "missing-remark"
             );
 
+
     } else {
 
-        $("reviewRemark").textContent =
+        $("reviewRemark")
+            .textContent =
             "No class teacher remark has been submitted yet.";
 
 
@@ -797,32 +994,38 @@ function openReport(key) {
             .add(
                 "missing-remark"
             );
-
     }
 
 
     /*
-     * APPROVE/REJECT only make sense while
-     * not already published.
-     *
-     * DELETE remains available to admin.
-     */
+        ADMIN APPROVE / REJECT
+        ONLY WHILE PENDING.
+    */
 
-    $("approveReportBtn").style.display =
+    const pending =
         currentReport.status ===
-        "published"
-            ? "none"
-            : "inline-block";
+        "pending";
 
 
-    $("rejectReportBtn").style.display =
-        currentReport.status ===
-        "published"
-            ? "none"
-            : "inline-block";
+    $("approveReportBtn")
+        .style
+        .display =
+        pending
+            ? "inline-block"
+            : "none";
 
 
-    $("deleteReportBtn").style.display =
+    $("rejectReportBtn")
+        .style
+        .display =
+        pending
+            ? "inline-block"
+            : "none";
+
+
+    $("deleteReportBtn")
+        .style
+        .display =
         "inline-block";
 
 
@@ -841,14 +1044,12 @@ function openReport(key) {
             block:
                 "start"
         });
-
 }
 
 
-
-// ============================================
-// CLOSE REVIEW
-// ============================================
+/* =========================================
+   CLOSE REVIEW
+========================================= */
 
 function closeReview() {
 
@@ -857,45 +1058,74 @@ function closeReview() {
 
 
     $("reportReviewPanel")
-        .classList
+        ?.classList
         .remove(
             "show"
         );
-
 }
 
 
+/* =========================================
+   GET FRESH REPORT RECORD
+========================================= */
 
-// ============================================
-// APPROVE COMPLETE REPORT
-// ============================================
+async function fetchFreshReport(
+    report
+) {
+
+    const {
+        data,
+        error
+    } =
+        await supabaseClient
+            .from(
+                "student_reports"
+            )
+            .select(`
+                id,
+                student_id,
+                class,
+                term,
+                session,
+                remark,
+                status,
+                published_at
+            `)
+            .eq(
+                "student_id",
+                report.student_id
+            )
+            .eq(
+                "class",
+                report.class
+            )
+            .eq(
+                "term",
+                report.term
+            )
+            .eq(
+                "session",
+                report.session
+            )
+            .maybeSingle();
+
+
+    if (error) {
+        throw error;
+    }
+
+
+    return data;
+}
+
+
+/* =========================================
+   APPROVE COMPLETE REPORT
+========================================= */
 
 async function approveCurrentReport() {
 
     if (!currentReport) {
-        return;
-    }
-
-
-    if (!currentReport.remark) {
-
-        alert(
-            "This report cannot be published yet because the class teacher has not added a Remark."
-        );
-
-        return;
-    }
-
-
-    const confirmed =
-        confirm(
-            `Publish the COMPLETE result for ${getStudentName(
-                currentReport.student_id
-            )}?`
-        );
-
-
-    if (!confirmed) {
         return;
     }
 
@@ -909,66 +1139,114 @@ async function approveCurrentReport() {
 
 
     button.textContent =
-        "Publishing...";
+        "Checking...";
 
 
     try {
 
-        const reportPayload = {
+        /*
+            STALE APPROVAL PROTECTION
 
-            student_id:
-                currentReport.student_id,
+            Re-read the exact report immediately
+            before publishing.
+        */
 
-            class:
-                currentReport.class,
+        const freshReport =
+            await fetchFreshReport(
+                currentReport
+            );
 
-            term:
-                currentReport.term,
 
-            session:
-                currentReport.session,
+        if (!freshReport) {
 
-            remark:
-                currentReport.remark,
+            throw new Error(
+                "This report no longer exists."
+            );
+        }
 
-            status:
-                "published",
 
-            published_at:
-                new Date().toISOString()
+        if (
+            normalize(
+                freshReport.status
+            )
+            !==
+            "pending"
+        ) {
 
-        };
+            alert(
+                "This report is no longer pending review. It may have been changed by the class teacher. Refreshing the page now."
+            );
 
+
+            closeReview();
+
+            await loadData();
+
+            return;
+        }
+
+
+        if (
+            !String(
+                freshReport.remark ||
+                ""
+            )
+                .trim()
+        ) {
+
+            alert(
+                "This report cannot be published because the class teacher remark is missing."
+            );
+
+            return;
+        }
+
+
+        const confirmed =
+            confirm(
+                `Publish the COMPLETE result for ${getStudentName(
+                    currentReport.student_id
+                )}?`
+            );
+
+
+        if (!confirmed) {
+            return;
+        }
+
+
+        button.textContent =
+            "Publishing...";
+
+
+        /*
+            IMPORTANT:
+
+            The update itself also requires
+            status='pending'.
+
+            If the teacher changes the report
+            between our check and this update,
+            no row will be published.
+        */
 
         const {
-            error: reportError
+            data,
+            error
         } =
             await supabaseClient
                 .from(
                     "student_reports"
                 )
-                .upsert(
-                    reportPayload,
-                    {
-                        onConflict:
-                            "student_id,class,term,session"
-                    }
-                );
-
-
-        if (reportError) {
-            throw reportError;
-        }
-
-
-        const {
-            error: resultsError
-        } =
-            await supabaseClient
-                .from("results")
                 .update({
+
                     status:
-                        "published"
+                        "published",
+
+                    published_at:
+                        new Date()
+                            .toISOString()
+
                 })
                 .eq(
                     "student_id",
@@ -985,12 +1263,43 @@ async function approveCurrentReport() {
                 .eq(
                     "session",
                     currentReport.session
-                );
+                )
+                .eq(
+                    "status",
+                    "pending"
+                )
+                .select();
 
 
-        if (resultsError) {
-            throw resultsError;
+        if (error) {
+            throw error;
         }
+
+
+        if (
+            !data ||
+            data.length !== 1
+        ) {
+
+            alert(
+                "The report changed before it could be published. Nothing was published. Refreshing the results now."
+            );
+
+
+            closeReview();
+
+            await loadData();
+
+            return;
+        }
+
+
+        /*
+            DO NOT change individual results.status.
+
+            Publication is controlled by the
+            student_reports row.
+        */
 
 
         alert(
@@ -1007,6 +1316,7 @@ async function approveCurrentReport() {
     } catch (error) {
 
         console.error(
+            "Publish report error:",
             error
         );
 
@@ -1024,33 +1334,17 @@ async function approveCurrentReport() {
 
         button.textContent =
             "Approve & Publish";
-
     }
-
 }
 
 
-
-// ============================================
-// REJECT COMPLETE REPORT
-// ============================================
+/* =========================================
+   REJECT COMPLETE REPORT
+========================================= */
 
 async function rejectCurrentReport() {
 
     if (!currentReport) {
-        return;
-    }
-
-
-    const confirmed =
-        confirm(
-            `Reject the COMPLETE result for ${getStudentName(
-                currentReport.student_id
-            )}?`
-        );
-
-
-    if (!confirmed) {
         return;
     }
 
@@ -1064,67 +1358,83 @@ async function rejectCurrentReport() {
 
 
     button.textContent =
-        "Rejecting...";
+        "Checking...";
 
 
     try {
 
-        const reportPayload = {
+        /*
+            GET FRESH COPY FIRST
+        */
 
-            student_id:
-                currentReport.student_id,
+        const freshReport =
+            await fetchFreshReport(
+                currentReport
+            );
 
-            class:
-                currentReport.class,
 
-            term:
-                currentReport.term,
+        if (!freshReport) {
 
-            session:
-                currentReport.session,
+            throw new Error(
+                "This report no longer exists."
+            );
+        }
 
-            remark:
-                currentReport.remark ||
-                null,
 
-            status:
-                "rejected",
+        if (
+            normalize(
+                freshReport.status
+            )
+            !==
+            "pending"
+        ) {
 
-            published_at:
-                null
+            alert(
+                "This report is no longer pending review. Refreshing the page."
+            );
 
-        };
+
+            closeReview();
+
+            await loadData();
+
+            return;
+        }
+
+
+        const confirmed =
+            confirm(
+                `Reject the COMPLETE result for ${getStudentName(
+                    currentReport.student_id
+                )}?`
+            );
+
+
+        if (!confirmed) {
+            return;
+        }
+
+
+        button.textContent =
+            "Rejecting...";
 
 
         const {
-            error: reportError
+            data,
+            error
         } =
             await supabaseClient
                 .from(
                     "student_reports"
                 )
-                .upsert(
-                    reportPayload,
-                    {
-                        onConflict:
-                            "student_id,class,term,session"
-                    }
-                );
-
-
-        if (reportError) {
-            throw reportError;
-        }
-
-
-        const {
-            error: resultsError
-        } =
-            await supabaseClient
-                .from("results")
                 .update({
+
                     status:
-                        "rejected"
+                        "rejected",
+
+                    published_at:
+                        null
+
                 })
                 .eq(
                     "student_id",
@@ -1141,12 +1451,41 @@ async function rejectCurrentReport() {
                 .eq(
                     "session",
                     currentReport.session
-                );
+                )
+                .eq(
+                    "status",
+                    "pending"
+                )
+                .select();
 
 
-        if (resultsError) {
-            throw resultsError;
+        if (error) {
+            throw error;
         }
+
+
+        if (
+            !data ||
+            data.length !== 1
+        ) {
+
+            alert(
+                "The report changed before it could be rejected. Nothing was changed."
+            );
+
+
+            closeReview();
+
+            await loadData();
+
+            return;
+        }
+
+
+        /*
+            Individual subject result rows
+            remain untouched.
+        */
 
 
         alert(
@@ -1163,6 +1502,7 @@ async function rejectCurrentReport() {
     } catch (error) {
 
         console.error(
+            "Reject report error:",
             error
         );
 
@@ -1180,16 +1520,13 @@ async function rejectCurrentReport() {
 
         button.textContent =
             "Reject Report";
-
     }
-
 }
 
 
-
-// ============================================
-// DELETE COMPLETE REPORT
-// ============================================
+/* =========================================
+   DELETE COMPLETE REPORT
+========================================= */
 
 async function deleteCurrentReport() {
 
@@ -1208,7 +1545,7 @@ async function deleteCurrentReport() {
         confirm(
             `Delete the COMPLETE result for ${studentName}?\n\n` +
             `${currentReport.class} | ${currentReport.term} | ${currentReport.session}\n\n` +
-            `This will permanently remove all subject results and the report remark.`
+            `This permanently removes all subject results and the report remark.`
         );
 
 
@@ -1243,11 +1580,12 @@ async function deleteCurrentReport() {
     try {
 
         /*
-         * DELETE SUBJECT RESULT ROWS
-         */
+            DELETE SUBJECT RESULT ROWS
+        */
 
         const {
-            error: resultsDeleteError
+            error:
+            resultsDeleteError
         } =
             await supabaseClient
                 .from("results")
@@ -1270,17 +1608,21 @@ async function deleteCurrentReport() {
                 );
 
 
-        if (resultsDeleteError) {
+        if (
+            resultsDeleteError
+        ) {
+
             throw resultsDeleteError;
         }
 
 
         /*
-         * DELETE REPORT / REMARK ROW
-         */
+            DELETE REPORT / REMARK
+        */
 
         const {
-            error: reportDeleteError
+            error:
+            reportDeleteError
         } =
             await supabaseClient
                 .from(
@@ -1305,7 +1647,10 @@ async function deleteCurrentReport() {
                 );
 
 
-        if (reportDeleteError) {
+        if (
+            reportDeleteError
+        ) {
+
             throw reportDeleteError;
         }
 
@@ -1342,16 +1687,13 @@ async function deleteCurrentReport() {
 
         button.textContent =
             "Delete Report";
-
     }
-
 }
 
 
-
-// ============================================
-// LOAD DATA
-// ============================================
+/* =========================================
+   LOAD DATA
+========================================= */
 
 async function loadData() {
 
@@ -1366,7 +1708,19 @@ async function loadData() {
 
                 supabaseClient
                     .from("results")
-                    .select("*")
+                    .select(`
+                        id,
+                        student_id,
+                        subject,
+                        ca,
+                        exam,
+                        total,
+                        grade,
+                        term,
+                        session,
+                        class,
+                        status
+                    `)
                     .order(
                         "id",
                         {
@@ -1375,17 +1729,33 @@ async function loadData() {
                         }
                     ),
 
+
                 supabaseClient
                     .from("students")
-                    .select(
-                        "student_id, first_name, last_name, fullname, class"
-                    ),
+                    .select(`
+                        student_id,
+                        first_name,
+                        last_name,
+                        fullname,
+                        class
+                    `),
+
 
                 supabaseClient
                     .from(
                         "student_reports"
                     )
-                    .select("*")
+                    .select(`
+                        id,
+                        student_id,
+                        class,
+                        term,
+                        session,
+                        remark,
+                        status,
+                        published_at,
+                        created_at
+                    `)
 
             ]);
 
@@ -1393,6 +1763,7 @@ async function loadData() {
         if (
             resultsResponse.error
         ) {
+
             throw resultsResponse.error;
         }
 
@@ -1400,6 +1771,7 @@ async function loadData() {
         if (
             studentsResponse.error
         ) {
+
             throw studentsResponse.error;
         }
 
@@ -1407,6 +1779,7 @@ async function loadData() {
         if (
             reportsResponse.error
         ) {
+
             throw reportsResponse.error;
         }
 
@@ -1446,24 +1819,33 @@ async function loadData() {
         alert(
             `Could not load results: ${error.message}`
         );
-
     }
-
 }
 
 
-
-// ============================================
-// PAGE EVENTS
-// ============================================
+/* =========================================
+   PAGE START
+========================================= */
 
 document.addEventListener(
     "DOMContentLoaded",
-    function () {
+    async function () {
+
+        /*
+            ADMIN AUTH FIRST
+        */
+
+        const admin =
+            await window.adminAuthReady;
+
+
+        if (!admin) {
+            return;
+        }
 
 
         $("reviewPendingBtn")
-            .addEventListener(
+            ?.addEventListener(
                 "click",
                 function () {
 
@@ -1484,48 +1866,47 @@ document.addEventListener(
 
 
                     renderReports();
-
                 }
             );
 
 
         $("refreshReportsBtn")
-            .addEventListener(
+            ?.addEventListener(
                 "click",
                 loadData
             );
 
 
         $("reportSearch")
-            .addEventListener(
+            ?.addEventListener(
                 "input",
                 renderReports
             );
 
 
         $("termFilter")
-            .addEventListener(
+            ?.addEventListener(
                 "change",
                 renderReports
             );
 
 
         $("sessionFilter")
-            .addEventListener(
+            ?.addEventListener(
                 "change",
                 renderReports
             );
 
 
         $("statusFilter")
-            .addEventListener(
+            ?.addEventListener(
                 "change",
                 renderReports
             );
 
 
         $("clearFiltersBtn")
-            .addEventListener(
+            ?.addEventListener(
                 "click",
                 function () {
 
@@ -1546,78 +1927,57 @@ document.addEventListener(
 
 
                     renderReports();
-
                 }
             );
 
 
         $("closeReviewBtn")
-            .addEventListener(
+            ?.addEventListener(
                 "click",
                 closeReview
             );
 
 
         $("approveReportBtn")
-            .addEventListener(
+            ?.addEventListener(
                 "click",
                 approveCurrentReport
             );
 
 
         $("rejectReportBtn")
-            .addEventListener(
+            ?.addEventListener(
                 "click",
                 rejectCurrentReport
             );
 
 
         $("deleteReportBtn")
-            .addEventListener(
+            ?.addEventListener(
                 "click",
                 deleteCurrentReport
             );
 
 
         $("menuBtn")
-            .addEventListener(
+            ?.addEventListener(
                 "click",
                 function () {
 
                     $("sidebar")
-                        .classList
+                        ?.classList
                         .toggle(
                             "active"
                         );
-
                 }
             );
 
 
-        $("logoutBtn")
-            .addEventListener(
-                "click",
-                function (event) {
-
-                    event.preventDefault();
+        /*
+            Logout is handled by admin-auth.js
+        */
 
 
-                    if (
-                        confirm(
-                            "Are you sure you want to logout?"
-                        )
-                    ) {
-
-                        window.location.href =
-                            "login.html";
-
-                    }
-
-                }
-            );
-
-
-        loadData();
-
+        await loadData();
     }
 );

@@ -1,270 +1,474 @@
 <!DOCTYPE html>
 <html lang="en">
+
 <head>
     <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+
+    <meta
+        name="viewport"
+        content="width=device-width, initial-scale=1.0"
+    >
+
     <title>PACSA | Settings</title>
-    <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Outfit:wght@300;400;500;600;700;800&display=swap">
-    <link rel="stylesheet" href="admin-dashboard.css">
+
+    <link
+        rel="stylesheet"
+        href="https://fonts.googleapis.com/css2?family=Outfit:wght@300;400;500;600;700;800&display=swap"
+    >
+
+    <link
+        rel="stylesheet"
+        href="admin-dashboard.css"
+    >
 </head>
+
 
 <body>
 
-<button class="menu-btn" id="menuBtn">☰</button>
+<button
+    class="menu-btn"
+    id="menuBtn"
+>
+    ☰
+</button>
 
-<aside class="sidebar" id="sidebar">
+
+<aside
+    class="sidebar"
+    id="sidebar"
+>
 
     <div class="brand">
-        <img src="images/PACSA LOGO.png" alt="PACSA Logo">
+
+        <img
+            src="images/PACSA LOGO.png"
+            alt="PACSA Logo"
+        >
 
         <div class="brand-text">
             <h2>PACSA</h2>
             <p>Admin Portal</p>
         </div>
+
     </div>
+
 
     <nav class="sidebar-nav">
 
-        <p class="nav-label">MAIN MENU</p>
+        <p class="nav-label">
+            MAIN MENU
+        </p>
 
-        <a href="admin-dashboard.html" class="nav-link">
-            <span class="nav-icon">⌂</span> Dashboard
+        <a
+            href="admin-dashboard.html"
+            class="nav-link"
+        >
+            <span class="nav-icon">⌂</span>
+            Dashboard
         </a>
 
-        <p class="nav-label">STUDENT MANAGEMENT</p>
 
-        <a href="students.html" class="nav-link">
-            <span class="nav-icon">🎓</span> Students
+        <p class="nav-label">
+            STUDENT MANAGEMENT
+        </p>
+
+        <a
+            href="students.html"
+            class="nav-link"
+        >
+            <span class="nav-icon">🎓</span>
+            Students
         </a>
 
-        <p class="nav-label">ACADEMIC MANAGEMENT</p>
 
-        <a href="teachers.html" class="nav-link">
-            <span class="nav-icon">👨‍🏫</span> Teachers
+        <p class="nav-label">
+            ACADEMIC MANAGEMENT
+        </p>
+
+        <a
+            href="teachers.html"
+            class="nav-link"
+        >
+            <span class="nav-icon">👨‍🏫</span>
+            Teachers
         </a>
 
-        <a href="subjects.html" class="nav-link">
-            <span class="nav-icon">📚</span> Subjects
+        <a
+            href="subjects.html"
+            class="nav-link"
+        >
+            <span class="nav-icon">📚</span>
+            Subjects
         </a>
 
-        <a href="classes.html" class="nav-link">
-            <span class="nav-icon">🏫</span> Classes
+        <a
+            href="classes.html"
+            class="nav-link"
+        >
+            <span class="nav-icon">🏫</span>
+            Classes
         </a>
 
-        <a href="sessions.html" class="nav-link">
-            <span class="nav-icon">📅</span> Sessions & Terms
+        <a
+            href="sessions.html"
+            class="nav-link"
+        >
+            <span class="nav-icon">📅</span>
+            Sessions & Terms
         </a>
 
-        <p class="nav-label">RESULT MANAGEMENT</p>
 
-        <a href="results.html" class="nav-link">
-            <span class="nav-icon">📑</span> Results
+        <p class="nav-label">
+            RESULT MANAGEMENT
+        </p>
+
+        <a
+            href="results.html"
+            class="nav-link"
+        >
+            <span class="nav-icon">📑</span>
+            Results
         </a>
 
-        <a href="reports.html" class="nav-link">
-            <span class="nav-icon">📊</span> Reports & Analytics
+        <a
+            href="reports.html"
+            class="nav-link"
+        >
+            <span class="nav-icon">📊</span>
+            Reports & Analytics
         </a>
 
-        <p class="nav-label">ADMINISTRATION</p>
 
-        <a href="applications.html" class="nav-link">
-            <span class="nav-icon">📝</span> Applications
+        <p class="nav-label">
+            ADMINISTRATION
+        </p>
+
+        <a
+            href="applications.html"
+            class="nav-link"
+        >
+            <span class="nav-icon">📝</span>
+            Applications
         </a>
 
-        <a href="settings.html" class="nav-link active">
-            <span class="nav-icon">⚙</span> Settings
+        <a
+            href="settings.html"
+            class="nav-link active"
+        >
+            <span class="nav-icon">⚙</span>
+            Settings
         </a>
 
     </nav>
 
+
     <div class="sidebar-footer">
-        <a href="#" class="logout-link" id="logoutBtn">
-            <span>🚪</span> Logout
+
+        <a
+            href="#"
+            class="logout-link"
+            id="logoutBtn"
+        >
+            <span>🚪</span>
+            Logout
         </a>
+
     </div>
 
 </aside>
 
+
 <main class="main-content">
 
-    <header class="topbar">
 
-        <div class="page-title">
-            <p class="breadcrumb">
-                Administration / Settings
-            </p>
+<header class="topbar">
 
-            <h1>Settings</h1>
-        </div>
+    <div class="page-title">
 
-        <div class="topbar-right">
-
-            <button class="notification-btn" aria-label="Notifications">
-                🔔
-                <span class="notification-dot"></span>
-            </button>
-
-            <div class="admin-profile">
-                <img src="images/Faith.jpg" alt="Administrator">
-
-                <div class="admin-info">
-                    <strong>Administrator</strong>
-                    <span>System Administrator</span>
-                </div>
-            </div>
-
-        </div>
-
-    </header>
-
-    <section class="management-hero">
-
-        <div>
-            <p class="section-subtitle">SYSTEM SETTINGS</p>
-
-            <h2>Manage School Settings</h2>
-
-            <p>
-                Configure school information and system preferences.
-            </p>
-        </div>
-
-        <button class="btn btn-primary" id="saveSettingsBtn">
-            Save Changes
-        </button>
-
-    </section>
-
-    <section class="management-page-card">
-
-        <div class="management-card-header">
-
-            <div>
-                <h2>School Information</h2>
-                <p>Update the basic information about your school.</p>
-            </div>
-
-        </div>
-
-        <form id="settingsForm">
-
-            <div class="form-grid">
-
-                <div class="form-group">
-                    <label>School Name</label>
-                    <input
-                        type="text"
-                        id="schoolName"
-                        value="PACSA School"
-                        required
-                    >
-                </div>
-
-                <div class="form-group">
-                    <label>School Email</label>
-                    <input
-                        type="email"
-                        id="schoolEmail"
-                        placeholder="school@example.com"
-                    >
-                </div>
-
-                <div class="form-group">
-                    <label>Phone Number</label>
-                    <input
-                        type="tel"
-                        id="schoolPhone"
-                        placeholder="+234 000 000 0000"
-                    >
-                </div>
-
-                <div class="form-group">
-                    <label>Current Session</label>
-                    <select id="currentSession">
-                        <option value="2026/2027">2026/2027</option>
-                        <option value="2025/2026">2025/2026</option>
-                    </select>
-                </div>
-
-                <div class="form-group">
-                    <label>Current Term</label>
-                    <select id="currentTerm">
-                        <option>First Term</option>
-                        <option>Second Term</option>
-                        <option>Third Term</option>
-                    </select>
-                </div>
-
-                <div class="form-group">
-                    <label>School Address</label>
-                    <input
-                        type="text"
-                        id="schoolAddress"
-                        placeholder="Enter school address"
-                    >
-                </div>
-
-            </div>
-
-        </form>
-
-    </section>
-
-    <section class="teacher-management-info">
-
-        <div class="info-card">
-
-            <div class="info-icon purple-info">🏫</div>
-
-            <div>
-                <h3>School Profile</h3>
-                <p>
-                    Manage your school's basic information.
-                </p>
-            </div>
-
-        </div>
-
-        <div class="info-card">
-
-            <div class="info-icon green-info">📅</div>
-
-            <div>
-                <h3>Academic Session</h3>
-                <p>
-                    Set the active academic session and term.
-                </p>
-            </div>
-
-        </div>
-
-        <div class="info-card">
-
-            <div class="info-icon orange-info">⚙</div>
-
-            <div>
-                <h3>System Preferences</h3>
-                <p>
-                    More system controls can be connected later.
-                </p>
-            </div>
-
-        </div>
-
-    </section>
-
-    <footer class="dashboard-footer">
-
-        <p>
-            © 2026 PACSA School Management System.
-            All rights reserved.
+        <p class="breadcrumb">
+            Administration / Settings
         </p>
 
-    </footer>
+        <h1>
+            Settings
+        </h1>
+
+    </div>
+
+
+    <div class="topbar-right">
+
+        <button
+            class="notification-btn"
+            aria-label="Notifications"
+        >
+            🔔
+            <span class="notification-dot"></span>
+        </button>
+
+
+        <div class="admin-profile">
+
+            <img
+                src="images/Faith.jpg"
+                alt="Administrator"
+            >
+
+            <div class="admin-info">
+                <strong>Administrator</strong>
+                <span>System Administrator</span>
+            </div>
+
+        </div>
+
+    </div>
+
+</header>
+
+
+<section class="management-hero">
+
+    <div>
+
+        <p class="section-subtitle">
+            SYSTEM SETTINGS
+        </p>
+
+        <h2>
+            Manage School Settings
+        </h2>
+
+        <p>
+            Update school information and control the
+            current academic session and term.
+        </p>
+
+    </div>
+
+
+    <button
+        type="button"
+        class="btn btn-primary"
+        id="saveSettingsBtn"
+    >
+        Save Changes
+    </button>
+
+</section>
+
+
+<section class="management-page-card">
+
+    <div class="management-card-header">
+
+        <div>
+
+            <h2>
+                School Information
+            </h2>
+
+            <p>
+                Manage the school's basic details.
+            </p>
+
+        </div>
+
+    </div>
+
+
+    <form id="settingsForm">
+
+        <div class="form-grid">
+
+            <div class="form-group">
+
+                <label for="schoolName">
+                    School Name
+                </label>
+
+                <input
+                    type="text"
+                    id="schoolName"
+                    required
+                >
+
+            </div>
+
+
+            <div class="form-group">
+
+                <label for="schoolEmail">
+                    School Email
+                </label>
+
+                <input
+                    type="email"
+                    id="schoolEmail"
+                    placeholder="school@example.com"
+                >
+
+            </div>
+
+
+            <div class="form-group">
+
+                <label for="schoolPhone">
+                    Phone Number
+                </label>
+
+                <input
+                    type="tel"
+                    id="schoolPhone"
+                    placeholder="+234 000 000 0000"
+                >
+
+            </div>
+
+
+            <div class="form-group">
+
+                <label for="schoolAddress">
+                    School Address
+                </label>
+
+                <input
+                    type="text"
+                    id="schoolAddress"
+                    placeholder="Enter school address"
+                >
+
+            </div>
+
+
+            <div class="form-group">
+
+                <label for="currentSession">
+                    Current Session
+                </label>
+
+                <select id="currentSession">
+
+                    <option value="">
+                        Select Session
+                    </option>
+
+                </select>
+
+            </div>
+
+
+            <div class="form-group">
+
+                <label for="currentTerm">
+                    Current Term
+                </label>
+
+                <select id="currentTerm">
+
+                    <option value="">
+                        Select Term
+                    </option>
+
+                </select>
+
+            </div>
+
+        </div>
+
+    </form>
+
+</section>
+
+
+<section class="teacher-management-info">
+
+    <div class="info-card">
+
+        <div class="info-icon purple-info">
+            🏫
+        </div>
+
+        <div>
+
+            <h3>
+                School Profile
+            </h3>
+
+            <p>
+                School contact information is stored in Supabase.
+            </p>
+
+        </div>
+
+    </div>
+
+
+    <div class="info-card">
+
+        <div class="info-icon green-info">
+            📅
+        </div>
+
+        <div>
+
+            <h3>
+                Academic Session
+            </h3>
+
+            <p>
+                The selected session and term become the
+                current academic period across PACSA.
+            </p>
+
+        </div>
+
+    </div>
+
+
+    <div class="info-card">
+
+        <div class="info-icon orange-info">
+            ⚙
+        </div>
+
+        <div>
+
+            <h3>
+                System Control
+            </h3>
+
+            <p>
+                Settings are now connected to real system data.
+            </p>
+
+        </div>
+
+    </div>
+
+</section>
+
+
+<footer class="dashboard-footer">
+
+    <p>
+        © 2026 PACSA School Management System.
+        All rights reserved.
+    </p>
+
+</footer>
+
 
 </main>
 
+
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+
+<script src="supabase.js"></script>
+
+<script src="admin-auth.js"></script>
+
 <script src="settings.js"></script>
+
 
 </body>
 </html>

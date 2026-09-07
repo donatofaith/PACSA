@@ -1,334 +1,1580 @@
+/* =========================================
+   PACSA SUBJECTS MANAGEMENT
+   ADMIN AUTH + SAFE SUBJECT MANAGEMENT
+========================================= */
+
 let subjects = [];
 
-function $(id) {
-    return document.getElementById(id);
-}
+let teacherAssignments = [];
+let studentSubjectRegistrations = [];
+let resultSubjects = [];
 
-function escapeHtml(value) {
-    return String(value ?? "")
-        .replaceAll("&", "&amp;")
-        .replaceAll("<", "&lt;")
-        .replaceAll(">", "&gt;")
-        .replaceAll('"', "&quot;")
-        .replaceAll("'", "&#039;");
-}
+const $ = id =>
+    document.getElementById(id);
 
-function renderSubjects() {
-    const table = $("subjectsTableBody");
-    const search = $("subjectSearch").value.trim().toLowerCase();
-    const category = $("categoryFilter").value;
-    const status = $("statusFilter").value;
 
-    const filtered = subjects.filter(subject =>
-        (String(subject.name || "").toLowerCase().includes(search) ||
-         String(subject.code || "").toLowerCase().includes(search)) &&
-        (!category || subject.category === category) &&
-        (!status || subject.status === status)
-    );
+/* =========================================
+   START
+========================================= */
 
-    table.innerHTML = filtered.map(subject => `
-        <tr>
-            <td><strong>${escapeHtml(subject.name)}</strong></td>
-            <td>${escapeHtml(subject.code)}</td>
-            <td>${escapeHtml(subject.category)}</td>
-            <td>0</td>
-<<<<<<< HEAD
-            <td><span class="status-badge ${subject.status === "active" ? "active-status" : "pending"}">${escapeHtml(subject.status)}</span></td>
-            <td class="action-column">
-                <button type="button" class="btn btn-light" onclick="editSubject('${subject.id}')">Edit</button>
-=======
-            <td>
-                <span class="status-badge ${subject.status === "active" ? "active-status" : "pending"}">
-                    ${escapeHtml(subject.status)}
-                </span>
-            </td>
-            <td class="action-column">
-                <button type="button" class="btn btn-light" onclick="editSubject('${subject.id}')">
-                    Edit
-                </button>
-                <button type="button" class="btn btn-light" onclick="deleteSubject('${subject.id}')">
-                    Delete
-                </button>
->>>>>>> 1d9664b (Update admin portal pages)
-            </td>
-        </tr>
-    `).join("");
+document.addEventListener(
+    "DOMContentLoaded",
+    async () => {
 
-    $("emptySubjectState").style.display = filtered.length ? "none" : "block";
-    $("totalSubjects").textContent = subjects.length;
-    $("activeSubjects").textContent = subjects.filter(s => s.status === "active").length;
-    $("coreSubjects").textContent = subjects.filter(s => s.category === "Core").length;
-    $("classesCovered").textContent = "0";
-    $("subjectCount").textContent = subjects.length;
-}
+        /*
+            ADMIN AUTH FIRST
+        */
+
+        const admin =
+            await window.adminAuthReady;
+
+        if (!admin) {
+            return;
+        }
+
+
+        /* MOBILE MENU */
+
+        $("menuBtn")
+            ?.addEventListener(
+                "click",
+                () => {
+
+                    $("sidebar")
+                        ?.classList
+                        .toggle("active");
+                }
+            );
+
+
+        /* ADD */
+
+        $("addSubjectBtn")
+            ?.addEventListener(
+                "click",
+                () => {
+
+                    openSubjectModal();
+                }
+            );
+
+
+        $("emptyAddSubjectBtn")
+            ?.addEventListener(
+                "click",
+                () => {
+
+                    openSubjectModal();
+                }
+            );
+
+
+        /* CLOSE */
+
+        $("closeSubjectModal")
+            ?.addEventListener(
+                "click",
+                closeSubjectModal
+            );
+
+
+        $("cancelSubjectBtn")
+            ?.addEventListener(
+                "click",
+                closeSubjectModal
+            );
+
+
+        $("subjectModal")
+            ?.addEventListener(
+                "click",
+                event => {
+
+                    if (
+                        event.target ===
+                        $("subjectModal")
+                    ) {
+
+                        closeSubjectModal();
+                    }
+                }
+            );
+
+
+        /* SAVE */
+
+        $("subjectForm")
+            ?.addEventListener(
+                "submit",
+                saveSubject
+            );
+
+
+        /* FILTERS */
+
+        $("subjectSearch")
+            ?.addEventListener(
+                "input",
+                renderSubjects
+            );
+
+
+        $("categoryFilter")
+            ?.addEventListener(
+                "change",
+                renderSubjects
+            );
+
+
+        $("statusFilter")
+            ?.addEventListener(
+                "change",
+                renderSubjects
+            );
+
+
+        $("clearFiltersBtn")
+            ?.addEventListener(
+                "click",
+                () => {
+
+                    $("subjectSearch").value =
+                        "";
+
+                    $("categoryFilter").value =
+                        "";
+
+                    $("statusFilter").value =
+                        "";
+
+                    renderSubjects();
+                }
+            );
+
+
+        /* NOTIFICATION */
+
+        document
+            .querySelector(
+                ".notification-btn"
+            )
+            ?.addEventListener(
+                "click",
+                () => {
+
+                    alert(
+                        "Your subject records are up to date."
+                    );
+                }
+            );
+
+
+        await loadSubjects();
+    }
+);
+
+
+/* =========================================
+   LOAD EVERYTHING
+========================================= */
 
 async function loadSubjects() {
-    $("subjectsLoading").style.display = "block";
-    $("emptySubjectState").style.display = "none";
 
-    const { data, error } = await supabaseClient
-        .from("subjects")
-        .select("id, name, code, category, status")
-        .order("name", { ascending: true });
+    showLoading(
+        true
+    );
 
-    $("subjectsLoading").style.display = "none";
 
-    if (error) {
-        console.error(error);
-        $("emptySubjectState").style.display = "block";
-        $("emptySubjectState").querySelector("h3").textContent = "Unable to Load Subjects";
-        $("emptySubjectState").querySelector("p").textContent = error.message;
-        return;
+    try {
+
+        const [
+            subjectResult,
+            teacherAssignmentResult,
+            studentSubjectResult,
+            resultsResult
+        ] =
+            await Promise.all([
+
+                supabaseClient
+                    .from("subjects")
+                    .select(`
+                        id,
+                        name,
+                        code,
+                        category,
+                        status
+                    `)
+                    .order(
+                        "name",
+                        {
+                            ascending: true
+                        }
+                    ),
+
+
+                supabaseClient
+                    .from(
+                        "teacher_assignments"
+                    )
+                    .select(`
+                        teacher_id,
+                        class,
+                        subject
+                    `),
+
+
+                supabaseClient
+                    .from(
+                        "student_subjects"
+                    )
+                    .select(`
+                        student_id,
+                        class,
+                        subject,
+                        session
+                    `),
+
+
+                supabaseClient
+                    .from("results")
+                    .select(`
+                        subject,
+                        class
+                    `)
+
+            ]);
+
+
+        if (
+            subjectResult.error
+        ) {
+
+            throw subjectResult.error;
+        }
+
+
+        subjects =
+            subjectResult.data ||
+            [];
+
+
+        if (
+            teacherAssignmentResult.error
+        ) {
+
+            console.error(
+                "Teacher assignment loading error:",
+                teacherAssignmentResult.error
+            );
+
+
+            teacherAssignments =
+                [];
+
+        } else {
+
+            teacherAssignments =
+                teacherAssignmentResult.data ||
+                [];
+        }
+
+
+        if (
+            studentSubjectResult.error
+        ) {
+
+            console.error(
+                "Student subject loading error:",
+                studentSubjectResult.error
+            );
+
+
+            studentSubjectRegistrations =
+                [];
+
+        } else {
+
+            studentSubjectRegistrations =
+                studentSubjectResult.data ||
+                [];
+        }
+
+
+        if (
+            resultsResult.error
+        ) {
+
+            console.error(
+                "Result subject loading error:",
+                resultsResult.error
+            );
+
+
+            resultSubjects =
+                [];
+
+        } else {
+
+            resultSubjects =
+                resultsResult.data ||
+                [];
+        }
+
+
+        renderSubjects();
+
+        updateStatistics();
+
+
+    } catch (error) {
+
+        console.error(
+            "Load subjects error:",
+            error
+        );
+
+
+        alert(
+            "Could not load subjects: " +
+            error.message
+        );
+
+
+        if (
+            $("emptySubjectState")
+        ) {
+
+            $("emptySubjectState")
+                .style
+                .display =
+                "block";
+        }
+
+
+    } finally {
+
+        showLoading(
+            false
+        );
+    }
+}
+
+
+/* =========================================
+   LOADING
+========================================= */
+
+function showLoading(
+    loading
+) {
+
+    if (
+        $("subjectsLoading")
+    ) {
+
+        $("subjectsLoading")
+            .style
+            .display =
+            loading
+                ? "block"
+                : "none";
     }
 
-    subjects = data || [];
-    renderSubjects();
+
+    if (
+        loading &&
+        $("emptySubjectState")
+    ) {
+
+        $("emptySubjectState")
+            .style
+            .display =
+            "none";
+    }
 }
 
-function openSubjectModal(subject = null) {
-    const modal = $("subjectModal");
-    const form = $("subjectForm");
 
-    form.reset();
-<<<<<<< HEAD
-    $("subjectModalTitle").textContent = subject ? "Edit Subject" : "Add New Subject";
-=======
+/* =========================================
+   NORMALIZE
+========================================= */
 
-    $("subjectModalTitle").textContent =
-        subject ? "Edit Subject" : "Add New Subject";
+function normalize(
+    value
+) {
 
->>>>>>> 1d9664b (Update admin portal pages)
-    $("subjectRecordId").value = subject?.id || "";
-    $("subjectName").value = subject?.name || "";
-    $("subjectCode").value = subject?.code || "";
-    $("subjectCategory").value = subject?.category || "Core";
-    $("subjectStatus").value = subject?.status || "active";
-
-    modal.style.display = "flex";
-    modal.style.position = "fixed";
-    modal.style.inset = "0";
-    modal.style.zIndex = "9999";
-    modal.style.background = "rgba(15, 23, 42, 0.55)";
-    modal.style.alignItems = "center";
-    modal.style.justifyContent = "center";
-    modal.style.padding = "20px";
+    return String(
+        value ||
+        ""
+    )
+        .trim()
+        .toLowerCase();
 }
+
+
+/* =========================================
+   SUBJECT CLASS COVERAGE
+========================================= */
+
+function getSubjectClasses(
+    subjectName
+) {
+
+    const subjectKey =
+        normalize(
+            subjectName
+        );
+
+
+    const classes =
+        new Set();
+
+
+    teacherAssignments
+        .filter(
+            assignment =>
+                normalize(
+                    assignment.subject
+                )
+                ===
+                subjectKey
+        )
+        .forEach(
+            assignment => {
+
+                if (
+                    assignment.class
+                ) {
+
+                    classes.add(
+                        assignment.class
+                    );
+                }
+            }
+        );
+
+
+    studentSubjectRegistrations
+        .filter(
+            registration =>
+                normalize(
+                    registration.subject
+                )
+                ===
+                subjectKey
+        )
+        .forEach(
+            registration => {
+
+                if (
+                    registration.class
+                ) {
+
+                    classes.add(
+                        registration.class
+                    );
+                }
+            }
+        );
+
+
+    return [
+        ...classes
+    ].sort();
+}
+
+
+/* =========================================
+   RENDER
+========================================= */
+
+function renderSubjects() {
+
+    const search =
+        normalize(
+            $("subjectSearch")
+                ?.value
+        );
+
+
+    const category =
+        $("categoryFilter")
+            ?.value ||
+        "";
+
+
+    const status =
+        $("statusFilter")
+            ?.value ||
+        "";
+
+
+    const filtered =
+        subjects.filter(
+            subject => {
+
+                const matchesSearch =
+                    normalize(
+                        subject.name
+                    )
+                        .includes(
+                            search
+                        )
+
+                    ||
+
+                    normalize(
+                        subject.code
+                    )
+                        .includes(
+                            search
+                        );
+
+
+                const matchesCategory =
+                    !category
+
+                    ||
+
+                    subject.category ===
+                    category;
+
+
+                const matchesStatus =
+                    !status
+
+                    ||
+
+                    subject.status ===
+                    status;
+
+
+                return (
+                    matchesSearch &&
+                    matchesCategory &&
+                    matchesStatus
+                );
+            }
+        );
+
+
+    if (
+        $("subjectsTableBody")
+    ) {
+
+        $("subjectsTableBody")
+            .innerHTML =
+
+            filtered
+                .map(
+                    subject => {
+
+                        const classes =
+                            getSubjectClasses(
+                                subject.name
+                            );
+
+
+                        const classHtml =
+                            classes.length
+
+                                ? classes
+                                    .map(
+                                        className => `
+
+                                            <span class="subject-class-badge">
+                                                ${escapeHtml(
+                                                    className
+                                                )}
+                                            </span>
+                                        `
+                                    )
+                                    .join("")
+
+                                : `
+
+                                    <span class="subject-no-class">
+                                        Not assigned
+                                    </span>
+                                `;
+
+
+                        const currentStatus =
+                            subject.status ||
+                            "active";
+
+
+                        return `
+
+                            <tr>
+
+                                <td>
+
+                                    <strong>
+                                        ${escapeHtml(
+                                            subject.name ||
+                                            "-"
+                                        )}
+                                    </strong>
+
+                                </td>
+
+
+                                <td>
+
+                                    ${escapeHtml(
+                                        subject.code ||
+                                        "-"
+                                    )}
+
+                                </td>
+
+
+                                <td>
+
+                                    ${escapeHtml(
+                                        subject.category ||
+                                        "-"
+                                    )}
+
+                                </td>
+
+
+                                <td>
+
+                                    <div class="subject-class-summary">
+                                        ${classHtml}
+                                    </div>
+
+                                </td>
+
+
+                                <td>
+
+                                    <span
+                                        class="status-badge ${
+                                            currentStatus ===
+                                            "active"
+
+                                                ? "active-status"
+
+                                                : "pending"
+                                        }"
+                                    >
+
+                                        ${escapeHtml(
+                                            capitalize(
+                                                currentStatus
+                                            )
+                                        )}
+
+                                    </span>
+
+                                </td>
+
+
+                                <td>
+
+                                    <div class="table-action-buttons">
+
+                                        <button
+                                            type="button"
+                                            class="table-btn edit-table-btn"
+                                            onclick="editSubject('${subject.id}')"
+                                            title="Edit Subject"
+                                        >
+                                            ✏
+                                        </button>
+
+
+                                        <button
+                                            type="button"
+                                            class="table-btn delete-table-btn"
+                                            onclick="deleteSubject('${subject.id}')"
+                                            title="Delete Subject"
+                                        >
+                                            🗑
+                                        </button>
+
+                                    </div>
+
+                                </td>
+
+                            </tr>
+                        `;
+                    }
+                )
+                .join("");
+    }
+
+
+    if (
+        $("emptySubjectState")
+    ) {
+
+        $("emptySubjectState")
+            .style
+            .display =
+
+            filtered.length
+                ? "none"
+                : "block";
+    }
+
+
+    if (
+        $("subjectCount")
+    ) {
+
+        $("subjectCount")
+            .textContent =
+            filtered.length;
+    }
+}
+
+
+/* =========================================
+   STATISTICS
+========================================= */
+
+function updateStatistics() {
+
+    if (
+        $("totalSubjects")
+    ) {
+
+        $("totalSubjects")
+            .textContent =
+            subjects.length;
+    }
+
+
+    if (
+        $("activeSubjects")
+    ) {
+
+        $("activeSubjects")
+            .textContent =
+
+            subjects.filter(
+                subject =>
+                    normalize(
+                        subject.status
+                    )
+                    ===
+                    "active"
+            )
+                .length;
+    }
+
+
+    if (
+        $("coreSubjects")
+    ) {
+
+        $("coreSubjects")
+            .textContent =
+
+            subjects.filter(
+                subject =>
+                    normalize(
+                        subject.category
+                    )
+                    ===
+                    "core"
+            )
+                .length;
+    }
+
+
+    const allClasses =
+        new Set();
+
+
+    subjects.forEach(
+        subject => {
+
+            getSubjectClasses(
+                subject.name
+            )
+                .forEach(
+                    className => {
+
+                        allClasses.add(
+                            className
+                        );
+                    }
+                );
+        }
+    );
+
+
+    if (
+        $("classesCovered")
+    ) {
+
+        $("classesCovered")
+            .textContent =
+            allClasses.size;
+    }
+
+
+    if (
+        $("subjectCount")
+    ) {
+
+        $("subjectCount")
+            .textContent =
+            subjects.length;
+    }
+}
+
+
+/* =========================================
+   OPEN MODAL
+========================================= */
+
+function openSubjectModal(
+    subject = null
+) {
+
+    $("subjectForm")
+        ?.reset();
+
+
+    if (
+        $("subjectRecordId")
+    ) {
+
+        $("subjectRecordId")
+            .value =
+            subject?.id ||
+            "";
+    }
+
+
+    if (
+        $("subjectModalTitle")
+    ) {
+
+        $("subjectModalTitle")
+            .textContent =
+
+            subject
+                ? "Edit Subject"
+                : "Add New Subject";
+    }
+
+
+    if (
+        $("subjectName")
+    ) {
+
+        $("subjectName")
+            .value =
+            subject?.name ||
+            "";
+    }
+
+
+    if (
+        $("subjectCode")
+    ) {
+
+        $("subjectCode")
+            .value =
+            subject?.code ||
+            "";
+    }
+
+
+    if (
+        $("subjectCategory")
+    ) {
+
+        $("subjectCategory")
+            .value =
+            subject?.category ||
+            "Core";
+    }
+
+
+    if (
+        $("subjectStatus")
+    ) {
+
+        $("subjectStatus")
+            .value =
+            subject?.status ||
+            "active";
+    }
+
+
+    $("subjectModal")
+        ?.classList
+        .add(
+            "active"
+        );
+}
+
+
+/* =========================================
+   CLOSE
+========================================= */
 
 function closeSubjectModal() {
-    $("subjectModal").style.display = "none";
+
+    $("subjectModal")
+        ?.classList
+        .remove(
+            "active"
+        );
 }
 
-window.editSubject = function(id) {
-<<<<<<< HEAD
-    const subject = subjects.find(s => String(s.id) === String(id));
-    if (subject) openSubjectModal(subject);
-};
 
-document.addEventListener("DOMContentLoaded", () => {
-    $("subjectForm").addEventListener("submit", async e => {
-        e.preventDefault();
+/* =========================================
+   SAVE SUBJECT
+========================================= */
 
-        const saveButton = $("saveSubjectBtn");
-        const id = $("subjectRecordId").value;
-        const data = {
-            name: $("subjectName").value.trim(),
-            code: $("subjectCode").value.trim().toUpperCase(),
-            category: $("subjectCategory").value,
-            status: $("subjectStatus").value
-        };
-=======
-    const subject = subjects.find(
-        s => String(s.id) === String(id)
-    );
+async function saveSubject(
+    event
+) {
 
-    if (subject) {
-        openSubjectModal(subject);
-    }
-};
+    event.preventDefault();
 
-window.deleteSubject = async function(id) {
-    const subject = subjects.find(
-        s => String(s.id) === String(id)
-    );
->>>>>>> 1d9664b (Update admin portal pages)
 
-        if (!data.name || !data.code) {
-            alert("Please enter the subject name and subject code.");
-            return;
-        }
+    const recordId =
+        $("subjectRecordId")
+            ?.value ||
+        "";
 
-<<<<<<< HEAD
-        saveButton.disabled = true;
-        saveButton.textContent = "Saving...";
 
-        const result = id
-            ? await supabaseClient.from("subjects").update(data).eq("id", id)
-            : await supabaseClient.from("subjects").insert([data]);
+    const existingSubject =
+        recordId
 
-        saveButton.disabled = false;
-        saveButton.textContent = "Save Subject";
+            ? subjects.find(
+                subject =>
+                    String(
+                        subject.id
+                    )
+                    ===
+                    String(
+                        recordId
+                    )
+            )
 
-        if (result.error) {
-            alert(`Could not save subject: ${result.error.message}`);
-            return;
-        }
+            : null;
 
-        closeSubjectModal();
-        loadSubjects();
-    });
 
-    $("addSubjectBtn").addEventListener("click", e => {
-        e.preventDefault();
-        openSubjectModal();
-    });
+    const oldSubjectName =
+        existingSubject?.name ||
+        "";
 
-    $("emptyAddSubjectBtn").addEventListener("click", e => {
-        e.preventDefault();
-        openSubjectModal();
-    });
 
-    $("closeSubjectModal").addEventListener("click", closeSubjectModal);
-    $("cancelSubjectBtn").addEventListener("click", closeSubjectModal);
+    const subjectData = {
 
-    $("subjectModal").addEventListener("click", e => {
-        if (e.target === $("subjectModal")) closeSubjectModal();
-    });
+        name:
+            $("subjectName")
+                ?.value
+                .trim() ||
+            "",
 
-    $("subjectSearch").addEventListener("input", renderSubjects);
-    $("categoryFilter").addEventListener("change", renderSubjects);
-    $("statusFilter").addEventListener("change", renderSubjects);
+        code:
+            $("subjectCode")
+                ?.value
+                .trim()
+                .toUpperCase() ||
+            "",
 
-    $("clearFiltersBtn").addEventListener("click", () => {
-        $("subjectSearch").value = "";
-        $("categoryFilter").value = "";
-        $("statusFilter").value = "";
-        renderSubjects();
-    });
+        category:
+            $("subjectCategory")
+                ?.value ||
+            "Core",
 
-    $("menuBtn").addEventListener("click", () => {
-        $("sidebar").classList.toggle("active");
-    });
+        status:
+            $("subjectStatus")
+                ?.value ||
+            "active"
+    };
 
-    $("logoutBtn").addEventListener("click", e => {
-        e.preventDefault();
-        if (confirm("Are you sure you want to logout?")) {
-            window.location.href = "login.html";
-        }
-    });
 
-    loadSubjects();
-});
-=======
-    const confirmed = confirm(
-        `Are you sure you want to delete "${subject.name}"?`
-    );
+    if (
+        !subjectData.name ||
+        !subjectData.code
+    ) {
 
-    if (!confirmed) return;
+        alert(
+            "Please enter Subject Name and Subject Code."
+        );
 
-    const { error } = await supabaseClient
-        .from("subjects")
-        .delete()
-        .eq("id", id);
-
-    if (error) {
-        console.error("Delete subject error:", error);
-        alert(`Could not delete subject: ${error.message}`);
         return;
     }
 
-    await loadSubjects();
-};
 
-document.addEventListener("DOMContentLoaded", () => {
+    /*
+        DUPLICATE NAME
+    */
 
-    $("subjectForm").addEventListener("submit", async e => {
-        e.preventDefault();
+    const duplicateName =
+        subjects.find(
+            subject =>
 
-        const saveButton = $("saveSubjectBtn");
-        const id = $("subjectRecordId").value;
+                normalize(
+                    subject.name
+                )
+                ===
+                normalize(
+                    subjectData.name
+                )
 
-        const data = {
-            name: $("subjectName").value.trim(),
-            code: $("subjectCode").value.trim().toUpperCase(),
-            category: $("subjectCategory").value,
-            status: $("subjectStatus").value
-        };
+                &&
 
-        if (!data.name || !data.code) {
-            alert("Please enter the subject name and subject code.");
-            return;
+                String(
+                    subject.id
+                )
+                !==
+                String(
+                    recordId
+                )
+        );
+
+
+    if (
+        duplicateName
+    ) {
+
+        alert(
+            "Another subject already uses this subject name."
+        );
+
+        return;
+    }
+
+
+    /*
+        DUPLICATE CODE
+    */
+
+    const duplicateCode =
+        subjects.find(
+            subject =>
+
+                normalize(
+                    subject.code
+                )
+                ===
+                normalize(
+                    subjectData.code
+                )
+
+                &&
+
+                String(
+                    subject.id
+                )
+                !==
+                String(
+                    recordId
+                )
+        );
+
+
+    if (
+        duplicateCode
+    ) {
+
+        alert(
+            "Another subject already uses this subject code."
+        );
+
+        return;
+    }
+
+
+    const button =
+        $("saveSubjectBtn");
+
+
+    if (
+        button
+    ) {
+
+        button.disabled =
+            true;
+
+
+        button.textContent =
+            "Saving...";
+    }
+
+
+    try {
+
+        /*
+            UPDATE EXISTING SUBJECT
+        */
+
+        if (
+            recordId
+        ) {
+
+            const {
+                error
+            } =
+                await supabaseClient
+                    .from("subjects")
+                    .update(
+                        subjectData
+                    )
+                    .eq(
+                        "id",
+                        recordId
+                    );
+
+
+            if (error) {
+                throw error;
+            }
+
+
+            /*
+                IF SUBJECT NAME CHANGED,
+                UPDATE ACTIVE ASSIGNMENT TABLES.
+
+                We do NOT rewrite historical results.
+            */
+
+            if (
+                oldSubjectName &&
+                normalize(
+                    oldSubjectName
+                )
+                !==
+                normalize(
+                    subjectData.name
+                )
+            ) {
+
+                const [
+                    teacherUpdate,
+                    studentUpdate
+                ] =
+                    await Promise.all([
+
+                        supabaseClient
+                            .from(
+                                "teacher_assignments"
+                            )
+                            .update({
+
+                                subject:
+                                    subjectData.name
+
+                            })
+                            .eq(
+                                "subject",
+                                oldSubjectName
+                            ),
+
+
+                        supabaseClient
+                            .from(
+                                "student_subjects"
+                            )
+                            .update({
+
+                                subject:
+                                    subjectData.name
+
+                            })
+                            .eq(
+                                "subject",
+                                oldSubjectName
+                            )
+
+                    ]);
+
+
+                if (
+                    teacherUpdate.error
+                ) {
+
+                    throw teacherUpdate.error;
+                }
+
+
+                if (
+                    studentUpdate.error
+                ) {
+
+                    throw studentUpdate.error;
+                }
+
+
+                /*
+                    Keep compatibility field in
+                    Teachers table in sync too.
+                */
+
+                const {
+                    error:
+                    teacherCompatibilityError
+                } =
+                    await supabaseClient
+                        .from("Teachers")
+                        .update({
+
+                            subject:
+                                subjectData.name
+
+                        })
+                        .eq(
+                            "subject",
+                            oldSubjectName
+                        );
+
+
+                if (
+                    teacherCompatibilityError
+                ) {
+
+                    console.error(
+                        "Teacher compatibility subject update error:",
+                        teacherCompatibilityError
+                    );
+                }
+            }
+
+
+        } else {
+
+            /*
+                CREATE NEW SUBJECT
+            */
+
+            const {
+                error
+            } =
+                await supabaseClient
+                    .from("subjects")
+                    .insert([
+                        subjectData
+                    ]);
+
+
+            if (error) {
+                throw error;
+            }
         }
 
-        saveButton.disabled = true;
-        saveButton.textContent = "Saving...";
-
-        const result = id
-            ? await supabaseClient
-                .from("subjects")
-                .update(data)
-                .eq("id", id)
-            : await supabaseClient
-                .from("subjects")
-                .insert([data]);
-
-        saveButton.disabled = false;
-        saveButton.textContent = "Save Subject";
-
-        if (result.error) {
-            console.error(result.error);
-            alert(`Could not save subject: ${result.error.message}`);
-            return;
-        }
 
         closeSubjectModal();
+
+
         await loadSubjects();
-    });
 
-    $("addSubjectBtn").addEventListener("click", e => {
-        e.preventDefault();
-        openSubjectModal();
-    });
 
-    $("emptyAddSubjectBtn").addEventListener("click", e => {
-        e.preventDefault();
-        openSubjectModal();
-    });
+        alert(
+            recordId
+                ? "Subject updated successfully."
+                : "Subject added successfully."
+        );
 
-    $("closeSubjectModal").addEventListener("click", closeSubjectModal);
 
-    $("cancelSubjectBtn").addEventListener("click", closeSubjectModal);
+    } catch (error) {
 
-    $("subjectModal").addEventListener("click", e => {
-        if (e.target === $("subjectModal")) {
-            closeSubjectModal();
+        console.error(
+            "Save subject error:",
+            error
+        );
+
+
+        alert(
+            "Could not save subject: " +
+            error.message
+        );
+
+
+    } finally {
+
+        if (
+            button
+        ) {
+
+            button.disabled =
+                false;
+
+
+            button.textContent =
+                "Save Subject";
         }
-    });
+    }
+}
 
-    $("subjectSearch").addEventListener("input", renderSubjects);
 
-    $("categoryFilter").addEventListener("change", renderSubjects);
+/* =========================================
+   EDIT SUBJECT
+========================================= */
 
-    $("statusFilter").addEventListener("change", renderSubjects);
+window.editSubject =
+    function (
+        id
+    ) {
 
-    $("clearFiltersBtn").addEventListener("click", () => {
-        $("subjectSearch").value = "";
-        $("categoryFilter").value = "";
-        $("statusFilter").value = "";
-        renderSubjects();
-    });
+        const subject =
+            subjects.find(
+                item =>
+                    String(
+                        item.id
+                    )
+                    ===
+                    String(
+                        id
+                    )
+            );
 
-    $("menuBtn").addEventListener("click", () => {
-        $("sidebar").classList.toggle("active");
-    });
 
-    $("logoutBtn").addEventListener("click", e => {
-        e.preventDefault();
+        if (
+            subject
+        ) {
 
-        if (confirm("Are you sure you want to logout?")) {
-            window.location.href = "login.html";
+            openSubjectModal(
+                subject
+            );
         }
-    });
+    };
 
-    loadSubjects();
-});
->>>>>>> 1d9664b (Update admin portal pages)
+
+/* =========================================
+   DELETE SUBJECT
+========================================= */
+
+window.deleteSubject =
+    async function (
+        id
+    ) {
+
+        const subject =
+            subjects.find(
+                item =>
+                    String(
+                        item.id
+                    )
+                    ===
+                    String(
+                        id
+                    )
+            );
+
+
+        if (!subject) {
+            return;
+        }
+
+
+        /*
+            HISTORICAL RESULTS CHECK
+
+            Do not allow deleting a subject
+            that already has academic results.
+        */
+
+        const hasResults =
+            resultSubjects.some(
+                result =>
+                    normalize(
+                        result.subject
+                    )
+                    ===
+                    normalize(
+                        subject.name
+                    )
+            );
+
+
+        if (
+            hasResults
+        ) {
+
+            alert(
+                `"${subject.name}" already has student results. ` +
+                `Do not delete it because that could damage historical records. ` +
+                `Edit the subject and change its status to Inactive instead.`
+            );
+
+            return;
+        }
+
+
+        const confirmed =
+            confirm(
+                `Delete "${subject.name}"?\n\n` +
+                `Its teacher assignments and student subject registrations will also be removed.`
+            );
+
+
+        if (!confirmed) {
+            return;
+        }
+
+
+        try {
+
+            /*
+                REMOVE TEACHER ASSIGNMENTS
+            */
+
+            const {
+                error:
+                teacherAssignmentError
+            } =
+                await supabaseClient
+                    .from(
+                        "teacher_assignments"
+                    )
+                    .delete()
+                    .eq(
+                        "subject",
+                        subject.name
+                    );
+
+
+            if (
+                teacherAssignmentError
+            ) {
+
+                throw teacherAssignmentError;
+            }
+
+
+            /*
+                REMOVE STUDENT REGISTRATIONS
+            */
+
+            const {
+                error:
+                studentRegistrationError
+            } =
+                await supabaseClient
+                    .from(
+                        "student_subjects"
+                    )
+                    .delete()
+                    .eq(
+                        "subject",
+                        subject.name
+                    );
+
+
+            if (
+                studentRegistrationError
+            ) {
+
+                throw studentRegistrationError;
+            }
+
+
+            /*
+                DELETE SUBJECT
+            */
+
+            const {
+                error:
+                subjectDeleteError
+            } =
+                await supabaseClient
+                    .from("subjects")
+                    .delete()
+                    .eq(
+                        "id",
+                        id
+                    );
+
+
+            if (
+                subjectDeleteError
+            ) {
+
+                throw subjectDeleteError;
+            }
+
+
+            await loadSubjects();
+
+
+            alert(
+                "Subject deleted successfully."
+            );
+
+
+        } catch (error) {
+
+            console.error(
+                "Delete subject error:",
+                error
+            );
+
+
+            alert(
+                "Could not delete subject: " +
+                error.message
+            );
+        }
+    };
+
+
+/* =========================================
+   HELPERS
+========================================= */
+
+function capitalize(
+    value
+) {
+
+    const text =
+        String(
+            value ||
+            ""
+        );
+
+
+    return (
+        text
+            .charAt(0)
+            .toUpperCase()
+
+        +
+
+        text.slice(1)
+    );
+}
+
+
+function escapeHtml(
+    value
+) {
+
+    return String(
+        value ??
+        ""
+    )
+        .replace(
+            /&/g,
+            "&amp;"
+        )
+        .replace(
+            /</g,
+            "&lt;"
+        )
+        .replace(
+            />/g,
+            "&gt;"
+        )
+        .replace(
+            /"/g,
+            "&quot;"
+        )
+        .replace(
+            /'/g,
+            "&#039;"
+        );
+}

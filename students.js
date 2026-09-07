@@ -1,462 +1,1339 @@
+/* =========================================
+   PACSA STUDENTS MANAGEMENT
+   ADMIN AUTH + SUBJECT REGISTRATION
+========================================= */
+
 let students = [];
+let subjects = [];
+let subjectRegistrations = [];
 
-const $ = id => document.getElementById(id);
+let currentSession = "";
+let currentTerm = "";
+
+let managingStudent = null;
+
+const $ = id =>
+    document.getElementById(id);
 
 
-/* START */
+/* =========================================
+   START
+========================================= */
 
-document.addEventListener("DOMContentLoaded", () => {
+document.addEventListener(
+    "DOMContentLoaded",
+    async () => {
 
-    $("menuBtn")?.addEventListener("click", () => {
-        $("sidebar")?.classList.toggle("active");
-    });
+        /*
+            WAIT FOR ADMIN AUTH FIRST
+        */
 
-    $("logoutBtn")?.addEventListener("click", e => {
-        e.preventDefault();
+        const admin =
+            await window.adminAuthReady;
 
-        if (confirm("Are you sure you want to logout?")) {
-            window.location.href = "login.html";
+        if (!admin) {
+            return;
         }
-    });
 
-    $("studentSearch")?.addEventListener("input", renderStudents);
-    $("classFilter")?.addEventListener("change", renderStudents);
-    $("statusFilter")?.addEventListener("change", renderStudents);
 
-    $("clearFiltersBtn")?.addEventListener("click", () => {
-        $("studentSearch").value = "";
-        $("classFilter").value = "";
-        $("statusFilter").value = "";
+        /* MOBILE SIDEBAR */
+
+        $("menuBtn")
+            ?.addEventListener(
+                "click",
+                () => {
+
+                    $("sidebar")
+                        ?.classList
+                        .toggle("active");
+                }
+            );
+
+
+        /* SEARCH */
+
+        $("studentSearch")
+            ?.addEventListener(
+                "input",
+                renderStudents
+            );
+
+
+        $("classFilter")
+            ?.addEventListener(
+                "change",
+                renderStudents
+            );
+
+
+        $("statusFilter")
+            ?.addEventListener(
+                "change",
+                renderStudents
+            );
+
+
+        $("clearFiltersBtn")
+            ?.addEventListener(
+                "click",
+                () => {
+
+                    $("studentSearch").value =
+                        "";
+
+                    $("classFilter").value =
+                        "";
+
+                    $("statusFilter").value =
+                        "";
+
+                    renderStudents();
+                }
+            );
+
+
+        /* ADD STUDENT */
+
+        $("addStudentBtn")
+            ?.addEventListener(
+                "click",
+                () =>
+                    openStudentModal()
+            );
+
+
+        $("emptyAddStudentBtn")
+            ?.addEventListener(
+                "click",
+                () =>
+                    openStudentModal()
+            );
+
+
+        /* STUDENT MODAL */
+
+        $("closeStudentModal")
+            ?.addEventListener(
+                "click",
+                closeStudentModal
+            );
+
+
+        $("cancelStudentBtn")
+            ?.addEventListener(
+                "click",
+                closeStudentModal
+            );
+
+
+        $("studentModal")
+            ?.addEventListener(
+                "click",
+                event => {
+
+                    if (
+                        event.target ===
+                        $("studentModal")
+                    ) {
+
+                        closeStudentModal();
+                    }
+                }
+            );
+
+
+        $("studentForm")
+            ?.addEventListener(
+                "submit",
+                saveStudent
+            );
+
+
+        /* VIEW STUDENT */
+
+        $("closeViewStudentModal")
+            ?.addEventListener(
+                "click",
+                closeViewStudentModal
+            );
+
+
+        $("closeViewStudentBtn")
+            ?.addEventListener(
+                "click",
+                closeViewStudentModal
+            );
+
+
+        $("viewStudentModal")
+            ?.addEventListener(
+                "click",
+                event => {
+
+                    if (
+                        event.target ===
+                        $("viewStudentModal")
+                    ) {
+
+                        closeViewStudentModal();
+                    }
+                }
+            );
+
+
+        /* SUBJECT MANAGER */
+
+        $("closeSubjectManager")
+            ?.addEventListener(
+                "click",
+                closeSubjectManager
+            );
+
+
+        $("cancelSubjectManager")
+            ?.addEventListener(
+                "click",
+                closeSubjectManager
+            );
+
+
+        $("subjectManagerModal")
+            ?.addEventListener(
+                "click",
+                event => {
+
+                    if (
+                        event.target ===
+                        $("subjectManagerModal")
+                    ) {
+
+                        closeSubjectManager();
+                    }
+                }
+            );
+
+
+        $("selectAllSubjectsBtn")
+            ?.addEventListener(
+                "click",
+                selectAllSubjects
+            );
+
+
+        $("clearAllSubjectsBtn")
+            ?.addEventListener(
+                "click",
+                clearAllSubjects
+            );
+
+
+        $("saveStudentSubjectsBtn")
+            ?.addEventListener(
+                "click",
+                saveStudentSubjects
+            );
+
+
+        /*
+            LOAD EVERYTHING
+        */
+
+        await loadCurrentSession();
+
+        await loadPageData();
+    }
+);
+
+
+/* =========================================
+   CURRENT SESSION
+========================================= */
+
+async function loadCurrentSession() {
+
+    try {
+
+        const {
+            data,
+            error
+        } =
+            await supabaseClient
+                .from("sessions_terms")
+                .select(
+                    "session, term, is_current, start_date, created_at"
+                )
+                .order(
+                    "start_date",
+                    {
+                        ascending: false
+                    }
+                );
+
+
+        if (error) {
+            throw error;
+        }
+
+
+        const rows =
+            data || [];
+
+
+        const active =
+            rows.find(
+                row =>
+                    row.is_current ===
+                    true
+            );
+
+
+        const selected =
+            active ||
+            rows[0] ||
+            null;
+
+
+        if (
+            selected
+        ) {
+
+            currentSession =
+                selected.session ||
+                "";
+
+
+            currentTerm =
+                selected.term ||
+                "";
+        }
+
+
+        if (
+            $("subjectCurrentSession")
+        ) {
+
+            $("subjectCurrentSession")
+                .textContent =
+                currentSession ||
+                "No current session";
+        }
+
+
+    } catch (error) {
+
+        console.error(
+            "Current session error:",
+            error
+        );
+
+
+        currentSession =
+            "";
+
+
+        currentTerm =
+            "";
+    }
+}
+
+
+/* =========================================
+   LOAD PAGE DATA
+========================================= */
+
+async function loadPageData() {
+
+    showStudentLoading(
+        true
+    );
+
+
+    try {
+
+        const [
+            studentResult,
+            subjectResult
+        ] =
+            await Promise.all([
+
+                supabaseClient
+                    .from("students")
+                    .select(`
+                        first_name,
+                        last_name,
+                        student_id,
+                        email,
+                        phone,
+                        class,
+                        gender,
+                        status
+                    `)
+                    .order(
+                        "first_name",
+                        {
+                            ascending: true
+                        }
+                    ),
+
+                supabaseClient
+                    .from("subjects")
+                    .select(
+                        "id, name, code, category, status"
+                    )
+                    .order(
+                        "name",
+                        {
+                            ascending: true
+                        }
+                    )
+
+            ]);
+
+
+        if (
+            studentResult.error
+        ) {
+
+            throw studentResult.error;
+        }
+
+
+        if (
+            subjectResult.error
+        ) {
+
+            throw subjectResult.error;
+        }
+
+
+        students =
+            studentResult.data ||
+            [];
+
+
+        subjects =
+            (
+                subjectResult.data ||
+                []
+            )
+                .filter(
+                    subject =>
+                        String(
+                            subject.status ||
+                            "active"
+                        )
+                            .toLowerCase()
+                        ===
+                        "active"
+                );
+
+
+        await loadSubjectRegistrations();
+
+
+        populateClasses();
+
         renderStudents();
-    });
 
-    $("addStudentBtn")?.addEventListener(
-        "click",
-        () => openStudentModal()
-    );
-
-    $("emptyAddStudentBtn")?.addEventListener(
-        "click",
-        () => openStudentModal()
-    );
-
-    $("closeStudentModal")?.addEventListener(
-        "click",
-        closeStudentModal
-    );
-
-    $("cancelStudentBtn")?.addEventListener(
-        "click",
-        closeStudentModal
-    );
-
-    $("closeViewStudentModal")?.addEventListener(
-        "click",
-        closeViewStudentModal
-    );
-
-    $("closeViewStudentBtn")?.addEventListener(
-        "click",
-        closeViewStudentModal
-    );
-
-    $("studentForm")?.addEventListener(
-        "submit",
-        saveStudent
-    );
-
-    loadStudents();
-});
+        updateStatistics();
 
 
-/* LOAD */
+    } catch (error) {
 
-async function loadStudents() {
+        console.error(
+            "Students page loading error:",
+            error
+        );
 
-    $("studentsLoading").style.display = "block";
-    $("emptyStudentState").style.display = "none";
-
-    const { data, error } = await supabaseClient
-        .from("students")
-        .select(`
-            first_name,
-            last_name,
-            student_id,
-            email,
-            phone,
-            class,
-            gender,
-            status
-        `)
-        .order("first_name", { ascending: true });
-
-    $("studentsLoading").style.display = "none";
-
-    if (error) {
-        console.error(error);
 
         alert(
-            "Could not load students: " +
+            "Could not load student information: " +
             error.message
         );
+
+
+    } finally {
+
+        showStudentLoading(
+            false
+        );
+    }
+}
+
+
+/* =========================================
+   LOAD SUBJECT REGISTRATIONS
+========================================= */
+
+async function loadSubjectRegistrations() {
+
+    if (
+        !currentSession
+    ) {
+
+        subjectRegistrations =
+            [];
 
         return;
     }
 
-    students = data || [];
 
-    populateClasses();
-    renderStudents();
-    updateStatistics();
+    const {
+        data,
+        error
+    } =
+        await supabaseClient
+            .from(
+                "student_subjects"
+            )
+            .select(`
+                id,
+                student_id,
+                class,
+                subject,
+                session
+            `)
+            .eq(
+                "session",
+                currentSession
+            );
+
+
+    if (error) {
+
+        console.error(
+            "Subject registration error:",
+            error
+        );
+
+
+        subjectRegistrations =
+            [];
+
+        return;
+    }
+
+
+    subjectRegistrations =
+        data || [];
 }
 
 
-/* RENDER */
+/* =========================================
+   LOADING
+========================================= */
+
+function showStudentLoading(
+    loading
+) {
+
+    if (
+        $("studentsLoading")
+    ) {
+
+        $("studentsLoading")
+            .style
+            .display =
+            loading
+                ? "block"
+                : "none";
+    }
+
+
+    if (
+        loading &&
+        $("emptyStudentState")
+    ) {
+
+        $("emptyStudentState")
+            .style
+            .display =
+            "none";
+    }
+}
+
+
+/* =========================================
+   RENDER STUDENTS
+========================================= */
 
 function renderStudents() {
 
     const search =
-        $("studentSearch").value
-            .toLowerCase()
-            .trim();
+        String(
+            $("studentSearch")
+                ?.value ||
+            ""
+        )
+            .trim()
+            .toLowerCase();
+
 
     const selectedClass =
-        $("classFilter").value;
+        $("classFilter")
+            ?.value ||
+        "";
+
 
     const selectedStatus =
-        $("statusFilter").value;
+        $("statusFilter")
+            ?.value ||
+        "";
 
-    const filtered = students.filter(student => {
 
-        const name =
-            `${student.first_name || ""} ${student.last_name || ""}`
-                .toLowerCase();
+    const filtered =
+        students.filter(
+            student => {
 
-        const id =
-            String(student.student_id || "")
-                .toLowerCase();
+                const name =
+                    getStudentName(
+                        student
+                    )
+                        .toLowerCase();
 
-        const email =
-            String(student.email || "")
-                .toLowerCase();
 
-        return (
-            (
-                name.includes(search) ||
-                id.includes(search) ||
-                email.includes(search)
-            ) &&
-            (
-                !selectedClass ||
-                student.class === selectedClass
-            ) &&
-            (
-                !selectedStatus ||
-                student.status === selectedStatus
-            )
+                const studentId =
+                    String(
+                        student.student_id ||
+                        ""
+                    )
+                        .toLowerCase();
+
+
+                const email =
+                    String(
+                        student.email ||
+                        ""
+                    )
+                        .toLowerCase();
+
+
+                const status =
+                    String(
+                        student.status ||
+                        "active"
+                    );
+
+
+                return (
+
+                    (
+                        name.includes(
+                            search
+                        )
+
+                        ||
+
+                        studentId.includes(
+                            search
+                        )
+
+                        ||
+
+                        email.includes(
+                            search
+                        )
+                    )
+
+                    &&
+
+                    (
+                        !selectedClass
+
+                        ||
+
+                        student.class ===
+                        selectedClass
+                    )
+
+                    &&
+
+                    (
+                        !selectedStatus
+
+                        ||
+
+                        status ===
+                        selectedStatus
+                    )
+                );
+            }
         );
-    });
 
-    $("studentsTableBody").innerHTML =
-        filtered.map(student => {
 
-            const name =
-                `${student.first_name || ""} ${student.last_name || ""}`
-                    .trim();
+    if (
+        $("studentsTableBody")
+    ) {
 
-            const status =
-                student.status || "active";
+        $("studentsTableBody")
+            .innerHTML =
 
-            return `
-                <tr>
+            filtered
+                .map(
+                    student => {
 
-                    <td>
-                        <div class="teacher-cell">
+                        const name =
+                            getStudentName(
+                                student
+                            );
 
-                            <div class="teacher-table-avatar">
-                                ${getInitials(name)}
-                            </div>
 
-                            <div class="teacher-name-info">
-                                <strong>
-                                    ${escapeHtml(name)}
-                                </strong>
+                        const status =
+                            student.status ||
+                            "active";
 
-                                <span>
+
+                        const subjectCount =
+                            getStudentSubjectCount(
+                                student.student_id
+                            );
+
+
+                        const encodedId =
+                            encodeURIComponent(
+                                student.student_id
+                            );
+
+
+                        return `
+
+                            <tr>
+
+                                <td>
+
+                                    <div class="teacher-cell">
+
+                                        <div class="teacher-table-avatar">
+
+                                            ${escapeHtml(
+                                                getInitials(
+                                                    name
+                                                )
+                                            )}
+
+                                        </div>
+
+
+                                        <div class="teacher-name-info">
+
+                                            <strong>
+                                                ${escapeHtml(
+                                                    name
+                                                )}
+                                            </strong>
+
+                                            <span>
+                                                ${escapeHtml(
+                                                    student.email ||
+                                                    "-"
+                                                )}
+                                            </span>
+
+                                        </div>
+
+                                    </div>
+
+                                </td>
+
+
+                                <td>
                                     ${escapeHtml(
-                                        student.email || "-"
+                                        student.student_id ||
+                                        "-"
                                     )}
-                                </span>
-                            </div>
+                                </td>
 
-                        </div>
-                    </td>
 
-                    <td>
-                        ${escapeHtml(
-                            student.student_id || "-"
-                        )}
-                    </td>
+                                <td>
+                                    ${escapeHtml(
+                                        student.class ||
+                                        "-"
+                                    )}
+                                </td>
 
-                    <td>
-                        ${escapeHtml(
-                            student.class || "-"
-                        )}
-                    </td>
 
-                    <td>
-                        ${escapeHtml(
-                            student.gender || "-"
-                        )}
-                    </td>
+                                <td>
+                                    ${escapeHtml(
+                                        student.gender ||
+                                        "-"
+                                    )}
+                                </td>
 
-                    <td>
-                        ${escapeHtml(
-                            student.phone || "-"
-                        )}
-                    </td>
 
-                    <td>
-                        <span class="status-badge ${
-                            status === "active"
-                                ? "active-status"
-                                : "pending"
-                        }">
-                            ${escapeHtml(status)}
-                        </span>
-                    </td>
+                                <td>
+                                    ${escapeHtml(
+                                        student.phone ||
+                                        "-"
+                                    )}
+                                </td>
 
-                    <td>
-                        <div class="table-action-buttons">
 
-                            <button
-                                class="table-btn view-table-btn"
-                                onclick="viewStudent('${encodeURIComponent(
-                                    student.student_id
-                                )}')"
-                                title="View Student">
-                                👁
-                            </button>
+                                <td>
 
-                            <button
-                                class="table-btn edit-table-btn"
-                                onclick="editStudent('${encodeURIComponent(
-                                    student.student_id
-                                )}')"
-                                title="Edit Student">
-                                ✏
-                            </button>
+                                    <strong>
+                                        ${subjectCount}
+                                    </strong>
 
-                            <button
-                                class="table-btn delete-table-btn"
-                                onclick="deleteStudent('${encodeURIComponent(
-                                    student.student_id
-                                )}')"
-                                title="Delete Student">
-                                🗑
-                            </button>
+                                </td>
 
-                        </div>
-                    </td>
 
-                </tr>
-            `;
+                                <td>
 
-        }).join("");
+                                    <span
+                                        class="status-badge ${
+                                            status ===
+                                            "active"
 
-    $("emptyStudentState").style.display =
-        filtered.length ? "none" : "block";
+                                                ? "active-status"
 
-    $("studentCount").textContent =
-        filtered.length;
+                                                : "pending"
+                                        }"
+                                    >
+                                        ${escapeHtml(
+                                            capitalize(
+                                                status
+                                            )
+                                        )}
+                                    </span>
+
+                                </td>
+
+
+                                <td>
+
+                                    <div class="table-action-buttons">
+
+                                        <button
+                                            type="button"
+                                            class="table-btn view-table-btn"
+                                            onclick="viewStudent('${encodedId}')"
+                                            title="View Student"
+                                        >
+                                            👁
+                                        </button>
+
+
+                                        <button
+                                            type="button"
+                                            class="table-btn edit-table-btn"
+                                            onclick="editStudent('${encodedId}')"
+                                            title="Edit Student"
+                                        >
+                                            ✏
+                                        </button>
+
+
+                                        <button
+                                            type="button"
+                                            class="table-btn manage-subject-btn"
+                                            onclick="manageStudentSubjects('${encodedId}')"
+                                            title="Manage Subjects"
+                                        >
+                                            📚
+                                        </button>
+
+
+                                        <button
+                                            type="button"
+                                            class="table-btn delete-table-btn"
+                                            onclick="deleteStudent('${encodedId}')"
+                                            title="Delete Student"
+                                        >
+                                            🗑
+                                        </button>
+
+                                    </div>
+
+                                </td>
+
+                            </tr>
+                        `;
+                    }
+                )
+                .join("");
+    }
+
+
+    if (
+        $("emptyStudentState")
+    ) {
+
+        $("emptyStudentState")
+            .style
+            .display =
+
+            filtered.length
+                ? "none"
+                : "block";
+    }
+
+
+    if (
+        $("studentCount")
+    ) {
+
+        $("studentCount")
+            .textContent =
+            filtered.length;
+    }
 }
 
 
-/* CLASS FILTER */
+/* =========================================
+   SUBJECT COUNT
+========================================= */
+
+function getStudentSubjectCount(
+    studentId
+) {
+
+    return subjectRegistrations
+        .filter(
+            row =>
+                String(
+                    row.student_id
+                )
+                ===
+                String(
+                    studentId
+                )
+
+                &&
+
+                row.session ===
+                currentSession
+        )
+        .length;
+}
+
+
+/* =========================================
+   CLASS FILTER
+========================================= */
 
 function populateClasses() {
 
     const filter =
         $("classFilter");
 
+
+    if (!filter) {
+        return;
+    }
+
+
+    const oldValue =
+        filter.value;
+
+
     const classes = [
+
         ...new Set(
+
             students
-                .map(student => student.class)
+                .map(
+                    student =>
+                        student.class
+                )
                 .filter(Boolean)
         )
-    ];
+
+    ].sort();
+
 
     filter.innerHTML =
         `<option value="">All Classes</option>`;
 
-    classes.forEach(className => {
 
-        const option =
-            document.createElement("option");
+    classes.forEach(
+        className => {
 
-        option.value = className;
-        option.textContent = className;
+            const option =
+                document.createElement(
+                    "option"
+                );
 
-        filter.appendChild(option);
-    });
+
+            option.value =
+                className;
+
+
+            option.textContent =
+                className;
+
+
+            filter.appendChild(
+                option
+            );
+        }
+    );
+
+
+    if (
+        classes.includes(
+            oldValue
+        )
+    ) {
+
+        filter.value =
+            oldValue;
+    }
 }
 
 
-/* STATISTICS */
+/* =========================================
+   STATISTICS
+========================================= */
 
 function updateStatistics() {
 
-    $("totalStudents").textContent =
-        students.length;
+    if (
+        $("totalStudents")
+    ) {
 
-    $("activeStudents").textContent =
-        students.filter(
-            student => student.status === "active"
-        ).length;
+        $("totalStudents")
+            .textContent =
+            students.length;
+    }
 
-    const classes =
+
+    if (
+        $("activeStudents")
+    ) {
+
+        $("activeStudents")
+            .textContent =
+
+            students.filter(
+                student =>
+                    String(
+                        student.status ||
+                        "active"
+                    )
+                        .toLowerCase()
+                    ===
+                    "active"
+            )
+                .length;
+    }
+
+
+    const classSet =
         new Set(
+
             students
-                .map(student => student.class)
+                .map(
+                    student =>
+                        student.class
+                )
                 .filter(Boolean)
         );
 
-    $("totalClasses").textContent =
-        classes.size;
 
-    $("newStudents").textContent =
-        students.length;
+    if (
+        $("totalClasses")
+    ) {
 
-    $("studentCount").textContent =
-        students.length;
+        $("totalClasses")
+            .textContent =
+            classSet.size;
+    }
+
+
+    if (
+        $("subjectRegistrationCount")
+    ) {
+
+        $("subjectRegistrationCount")
+            .textContent =
+            subjectRegistrations.length;
+    }
+
+
+    if (
+        $("studentCount")
+    ) {
+
+        $("studentCount")
+            .textContent =
+            students.length;
+    }
 }
 
 
-/* FIND */
+/* =========================================
+   FIND STUDENT
+========================================= */
 
-function findStudent(studentId) {
+function findStudent(
+    encodedStudentId
+) {
 
-    const id =
-        decodeURIComponent(studentId);
+    const studentId =
+        decodeURIComponent(
+            encodedStudentId
+        );
+
 
     return students.find(
         student =>
-            String(student.student_id) === String(id)
+            String(
+                student.student_id
+            )
+            ===
+            String(
+                studentId
+            )
     );
 }
 
 
-/* OPEN ADD / EDIT */
+/* =========================================
+   STUDENT NAME
+========================================= */
 
-function openStudentModal(student = null) {
+function getStudentName(
+    student
+) {
 
-    $("studentForm").reset();
+    return (
 
-    $("studentRecordId").value =
-        student?.student_id || "";
+        `${student?.first_name || ""} ${student?.last_name || ""}`
+            .trim()
 
-    $("studentModalTitle").textContent =
-        student
-            ? "Edit Student"
-            : "Add New Student";
+        ||
 
-    $("studentFirstName").value =
-        student?.first_name || "";
+        student?.student_id
 
-    $("studentLastName").value =
-        student?.last_name || "";
+        ||
 
-    $("studentId").value =
-        student?.student_id || "";
-
-    $("studentEmail").value =
-        student?.email || "";
-
-    $("studentPhone").value =
-        student?.phone || "";
-
-    $("studentClass").value =
-        student?.class || "";
-
-    $("studentGender").value =
-        student?.gender || "Male";
-
-    $("studentStatus").value =
-        student?.status || "active";
-
-    $("studentModal")
-        .classList.add("active");
+        "Student"
+    );
 }
 
 
-/* CLOSE */
+/* =========================================
+   OPEN STUDENT MODAL
+========================================= */
+
+function openStudentModal(
+    student = null
+) {
+
+    $("studentForm")
+        ?.reset();
+
+
+    if (
+        $("studentRecordId")
+    ) {
+
+        $("studentRecordId")
+            .value =
+            student?.student_id ||
+            "";
+    }
+
+
+    if (
+        $("studentModalTitle")
+    ) {
+
+        $("studentModalTitle")
+            .textContent =
+
+            student
+                ? "Edit Student"
+                : "Add New Student";
+    }
+
+
+    if (
+        $("studentFirstName")
+    ) {
+
+        $("studentFirstName")
+            .value =
+            student?.first_name ||
+            "";
+    }
+
+
+    if (
+        $("studentLastName")
+    ) {
+
+        $("studentLastName")
+            .value =
+            student?.last_name ||
+            "";
+    }
+
+
+    if (
+        $("studentId")
+    ) {
+
+        $("studentId")
+            .value =
+            student?.student_id ||
+            "";
+    }
+
+
+    if (
+        $("studentEmail")
+    ) {
+
+        $("studentEmail")
+            .value =
+            student?.email ||
+            "";
+    }
+
+
+    if (
+        $("studentPhone")
+    ) {
+
+        $("studentPhone")
+            .value =
+            student?.phone ||
+            "";
+    }
+
+
+    if (
+        $("studentClass")
+    ) {
+
+        $("studentClass")
+            .value =
+            student?.class ||
+            "";
+    }
+
+
+    if (
+        $("studentGender")
+    ) {
+
+        $("studentGender")
+            .value =
+            student?.gender ||
+            "Male";
+    }
+
+
+    if (
+        $("studentStatus")
+    ) {
+
+        $("studentStatus")
+            .value =
+            student?.status ||
+            "active";
+    }
+
+
+    $("studentModal")
+        ?.classList
+        .add("active");
+}
+
+
+/* =========================================
+   CLOSE STUDENT MODAL
+========================================= */
 
 function closeStudentModal() {
 
     $("studentModal")
-        .classList.remove("active");
+        ?.classList
+        .remove("active");
 }
 
 
-function closeViewStudentModal() {
+/* =========================================
+   SAVE STUDENT
+========================================= */
 
-    $("viewStudentModal")
-        .classList.remove("active");
-}
-
-
-/* SAVE */
-
-async function saveStudent(event) {
+async function saveStudent(
+    event
+) {
 
     event.preventDefault();
 
+
     const oldStudentId =
-        $("studentRecordId").value.trim();
+        $("studentRecordId")
+            ?.value
+            .trim() ||
+        "";
+
 
     const studentData = {
 
         first_name:
             $("studentFirstName")
-                .value.trim(),
+                ?.value
+                .trim() ||
+            "",
 
         last_name:
             $("studentLastName")
-                .value.trim(),
+                ?.value
+                .trim() ||
+            "",
 
         student_id:
             $("studentId")
-                .value.trim(),
+                ?.value
+                .trim() ||
+            "",
 
         email:
             $("studentEmail")
-                .value.trim(),
+                ?.value
+                .trim() ||
+            "",
 
         phone:
             $("studentPhone")
-                .value.trim(),
+                ?.value
+                .trim() ||
+            "",
 
         class:
             $("studentClass")
-                .value,
+                ?.value ||
+            "",
 
         gender:
             $("studentGender")
-                .value,
+                ?.value ||
+            "",
 
         status:
             $("studentStatus")
-                .value
+                ?.value ||
+            "active"
     };
 
 
-    /* VALIDATION */
-
     if (
-        !studentData.first_name ||
-        !studentData.last_name ||
-        !studentData.student_id ||
+        !studentData.first_name
+
+        ||
+
+        !studentData.last_name
+
+        ||
+
+        !studentData.student_id
+
+        ||
+
         !studentData.class
     ) {
 
@@ -468,207 +1345,1335 @@ async function saveStudent(event) {
     }
 
 
-    const button =
+    const saveButton =
         $("saveStudentBtn");
 
-    button.disabled = true;
-    button.textContent = "Saving...";
+
+    if (
+        saveButton
+    ) {
+
+        saveButton.disabled =
+            true;
 
 
-    let result;
-
-
-    /* UPDATE */
-
-    if (oldStudentId) {
-
-        result = await supabaseClient
-            .from("students")
-            .update(studentData)
-            .eq(
-                "student_id",
-                oldStudentId
-            );
-
-    }
-
-    /* INSERT */
-
-    else {
-
-        result = await supabaseClient
-            .from("students")
-            .insert([
-                studentData
-            ]);
+        saveButton.textContent =
+            "Saving...";
     }
 
 
-    button.disabled = false;
-    button.textContent = "Save Student";
+    try {
+
+        /*
+            EDIT STUDENT
+        */
+
+        if (
+            oldStudentId
+        ) {
+
+            const {
+                error
+            } =
+                await supabaseClient
+                    .from("students")
+                    .update(
+                        studentData
+                    )
+                    .eq(
+                        "student_id",
+                        oldStudentId
+                    );
 
 
-    if (result.error) {
+            if (error) {
+                throw error;
+            }
+
+
+            /*
+                IF STUDENT ID CHANGED,
+                UPDATE SUBJECT REGISTRATIONS
+            */
+
+            if (
+                oldStudentId !==
+                studentData.student_id
+            ) {
+
+                const {
+                    error:
+                    subjectIdError
+                } =
+                    await supabaseClient
+                        .from(
+                            "student_subjects"
+                        )
+                        .update({
+
+                            student_id:
+                                studentData.student_id
+
+                        })
+                        .eq(
+                            "student_id",
+                            oldStudentId
+                        );
+
+
+                if (
+                    subjectIdError
+                ) {
+
+                    throw subjectIdError;
+                }
+            }
+
+
+            /*
+                KEEP CURRENT SESSION
+                REGISTRATION CLASS IN SYNC
+            */
+
+            if (
+                currentSession
+            ) {
+
+                const {
+                    error:
+                    classSyncError
+                } =
+                    await supabaseClient
+                        .from(
+                            "student_subjects"
+                        )
+                        .update({
+
+                            class:
+                                studentData.class
+
+                        })
+                        .eq(
+                            "student_id",
+                            studentData.student_id
+                        )
+                        .eq(
+                            "session",
+                            currentSession
+                        );
+
+
+                if (
+                    classSyncError
+                ) {
+
+                    throw classSyncError;
+                }
+            }
+
+
+        } else {
+
+            /*
+                NEW STUDENT
+            */
+
+            const {
+                error
+            } =
+                await supabaseClient
+                    .from("students")
+                    .insert([
+                        studentData
+                    ]);
+
+
+            if (error) {
+                throw error;
+            }
+        }
+
+
+        closeStudentModal();
+
+
+        await loadPageData();
+
+
+        alert(
+            oldStudentId
+                ? "Student updated successfully."
+                : "Student added successfully."
+        );
+
+
+    } catch (error) {
 
         console.error(
             "Save student error:",
-            result.error
+            error
         );
+
 
         alert(
             "Could not save student: " +
-            result.error.message
-        );
-
-        return;
-    }
-
-
-    closeStudentModal();
-
-    await loadStudents();
-
-    alert(
-        oldStudentId
-            ? "Student updated successfully."
-            : "Student added successfully."
-    );
-}
-
-
-/* VIEW */
-
-window.viewStudent = function(studentId) {
-
-    const student =
-        findStudent(studentId);
-
-    if (!student) return;
-
-    const name =
-        `${student.first_name || ""} ${student.last_name || ""}`
-            .trim();
-
-    $("viewStudentAvatar").textContent =
-        getInitials(name);
-
-    $("viewStudentName").textContent =
-        name;
-
-    $("viewStudentId").textContent =
-        student.student_id || "-";
-
-    $("viewStudentClass").textContent =
-        student.class || "-";
-
-    $("viewStudentGender").textContent =
-        student.gender || "-";
-
-    $("viewStudentEmail").textContent =
-        student.email || "-";
-
-    $("viewStudentPhone").textContent =
-        student.phone || "-";
-
-    $("viewStudentStatus").textContent =
-        student.status || "active";
-
-    $("viewStudentStatus").className =
-        "status-badge " +
-        (
-            student.status === "active"
-                ? "active-status"
-                : "pending"
-        );
-
-    $("viewStudentModal")
-        .classList.add("active");
-};
-
-
-/* EDIT */
-
-window.editStudent = function(studentId) {
-
-    const student =
-        findStudent(studentId);
-
-    if (student) {
-        openStudentModal(student);
-    }
-};
-
-
-/* DELETE */
-
-window.deleteStudent = async function(studentId) {
-
-    const student =
-        findStudent(studentId);
-
-    if (!student) return;
-
-    const name =
-        `${student.first_name || ""} ${student.last_name || ""}`
-            .trim();
-
-    if (
-        !confirm(
-            `Are you sure you want to delete ${name}?`
-        )
-    ) {
-        return;
-    }
-
-    const { error } =
-        await supabaseClient
-            .from("students")
-            .delete()
-            .eq(
-                "student_id",
-                student.student_id
-            );
-
-    if (error) {
-
-        console.error(error);
-
-        alert(
-            "Could not delete student: " +
             error.message
         );
 
-        return;
+
+    } finally {
+
+        if (
+            saveButton
+        ) {
+
+            saveButton.disabled =
+                false;
+
+
+            saveButton.textContent =
+                "Save Student";
+        }
     }
-
-    await loadStudents();
-
-    alert(
-        "Student deleted successfully."
-    );
-};
-
-
-/* HELPERS */
-
-function getInitials(name) {
-
-    return name
-        .split(" ")
-        .filter(Boolean)
-        .map(word => word[0])
-        .join("")
-        .substring(0, 2)
-        .toUpperCase();
 }
 
 
-function escapeHtml(value) {
+/* =========================================
+   VIEW STUDENT
+========================================= */
 
-    return String(value ?? "")
-        .replaceAll("&", "&amp;")
-        .replaceAll("<", "&lt;")
-        .replaceAll(">", "&gt;")
-        .replaceAll('"', "&quot;")
-        .replaceAll("'", "&#039;");
+window.viewStudent =
+    function (
+        studentId
+    ) {
+
+        const student =
+            findStudent(
+                studentId
+            );
+
+
+        if (!student) {
+            return;
+        }
+
+
+        const name =
+            getStudentName(
+                student
+            );
+
+
+        const subjectCount =
+            getStudentSubjectCount(
+                student.student_id
+            );
+
+
+        if (
+            $("viewStudentAvatar")
+        ) {
+
+            $("viewStudentAvatar")
+                .textContent =
+                getInitials(
+                    name
+                );
+        }
+
+
+        if (
+            $("viewStudentName")
+        ) {
+
+            $("viewStudentName")
+                .textContent =
+                name;
+        }
+
+
+        if (
+            $("viewStudentId")
+        ) {
+
+            $("viewStudentId")
+                .textContent =
+                student.student_id ||
+                "-";
+        }
+
+
+        if (
+            $("viewStudentClass")
+        ) {
+
+            $("viewStudentClass")
+                .textContent =
+                student.class ||
+                "-";
+        }
+
+
+        if (
+            $("viewStudentGender")
+        ) {
+
+            $("viewStudentGender")
+                .textContent =
+                student.gender ||
+                "-";
+        }
+
+
+        if (
+            $("viewStudentEmail")
+        ) {
+
+            $("viewStudentEmail")
+                .textContent =
+                student.email ||
+                "-";
+        }
+
+
+        if (
+            $("viewStudentPhone")
+        ) {
+
+            $("viewStudentPhone")
+                .textContent =
+                student.phone ||
+                "-";
+        }
+
+
+        if (
+            $("viewStudentSubjectCount")
+        ) {
+
+            $("viewStudentSubjectCount")
+                .textContent =
+                subjectCount;
+        }
+
+
+        if (
+            $("viewStudentSession")
+        ) {
+
+            $("viewStudentSession")
+                .textContent =
+                currentSession ||
+                "-";
+        }
+
+
+        if (
+            $("viewStudentStatus")
+        ) {
+
+            const status =
+                student.status ||
+                "active";
+
+
+            $("viewStudentStatus")
+                .textContent =
+                capitalize(
+                    status
+                );
+
+
+            $("viewStudentStatus")
+                .className =
+
+                "status-badge " +
+
+                (
+                    status ===
+                    "active"
+
+                        ? "active-status"
+
+                        : "pending"
+                );
+        }
+
+
+        $("viewStudentModal")
+            ?.classList
+            .add("active");
+    };
+
+
+/* =========================================
+   CLOSE VIEW
+========================================= */
+
+function closeViewStudentModal() {
+
+    $("viewStudentModal")
+        ?.classList
+        .remove("active");
+}
+
+
+/* =========================================
+   EDIT STUDENT
+========================================= */
+
+window.editStudent =
+    function (
+        studentId
+    ) {
+
+        const student =
+            findStudent(
+                studentId
+            );
+
+
+        if (
+            student
+        ) {
+
+            openStudentModal(
+                student
+            );
+        }
+    };
+
+
+/* =========================================
+   MANAGE STUDENT SUBJECTS
+========================================= */
+
+window.manageStudentSubjects =
+    function (
+        studentId
+    ) {
+
+        const student =
+            findStudent(
+                studentId
+            );
+
+
+        if (!student) {
+
+            alert(
+                "Student could not be found."
+            );
+
+            return;
+        }
+
+
+        managingStudent =
+            student;
+
+
+        const name =
+            getStudentName(
+                student
+            );
+
+
+        if (
+            $("subjectStudentAvatar")
+        ) {
+
+            $("subjectStudentAvatar")
+                .textContent =
+                getInitials(
+                    name
+                );
+        }
+
+
+        if (
+            $("subjectStudentName")
+        ) {
+
+            $("subjectStudentName")
+                .textContent =
+                name;
+        }
+
+
+        if (
+            $("subjectStudentInfo")
+        ) {
+
+            $("subjectStudentInfo")
+                .textContent =
+
+                `${student.student_id || "-"} · ${student.class || "-"}`;
+        }
+
+
+        if (
+            $("subjectCurrentSession")
+        ) {
+
+            $("subjectCurrentSession")
+                .textContent =
+                currentSession ||
+                "No current session";
+        }
+
+
+        if (
+            $("subjectSaveMessage")
+        ) {
+
+            $("subjectSaveMessage")
+                .textContent =
+                "";
+        }
+
+
+        renderSubjectManager();
+
+
+        $("subjectManagerModal")
+            ?.classList
+            .add("active");
+    };
+
+
+/* =========================================
+   RENDER SUBJECT MANAGER
+========================================= */
+
+function renderSubjectManager() {
+
+    const grid =
+        $("subjectsCheckGrid");
+
+
+    if (
+        !grid ||
+        !managingStudent
+    ) {
+
+        return;
+    }
+
+
+    if (
+        !currentSession
+    ) {
+
+        grid.innerHTML = `
+
+            <div class="subjects-empty">
+                No current academic session has been configured.
+            </div>
+        `;
+
+
+        updateSelectedSubjectCount();
+
+        return;
+    }
+
+
+    if (
+        !subjects.length
+    ) {
+
+        grid.innerHTML = `
+
+            <div class="subjects-empty">
+                No active subjects are available.
+            </div>
+        `;
+
+
+        updateSelectedSubjectCount();
+
+        return;
+    }
+
+
+    const registeredSubjects =
+        new Set(
+
+            subjectRegistrations
+                .filter(
+                    row =>
+                        String(
+                            row.student_id
+                        )
+                        ===
+                        String(
+                            managingStudent.student_id
+                        )
+
+                        &&
+
+                        row.session ===
+                        currentSession
+                )
+                .map(
+                    row =>
+                        row.subject
+                )
+        );
+
+
+    grid.innerHTML =
+        subjects
+            .map(
+                subject => {
+
+                    const selected =
+                        registeredSubjects.has(
+                            subject.name
+                        );
+
+
+                    return `
+
+                        <label
+                            class="subject-check-card ${
+                                selected
+                                    ? "selected"
+                                    : ""
+                            }"
+                        >
+
+                            <input
+                                type="checkbox"
+                                class="student-subject-checkbox"
+                                value="${escapeAttribute(
+                                    subject.name
+                                )}"
+                                ${
+                                    selected
+                                        ? "checked"
+                                        : ""
+                                }
+                            >
+
+                            <div>
+
+                                <strong>
+                                    ${escapeHtml(
+                                        subject.name
+                                    )}
+                                </strong>
+
+                                <span>
+                                    ${escapeHtml(
+                                        subject.code ||
+                                        subject.category ||
+                                        "Subject"
+                                    )}
+                                </span>
+
+                            </div>
+
+                        </label>
+                    `;
+                }
+            )
+            .join("");
+
+
+    document
+        .querySelectorAll(
+            ".student-subject-checkbox"
+        )
+        .forEach(
+            checkbox => {
+
+                checkbox.addEventListener(
+                    "change",
+                    () => {
+
+                        const card =
+                            checkbox.closest(
+                                ".subject-check-card"
+                            );
+
+
+                        card
+                            ?.classList
+                            .toggle(
+                                "selected",
+                                checkbox.checked
+                            );
+
+
+                        updateSelectedSubjectCount();
+                    }
+                );
+            }
+        );
+
+
+    updateSelectedSubjectCount();
+}
+
+
+/* =========================================
+   SELECT ALL SUBJECTS
+========================================= */
+
+function selectAllSubjects() {
+
+    document
+        .querySelectorAll(
+            ".student-subject-checkbox"
+        )
+        .forEach(
+            checkbox => {
+
+                checkbox.checked =
+                    true;
+
+
+                checkbox
+                    .closest(
+                        ".subject-check-card"
+                    )
+                    ?.classList
+                    .add(
+                        "selected"
+                    );
+            }
+        );
+
+
+    updateSelectedSubjectCount();
+}
+
+
+/* =========================================
+   CLEAR ALL SUBJECTS
+========================================= */
+
+function clearAllSubjects() {
+
+    document
+        .querySelectorAll(
+            ".student-subject-checkbox"
+        )
+        .forEach(
+            checkbox => {
+
+                checkbox.checked =
+                    false;
+
+
+                checkbox
+                    .closest(
+                        ".subject-check-card"
+                    )
+                    ?.classList
+                    .remove(
+                        "selected"
+                    );
+            }
+        );
+
+
+    updateSelectedSubjectCount();
+}
+
+
+/* =========================================
+   SELECTED COUNT
+========================================= */
+
+function updateSelectedSubjectCount() {
+
+    const selected =
+        document
+            .querySelectorAll(
+                ".student-subject-checkbox:checked"
+            )
+            .length;
+
+
+    if (
+        $("selectedSubjectCount")
+    ) {
+
+        $("selectedSubjectCount")
+            .textContent =
+            selected;
+    }
+}
+
+
+/* =========================================
+   SAVE STUDENT SUBJECTS
+========================================= */
+
+async function saveStudentSubjects() {
+
+    if (
+        !managingStudent
+    ) {
+
+        return;
+    }
+
+
+    if (
+        !currentSession
+    ) {
+
+        alert(
+            "No current academic session is available."
+        );
+
+        return;
+    }
+
+
+    const button =
+        $("saveStudentSubjectsBtn");
+
+
+    const message =
+        $("subjectSaveMessage");
+
+
+    const selectedSubjects =
+        Array
+            .from(
+                document.querySelectorAll(
+                    ".student-subject-checkbox:checked"
+                )
+            )
+            .map(
+                checkbox =>
+                    checkbox.value
+            );
+
+
+    if (
+        button
+    ) {
+
+        button.disabled =
+            true;
+
+
+        button.textContent =
+            "Saving...";
+    }
+
+
+    if (
+        message
+    ) {
+
+        message.textContent =
+            "";
+    }
+
+
+    try {
+
+        /*
+            EXISTING SUBJECTS FOR THIS
+            STUDENT + CURRENT SESSION
+        */
+
+        const existing =
+            subjectRegistrations
+                .filter(
+                    row =>
+                        String(
+                            row.student_id
+                        )
+                        ===
+                        String(
+                            managingStudent.student_id
+                        )
+
+                        &&
+
+                        row.session ===
+                        currentSession
+                );
+
+
+        const existingNames =
+            new Set(
+
+                existing.map(
+                    row =>
+                        row.subject
+                )
+            );
+
+
+        const selectedNames =
+            new Set(
+                selectedSubjects
+            );
+
+
+        /*
+            SUBJECTS TO ADD
+        */
+
+        const toAdd =
+            selectedSubjects.filter(
+                subject =>
+                    !existingNames.has(
+                        subject
+                    )
+            );
+
+
+        /*
+            SUBJECTS TO REMOVE
+        */
+
+        const toRemove =
+            existing
+                .filter(
+                    row =>
+                        !selectedNames.has(
+                            row.subject
+                        )
+                )
+                .map(
+                    row =>
+                        row.subject
+                );
+
+
+        /*
+            INSERT NEW SUBJECTS
+        */
+
+        if (
+            toAdd.length
+        ) {
+
+            const rows =
+                toAdd.map(
+                    subject => ({
+
+                        student_id:
+                            managingStudent.student_id,
+
+                        class:
+                            managingStudent.class,
+
+                        subject,
+
+                        session:
+                            currentSession
+
+                    })
+                );
+
+
+            const {
+                error
+            } =
+                await supabaseClient
+                    .from(
+                        "student_subjects"
+                    )
+                    .insert(
+                        rows
+                    );
+
+
+            if (error) {
+                throw error;
+            }
+        }
+
+
+        /*
+            REMOVE UNSELECTED SUBJECTS
+        */
+
+        if (
+            toRemove.length
+        ) {
+
+            const {
+                error
+            } =
+                await supabaseClient
+                    .from(
+                        "student_subjects"
+                    )
+                    .delete()
+                    .eq(
+                        "student_id",
+                        managingStudent.student_id
+                    )
+                    .eq(
+                        "session",
+                        currentSession
+                    )
+                    .in(
+                        "subject",
+                        toRemove
+                    );
+
+
+            if (error) {
+                throw error;
+            }
+        }
+
+
+        /*
+            KEEP CLASS CORRECT FOR
+            ALL CURRENT REGISTRATIONS
+        */
+
+        const {
+            error:
+            classUpdateError
+        } =
+            await supabaseClient
+                .from(
+                    "student_subjects"
+                )
+                .update({
+
+                    class:
+                        managingStudent.class
+
+                })
+                .eq(
+                    "student_id",
+                    managingStudent.student_id
+                )
+                .eq(
+                    "session",
+                    currentSession
+                );
+
+
+        if (
+            classUpdateError
+        ) {
+
+            throw classUpdateError;
+        }
+
+
+        /*
+            RELOAD REGISTRATION DATA
+        */
+
+        await loadSubjectRegistrations();
+
+
+        renderStudents();
+
+        updateStatistics();
+
+
+        if (
+            message
+        ) {
+
+            message.textContent =
+                "Subjects saved successfully.";
+
+
+            message.style.color =
+                "#166534";
+        }
+
+
+        updateSelectedSubjectCount();
+
+
+        setTimeout(
+            () => {
+
+                closeSubjectManager();
+
+            },
+            500
+        );
+
+
+    } catch (error) {
+
+        console.error(
+            "Save subjects error:",
+            error
+        );
+
+
+        if (
+            message
+        ) {
+
+            message.textContent =
+                "Could not save subjects: " +
+                error.message;
+
+
+            message.style.color =
+                "#DC2626";
+        }
+
+
+    } finally {
+
+        if (
+            button
+        ) {
+
+            button.disabled =
+                false;
+
+
+            button.textContent =
+                "Save Subjects";
+        }
+    }
+}
+
+
+/* =========================================
+   CLOSE SUBJECT MANAGER
+========================================= */
+
+function closeSubjectManager() {
+
+    managingStudent =
+        null;
+
+
+    $("subjectManagerModal")
+        ?.classList
+        .remove("active");
+
+
+    if (
+        $("subjectSaveMessage")
+    ) {
+
+        $("subjectSaveMessage")
+            .textContent =
+            "";
+    }
+}
+
+
+/* =========================================
+   DELETE STUDENT
+========================================= */
+
+window.deleteStudent =
+    async function (
+        studentId
+    ) {
+
+        const student =
+            findStudent(
+                studentId
+            );
+
+
+        if (!student) {
+            return;
+        }
+
+
+        const name =
+            getStudentName(
+                student
+            );
+
+
+        const confirmed =
+            confirm(
+                `Are you sure you want to delete ${name}?`
+            );
+
+
+        if (!confirmed) {
+            return;
+        }
+
+
+        try {
+
+            /*
+                DELETE SUBJECT REGISTRATIONS FIRST
+            */
+
+            const {
+                error:
+                registrationError
+            } =
+                await supabaseClient
+                    .from(
+                        "student_subjects"
+                    )
+                    .delete()
+                    .eq(
+                        "student_id",
+                        student.student_id
+                    );
+
+
+            if (
+                registrationError
+            ) {
+
+                throw registrationError;
+            }
+
+
+            /*
+                DELETE STUDENT
+            */
+
+            const {
+                error
+            } =
+                await supabaseClient
+                    .from("students")
+                    .delete()
+                    .eq(
+                        "student_id",
+                        student.student_id
+                    );
+
+
+            if (error) {
+                throw error;
+            }
+
+
+            await loadPageData();
+
+
+            alert(
+                "Student deleted successfully."
+            );
+
+
+        } catch (error) {
+
+            console.error(
+                "Delete student error:",
+                error
+            );
+
+
+            alert(
+                "Could not delete student: " +
+                error.message
+            );
+        }
+    };
+
+
+/* =========================================
+   HELPERS
+========================================= */
+
+function getInitials(
+    name
+) {
+
+    return String(
+        name ||
+        ""
+    )
+        .trim()
+        .split(/\s+/)
+        .filter(Boolean)
+        .slice(
+            0,
+            2
+        )
+        .map(
+            word =>
+                word[0]
+        )
+        .join("")
+        .toUpperCase()
+
+        ||
+
+        "ST";
+}
+
+
+function capitalize(
+    value
+) {
+
+    const text =
+        String(
+            value ||
+            ""
+        );
+
+
+    return (
+        text
+            .charAt(0)
+            .toUpperCase()
+
+        +
+
+        text.slice(1)
+    );
+}
+
+
+function escapeHtml(
+    value
+) {
+
+    return String(
+        value ??
+        ""
+    )
+        .replace(
+            /&/g,
+            "&amp;"
+        )
+        .replace(
+            /</g,
+            "&lt;"
+        )
+        .replace(
+            />/g,
+            "&gt;"
+        )
+        .replace(
+            /"/g,
+            "&quot;"
+        )
+        .replace(
+            /'/g,
+            "&#039;"
+        );
+}
+
+
+function escapeAttribute(
+    value
+) {
+
+    return escapeHtml(
+        value
+    );
 }

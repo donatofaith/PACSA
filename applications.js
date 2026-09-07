@@ -1,348 +1,1284 @@
+/* =========================================
+   PACSA APPLICATION MANAGEMENT
+   ADMIN AUTH + STUDENT CREATION
+========================================= */
+
 let applications = [];
 
-const table = document.getElementById("applicationsTableBody");
-const search = document.getElementById("applicationSearch");
-const classFilter = document.getElementById("classFilter");
-const statusFilter = document.getElementById("statusFilter");
+const $ = id =>
+    document.getElementById(id);
+
+
+/* =========================================
+   HELPERS
+========================================= */
+
+function normalize(value) {
+
+    return String(value || "")
+        .trim()
+        .toLowerCase();
+}
+
 
 function escapeHtml(value) {
+
     return String(value ?? "")
-        .replaceAll("&", "&amp;")
-        .replaceAll("<", "&lt;")
-        .replaceAll(">", "&gt;")
-        .replaceAll('"', "&quot;")
-        .replaceAll("'", "&#039;");
+        .replace(/&/g, "&amp;")
+        .replace(/</g, "&lt;")
+        .replace(/>/g, "&gt;")
+        .replace(/"/g, "&quot;")
+        .replace(/'/g, "&#039;");
 }
+
 
 function capitalize(value) {
-    value = String(value || "");
-    return value.charAt(0).toUpperCase() + value.slice(1);
+
+    const text =
+        String(value || "");
+
+    return (
+        text.charAt(0).toUpperCase() +
+        text.slice(1)
+    );
 }
+
+
+function splitFullName(fullName) {
+
+    const parts =
+        String(fullName || "")
+            .trim()
+            .split(/\s+/)
+            .filter(Boolean);
+
+
+    if (!parts.length) {
+
+        return {
+            first_name: "",
+            last_name: ""
+        };
+    }
+
+
+    if (parts.length === 1) {
+
+        return {
+            first_name: parts[0],
+            last_name: ""
+        };
+    }
+
+
+    return {
+        first_name: parts[0],
+        last_name: parts.slice(1).join(" ")
+    };
+}
+
+
+function formatDate(value) {
+
+    if (!value) {
+        return "--";
+    }
+
+
+    const date =
+        new Date(value);
+
+
+    if (
+        Number.isNaN(
+            date.getTime()
+        )
+    ) {
+
+        return "--";
+    }
+
+
+    return date.toLocaleDateString(
+        "en-GB",
+        {
+            day: "2-digit",
+            month: "short",
+            year: "numeric"
+        }
+    );
+}
+
+
+/* =========================================
+   RENDER APPLICATIONS
+========================================= */
 
 function renderApplications() {
-    const text = search.value.trim().toLowerCase();
 
-    const filtered = applications.filter(app => {
-        const matchesSearch =
-            `${app.full_name || ""} ${app.parent_name || ""} ${app.email || ""} ${app.phone || ""} ${app.class || ""}`
-                .toLowerCase()
-                .includes(text);
+    const searchText =
+        normalize(
+            $("applicationSearch")?.value
+        );
 
-        const matchesClass =
-            !classFilter.value || app.class === classFilter.value;
 
-        const matchesStatus =
-            !statusFilter.value ||
-            (app.status || "pending") === statusFilter.value;
+    const selectedClass =
+        $("classFilter")?.value || "";
 
-        return matchesSearch && matchesClass && matchesStatus;
-    });
 
-    table.innerHTML = filtered.map(app => {
-        const status = app.status || "pending";
+    const selectedStatus =
+        $("statusFilter")?.value || "";
 
-        return `
-            <tr>
-                <td>
-                    <strong>${escapeHtml(app.full_name)}</strong>
-                </td>
 
-                <td>${escapeHtml(app.gender)}</td>
+    const filtered =
+        applications.filter(
+            app => {
 
-                <td>${escapeHtml(app.class)}</td>
+                const searchable =
+                    normalize(
+                        [
+                            app.full_name,
+                            app.parent_name,
+                            app.email,
+                            app.phone,
+                            app.class
+                        ].join(" ")
+                    );
 
-                <td>${escapeHtml(app.parent_name)}</td>
 
-                <td>
-                    ${app.created_at
-                        ? new Date(app.created_at).toLocaleDateString()
-                        : "--"}
-                </td>
+                const matchesSearch =
+                    !searchText ||
+                    searchable.includes(
+                        searchText
+                    );
 
-                <td>
-                    <span class="status-badge ${escapeHtml(status)}">
-                        ${escapeHtml(capitalize(status))}
-                    </span>
-                </td>
 
-                <td>
-                    <div style="display:flex;gap:6px;flex-wrap:wrap;">
+                const matchesClass =
+                    !selectedClass ||
+                    app.class === selectedClass;
 
-                        <button
-                            type="button"
-                            class="btn btn-light"
-                            onclick="viewApplication('${app.id}')">
-                            View
-                        </button>
 
-                        ${
-                            status === "pending"
-                                ? `
+                const matchesStatus =
+                    !selectedStatus ||
+                    normalize(
+                        app.status || "pending"
+                    ) ===
+                    normalize(
+                        selectedStatus
+                    );
+
+
+                return (
+                    matchesSearch &&
+                    matchesClass &&
+                    matchesStatus
+                );
+            }
+        );
+
+
+    const table =
+        $("applicationsTableBody");
+
+
+    if (!table) {
+        return;
+    }
+
+
+    table.innerHTML =
+        filtered
+            .map(
+                app => {
+
+                    const status =
+                        normalize(
+                            app.status || "pending"
+                        );
+
+
+                    return `
+                        <tr>
+
+                            <td>
+
+                                <strong>
+                                    ${escapeHtml(
+                                        app.full_name || "-"
+                                    )}
+                                </strong>
+
+                                ${
+                                    app.email
+                                        ? `
+                                            <br>
+
+                                            <small>
+                                                ${escapeHtml(
+                                                    app.email
+                                                )}
+                                            </small>
+                                        `
+                                        : ""
+                                }
+
+                            </td>
+
+
+                            <td>
+                                ${escapeHtml(
+                                    app.gender || "-"
+                                )}
+                            </td>
+
+
+                            <td>
+                                ${escapeHtml(
+                                    app.class || "-"
+                                )}
+                            </td>
+
+
+                            <td>
+                                ${escapeHtml(
+                                    app.parent_name || "-"
+                                )}
+                            </td>
+
+
+                            <td>
+                                ${formatDate(
+                                    app.created_at
+                                )}
+                            </td>
+
+
+                            <td>
+
+                                <span
+                                    class="status-badge ${escapeHtml(
+                                        status
+                                    )}"
+                                >
+                                    ${escapeHtml(
+                                        capitalize(status)
+                                    )}
+                                </span>
+
+                            </td>
+
+
+                            <td>
+
+                                <div
+                                    style="
+                                        display:flex;
+                                        gap:6px;
+                                        flex-wrap:wrap;
+                                    "
+                                >
+
                                     <button
                                         type="button"
                                         class="btn btn-light"
-                                        onclick="approveApplication('${app.id}')">
-                                        Approve
+                                        onclick="viewApplication('${app.id}')"
+                                    >
+                                        View
                                     </button>
+
+
+                                    ${
+                                        status === "pending"
+
+                                            ? `
+                                                <button
+                                                    type="button"
+                                                    class="btn btn-light"
+                                                    onclick="approveApplication('${app.id}')"
+                                                >
+                                                    Approve
+                                                </button>
+
+
+                                                <button
+                                                    type="button"
+                                                    class="btn btn-light"
+                                                    onclick="rejectApplication('${app.id}')"
+                                                >
+                                                    Reject
+                                                </button>
+                                            `
+
+                                            : ""
+                                    }
+
 
                                     <button
                                         type="button"
                                         class="btn btn-light"
-                                        onclick="rejectApplication('${app.id}')">
-                                        Reject
+                                        onclick="deleteApplication('${app.id}')"
+                                        style="
+                                            color:#DC2626;
+                                            border-color:#FECACA;
+                                        "
+                                    >
+                                        Delete
                                     </button>
-                                `
-                                : ""
-                        }
 
-                    </div>
-                </td>
-            </tr>
-        `;
-    }).join("");
+                                </div>
 
-    document.getElementById("emptyApplicationState").style.display =
-        filtered.length ? "none" : "block";
+                            </td>
 
-    document.getElementById("applicationCount").textContent =
-        filtered.length;
+                        </tr>
+                    `;
+                }
+            )
+            .join("");
 
-    document.getElementById("totalApplications").textContent =
-        applications.length;
 
-    document.getElementById("pendingApplications").textContent =
-        applications.filter(a => (a.status || "pending") === "pending").length;
+    if (
+        $("emptyApplicationState")
+    ) {
 
-    document.getElementById("approvedApplications").textContent =
-        applications.filter(a => a.status === "approved").length;
+        $("emptyApplicationState")
+            .style.display =
+            filtered.length
+                ? "none"
+                : "block";
+    }
 
-    document.getElementById("rejectedApplications").textContent =
-        applications.filter(a => a.status === "rejected").length;
+
+    if (
+        $("applicationCount")
+    ) {
+
+        $("applicationCount")
+            .textContent =
+            filtered.length;
+    }
+
+
+    if (
+        $("totalApplications")
+    ) {
+
+        $("totalApplications")
+            .textContent =
+            applications.length;
+    }
+
+
+    if (
+        $("pendingApplications")
+    ) {
+
+        $("pendingApplications")
+            .textContent =
+            applications.filter(
+                app =>
+                    normalize(
+                        app.status || "pending"
+                    ) === "pending"
+            ).length;
+    }
+
+
+    if (
+        $("approvedApplications")
+    ) {
+
+        $("approvedApplications")
+            .textContent =
+            applications.filter(
+                app =>
+                    normalize(
+                        app.status
+                    ) === "approved"
+            ).length;
+    }
+
+
+    if (
+        $("rejectedApplications")
+    ) {
+
+        $("rejectedApplications")
+            .textContent =
+            applications.filter(
+                app =>
+                    normalize(
+                        app.status
+                    ) === "rejected"
+            ).length;
+    }
 }
 
 
-/* LOAD APPLICATIONS */
+/* =========================================
+   LOAD APPLICATIONS
+========================================= */
 
 async function loadApplications() {
-    table.innerHTML = `
-        <tr>
-            <td colspan="7">Loading applications...</td>
-        </tr>
-    `;
 
-    const { data, error } = await supabaseClient
-        .from("applications")
-        .select("*")
-        .order("created_at", { ascending: false });
+    const table =
+        $("applicationsTableBody");
 
-    if (error) {
-        console.error(error);
+
+    if (table) {
 
         table.innerHTML = `
             <tr>
                 <td colspan="7">
-                    Could not load applications:
-                    ${escapeHtml(error.message)}
+                    Loading applications...
                 </td>
             </tr>
         `;
-
-        return;
     }
 
-    applications = data || [];
+
+    try {
+
+        const {
+            data,
+            error
+        } =
+            await supabaseClient
+                .from("applications")
+                .select("*")
+                .order(
+                    "created_at",
+                    {
+                        ascending: false
+                    }
+                );
+
+
+        if (error) {
+            throw error;
+        }
+
+
+        applications =
+            data || [];
+
+
+        renderApplications();
+
+
+    } catch (error) {
+
+        console.error(
+            "Load applications error:",
+            error
+        );
+
+
+        if (table) {
+
+            table.innerHTML = `
+                <tr>
+
+                    <td colspan="7">
+
+                        Could not load applications:
+                        ${escapeHtml(
+                            error.message
+                        )}
+
+                    </td>
+
+                </tr>
+            `;
+        }
+    }
+}
+
+
+/* =========================================
+   VIEW APPLICATION
+========================================= */
+
+window.viewApplication =
+    function(id) {
+
+        const app =
+            applications.find(
+                item =>
+                    String(item.id) ===
+                    String(id)
+            );
+
+
+        if (!app) {
+            return;
+        }
+
+
+        alert(
+            `Applicant: ${app.full_name || "--"}\n\n` +
+            `Date of Birth: ${app.date_of_birth || "--"}\n` +
+            `Gender: ${app.gender || "--"}\n` +
+            `Class: ${app.class || "--"}\n` +
+            `Parent/Guardian: ${app.parent_name || "--"}\n` +
+            `Phone: ${app.phone || "--"}\n` +
+            `Email: ${app.email || "--"}\n` +
+            `Address: ${app.address || "--"}\n` +
+            `Previous School: ${app.previous_school || "--"}\n` +
+            `Additional Information: ${app.additional_information || "--"}\n\n` +
+            `Status: ${capitalize(
+                app.status || "pending"
+            )}`
+        );
+    };
+
+
+/* =========================================
+   GENERATE STUDENT ID
+========================================= */
+
+async function generateStudentId() {
+
+    const {
+        data,
+        error
+    } =
+        await supabaseClient
+            .from("students")
+            .select("student_id");
+
+
+    if (error) {
+        throw error;
+    }
+
+
+    let highestNumber = 0;
+
+
+    (data || [])
+        .forEach(
+            student => {
+
+                const value =
+                    String(
+                        student.student_id || ""
+                    )
+                        .trim()
+                        .toUpperCase();
+
+
+                const match =
+                    value.match(
+                        /^PACSA(\d+)$/
+                    );
+
+
+                if (!match) {
+                    return;
+                }
+
+
+                const number =
+                    Number(match[1]);
+
+
+                if (
+                    Number.isFinite(number) &&
+                    number > highestNumber
+                ) {
+
+                    highestNumber =
+                        number;
+                }
+            }
+        );
+
+
+    return (
+        "PACSA" +
+        String(
+            highestNumber + 1
+        ).padStart(
+            3,
+            "0"
+        )
+    );
+}
+
+
+/* =========================================
+   FIND EXISTING STUDENT
+========================================= */
+
+async function findExistingStudent(app) {
+
+    if (!app.email) {
+        return null;
+    }
+
+
+    const {
+        data,
+        error
+    } =
+        await supabaseClient
+            .from("students")
+            .select(`
+                student_id,
+                first_name,
+                last_name,
+                fullname,
+                email,
+                class,
+                status,
+                portal_status
+            `)
+            .ilike(
+                "email",
+                app.email.trim()
+            )
+            .limit(1);
+
+
+    if (error) {
+        throw error;
+    }
+
+
+    return data?.[0] || null;
+}
+
+
+/* =========================================
+   CREATE STUDENT
+========================================= */
+
+async function createStudentFromApplication(app) {
+
+    const existing =
+        await findExistingStudent(app);
+
+
+    if (existing) {
+        return existing;
+    }
+
+
+    const studentId =
+        await generateStudentId();
+
+
+    const names =
+        splitFullName(
+            app.full_name
+        );
+
+
+    const studentData = {
+
+        student_id:
+            studentId,
+
+        first_name:
+            names.first_name,
+
+        last_name:
+            names.last_name,
+
+        fullname:
+            app.full_name ||
+            `${names.first_name} ${names.last_name}`
+                .trim(),
+
+        email:
+            app.email || null,
+
+        phone:
+            app.phone || null,
+
+        class:
+            app.class || null,
+
+        status:
+            "Active",
+
+        portal_status:
+            "not_activated",
+
+        auth_user_id:
+            null
+    };
+
+
+    const {
+        data,
+        error
+    } =
+        await supabaseClient
+            .from("students")
+            .insert([
+                studentData
+            ])
+            .select(`
+                student_id,
+                first_name,
+                last_name,
+                fullname,
+                email,
+                class,
+                status,
+                portal_status
+            `)
+            .single();
+
+
+    if (error) {
+        throw error;
+    }
+
+
+    return data;
+}
+
+
+/* =========================================
+   APPROVE APPLICATION
+========================================= */
+
+window.approveApplication =
+    async function(id) {
+
+        const app =
+            applications.find(
+                item =>
+                    String(item.id) ===
+                    String(id)
+            );
+
+
+        if (!app) {
+            return;
+        }
+
+
+        const confirmed =
+            confirm(
+                `Approve ${app.full_name}'s application?\n\n` +
+                `A student record will be created and the applicant will be able to activate the Student Portal.`
+            );
+
+
+        if (!confirmed) {
+            return;
+        }
+
+
+        try {
+
+            const {
+                data: freshApp,
+                error: freshError
+            } =
+                await supabaseClient
+                    .from("applications")
+                    .select("*")
+                    .eq(
+                        "id",
+                        id
+                    )
+                    .maybeSingle();
+
+
+            if (freshError) {
+                throw freshError;
+            }
+
+
+            if (!freshApp) {
+
+                throw new Error(
+                    "This application no longer exists."
+                );
+            }
+
+
+            if (
+                normalize(
+                    freshApp.status || "pending"
+                ) !== "pending"
+            ) {
+
+                alert(
+                    `This application is already ${freshApp.status}.`
+                );
+
+
+                await loadApplications();
+
+                return;
+            }
+
+
+            if (!freshApp.email) {
+
+                alert(
+                    "This applicant has no email address. Student Portal activation requires an email."
+                );
+
+                return;
+            }
+
+
+            const student =
+                await createStudentFromApplication(
+                    freshApp
+                );
+
+
+            const {
+                data: updatedApplication,
+                error: approvalError
+            } =
+                await supabaseClient
+                    .from("applications")
+                    .update({
+                        status:
+                            "approved"
+                    })
+                    .eq(
+                        "id",
+                        id
+                    )
+                    .eq(
+                        "status",
+                        freshApp.status
+                    )
+                    .select();
+
+
+            if (approvalError) {
+                throw approvalError;
+            }
+
+
+            if (
+                !updatedApplication ||
+                updatedApplication.length !== 1
+            ) {
+
+                alert(
+                    "The application changed before approval completed."
+                );
+
+
+                await loadApplications();
+
+                return;
+            }
+
+
+            await loadApplications();
+
+
+            let emailSent =
+                false;
+
+
+            try {
+
+                const {
+                    error: emailError
+                } =
+                    await supabaseClient
+                        .functions
+                        .invoke(
+                            "smooth-api",
+                            {
+                                body: {
+
+                                    application_id:
+                                        freshApp.id,
+
+                                    full_name:
+                                        freshApp.full_name,
+
+                                    email:
+                                        freshApp.email,
+
+                                    class:
+                                        freshApp.class,
+
+                                    student_id:
+                                        student.student_id,
+
+                                    portal_status:
+                                        student.portal_status
+                                }
+                            }
+                        );
+
+
+                if (!emailError) {
+
+                    emailSent =
+                        true;
+
+                } else {
+
+                    console.error(
+                        "Approval email error:",
+                        emailError
+                    );
+                }
+
+
+            } catch (emailError) {
+
+                console.error(
+                    "Approval email error:",
+                    emailError
+                );
+            }
+
+
+            if (emailSent) {
+
+                alert(
+                    `Application approved successfully!\n\n` +
+                    `Student ID: ${student.student_id}\n` +
+                    `Class: ${student.class || freshApp.class || "--"}\n\n` +
+                    `A congratulatory email has been sent to ${freshApp.email}.`
+                );
+
+            } else {
+
+                alert(
+                    `Application approved successfully.\n\n` +
+                    `Student ID: ${student.student_id}\n` +
+                    `Class: ${student.class || freshApp.class || "--"}\n\n` +
+                    `The student record was created, but the email could not be sent.`
+                );
+            }
+
+
+        } catch (error) {
+
+            console.error(
+                "Approve application error:",
+                error
+            );
+
+
+            alert(
+                "Could not approve application: " +
+                error.message
+            );
+        }
+    };
+
+
+/* =========================================
+   REJECT APPLICATION
+========================================= */
+
+window.rejectApplication =
+    async function(id) {
+
+        const app =
+            applications.find(
+                item =>
+                    String(item.id) ===
+                    String(id)
+            );
+
+
+        if (!app) {
+            return;
+        }
+
+
+        if (
+            !confirm(
+                `Reject ${app.full_name}'s application?`
+            )
+        ) {
+
+            return;
+        }
+
+
+        try {
+
+            const {
+                data,
+                error
+            } =
+                await supabaseClient
+                    .from("applications")
+                    .update({
+                        status:
+                            "rejected"
+                    })
+                    .eq(
+                        "id",
+                        id
+                    )
+                    .eq(
+                        "status",
+                        app.status || "pending"
+                    )
+                    .select();
+
+
+            if (error) {
+                throw error;
+            }
+
+
+            if (
+                !data ||
+                data.length !== 1
+            ) {
+
+                alert(
+                    "This application has already been changed."
+                );
+
+
+                await loadApplications();
+
+                return;
+            }
+
+
+            await loadApplications();
+
+
+            alert(
+                "Application rejected successfully."
+            );
+
+
+        } catch (error) {
+
+            console.error(
+                "Reject application error:",
+                error
+            );
+
+
+            alert(
+                "Could not reject application: " +
+                error.message
+            );
+        }
+    };
+
+
+/* =========================================
+   DELETE APPLICATION
+========================================= */
+
+window.deleteApplication =
+    async function(id) {
+
+        const app =
+            applications.find(
+                item =>
+                    String(item.id) ===
+                    String(id)
+            );
+
+
+        if (!app) {
+            return;
+        }
+
+
+        const status =
+            normalize(
+                app.status || "pending"
+            );
+
+
+        let message =
+            `Delete ${app.full_name}'s application?`;
+
+
+        if (
+            status === "approved"
+        ) {
+
+            message +=
+                `\n\nThis application was already approved.` +
+                `\nThe student's PACSA student record will NOT be deleted.`;
+        }
+
+
+        const firstConfirm =
+            confirm(message);
+
+
+        if (!firstConfirm) {
+            return;
+        }
+
+
+        const secondConfirm =
+            confirm(
+                "This application record will be permanently deleted.\n\nContinue?"
+            );
+
+
+        if (!secondConfirm) {
+            return;
+        }
+
+
+        try {
+
+            const {
+                error
+            } =
+                await supabaseClient
+                    .from("applications")
+                    .delete()
+                    .eq(
+                        "id",
+                        id
+                    );
+
+
+            if (error) {
+                throw error;
+            }
+
+
+            await loadApplications();
+
+
+            alert(
+                "Application deleted successfully."
+            );
+
+
+        } catch (error) {
+
+            console.error(
+                "Delete application error:",
+                error
+            );
+
+
+            alert(
+                "Could not delete application: " +
+                error.message
+            );
+        }
+    };
+
+
+/* =========================================
+   CLEAR FILTERS
+========================================= */
+
+function clearFilters() {
+
+    if (
+        $("applicationSearch")
+    ) {
+
+        $("applicationSearch").value =
+            "";
+    }
+
+
+    if (
+        $("classFilter")
+    ) {
+
+        $("classFilter").value =
+            "";
+    }
+
+
+    if (
+        $("statusFilter")
+    ) {
+
+        $("statusFilter").value =
+            "";
+    }
+
+
     renderApplications();
 }
 
 
-/* VIEW APPLICATION */
+/* =========================================
+   PAGE START
+========================================= */
 
-window.viewApplication = function(id) {
-    const app = applications.find(
-        a => String(a.id) === String(id)
-    );
+document.addEventListener(
+    "DOMContentLoaded",
+    async () => {
 
-    if (!app) return;
-
-    alert(
-        `Applicant: ${app.full_name}\n\n` +
-        `Date of Birth: ${app.date_of_birth || "--"}\n` +
-        `Gender: ${app.gender || "--"}\n` +
-        `Class: ${app.class || "--"}\n` +
-        `Parent/Guardian: ${app.parent_name || "--"}\n` +
-        `Phone: ${app.phone || "--"}\n` +
-        `Email: ${app.email || "--"}\n` +
-        `Address: ${app.address || "--"}\n` +
-        `Previous School: ${app.previous_school || "--"}\n` +
-        `Additional Information: ${app.additional_information || "--"}\n\n` +
-        `Status: ${app.status || "pending"}`
-    );
-};
+        const admin =
+            await window.adminAuthReady;
 
 
-/* APPROVE APPLICATION */
-
-window.approveApplication = async function(id) {
-    const app = applications.find(
-        a => String(a.id) === String(id)
-    );
-
-    if (!app) return;
-
-    if (!confirm(
-        `Approve ${app.full_name}'s application?\n\n` +
-        `A congratulatory email will be sent to ${app.email}.`
-    )) {
-        return;
-    }
-
-    const { error } = await supabaseClient
-        .from("applications")
-        .update({
-            status: "approved"
-        })
-        .eq("id", id);
-
-    if (error) {
-        console.error(error);
-
-        alert(
-            `Could not approve application:\n${error.message}`
-        );
-
-        return;
-    }
-
-    app.status = "approved";
-    renderApplications();
+        if (!admin) {
+            return;
+        }
 
 
-    /* SEND CONGRATULATORY EMAIL */
+        $("applicationSearch")
+            ?.addEventListener(
+                "input",
+                renderApplications
+            );
 
-    try {
-        const { error: emailError } =
-            await supabaseClient.functions.invoke(
-                "smooth-api",
-                {
-                    body: {
-                        application_id: app.id,
-                        full_name: app.full_name,
-                        email: app.email,
-                        class: app.class
-                    }
+
+        $("classFilter")
+            ?.addEventListener(
+                "change",
+                renderApplications
+            );
+
+
+        $("statusFilter")
+            ?.addEventListener(
+                "change",
+                renderApplications
+            );
+
+
+        $("clearFiltersBtn")
+            ?.addEventListener(
+                "click",
+                clearFilters
+            );
+
+
+        $("menuBtn")
+            ?.addEventListener(
+                "click",
+                () => {
+
+                    $("sidebar")
+                        ?.classList
+                        .toggle(
+                            "active"
+                        );
                 }
             );
 
-        if (emailError) {
-            console.error("Email error:", emailError);
 
-            alert(
-                "Application approved, but the congratulatory email could not be sent."
-            );
+        /*
+            Logout handled by admin-auth.js
+        */
 
-            return;
-        }
 
-        alert(
-            `Application approved successfully!\n\n` +
-            `A congratulatory email has been sent to ${app.email}.`
-        );
-
-    } catch (error) {
-        console.error("Email error:", error);
-
-        alert(
-            "Application approved, but there was a problem sending the email."
-        );
+        await loadApplications();
     }
-};
-
-
-/* REJECT APPLICATION */
-
-window.rejectApplication = async function(id) {
-    const app = applications.find(
-        a => String(a.id) === String(id)
-    );
-
-    if (!app) return;
-
-    if (!confirm(
-        `Reject ${app.full_name}'s application?`
-    )) {
-        return;
-    }
-
-    const { error } = await supabaseClient
-        .from("applications")
-        .update({
-            status: "rejected"
-        })
-        .eq("id", id);
-
-    if (error) {
-        console.error(error);
-
-        alert(
-            `Could not reject application:\n${error.message}`
-        );
-
-        return;
-    }
-
-    app.status = "rejected";
-
-    renderApplications();
-
-    alert("Application rejected successfully.");
-};
-
-
-/* FILTERS */
-
-search.addEventListener("input", renderApplications);
-classFilter.addEventListener("change", renderApplications);
-statusFilter.addEventListener("change", renderApplications);
-
-document.getElementById("clearFiltersBtn")
-    .addEventListener("click", () => {
-        search.value = "";
-        classFilter.value = "";
-        statusFilter.value = "";
-
-        renderApplications();
-    });
-
-
-/* MOBILE MENU */
-
-document.getElementById("menuBtn")
-    .addEventListener("click", () => {
-        document.getElementById("sidebar")
-            .classList.toggle("active");
-    });
-
-
-/* LOGOUT */
-
-document.getElementById("logoutBtn")
-    .addEventListener("click", async e => {
-        e.preventDefault();
-
-        if (!confirm("Are you sure you want to logout?")) {
-            return;
-        }
-
-        try {
-            await supabaseClient.auth.signOut();
-        } catch (error) {
-            console.error(error);
-        }
-
-        window.location.href = "login.html";
-    });
-
-
-/* START */
-
-loadApplications();
+);

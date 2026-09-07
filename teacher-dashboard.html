@@ -22,6 +22,112 @@
     >
 
     <style>
+
+        /* =========================================
+           PROFILE PHOTO
+        ========================================= */
+
+        .mini-avatar {
+            width: 44px;
+            height: 44px;
+            border-radius: 50%;
+            object-fit: cover;
+            background: #F3E8FF;
+            border: 2px solid rgba(255,255,255,.75);
+            display: block;
+        }
+
+        .teacher-photo-section {
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            gap: 10px;
+            width: 100%;
+        }
+
+        .teacher-photo-wrapper {
+            width: 110px;
+            height: 110px;
+            position: relative;
+        }
+
+        .teacher-profile-photo {
+            width: 110px;
+            height: 110px;
+            border-radius: 22px;
+            object-fit: cover;
+            display: block;
+            background: #F3E8FF;
+            border: 3px solid #E9D5FF;
+        }
+
+        .teacher-photo-loading {
+            position: absolute;
+            inset: 0;
+            border-radius: 22px;
+            background: rgba(31, 41, 55, 0.68);
+            color: #fff;
+            display: none;
+            align-items: center;
+            justify-content: center;
+            padding: 10px;
+            text-align: center;
+            font-size: 12px;
+            font-weight: 600;
+        }
+
+        .teacher-photo-loading.show {
+            display: flex;
+        }
+
+        .teacher-photo-btn {
+            border: none;
+            background: #F3E8FF;
+            color: #5B21B6;
+            padding: 8px 13px;
+            border-radius: 9px;
+            font-family: inherit;
+            font-size: 12px;
+            font-weight: 700;
+            cursor: pointer;
+        }
+
+        .teacher-photo-btn:hover {
+            background: #E9D5FF;
+        }
+
+        .teacher-photo-btn:disabled {
+            opacity: .6;
+            cursor: not-allowed;
+        }
+
+        .teacher-photo-help {
+            color: #6B7280;
+            font-size: 10px;
+            text-align: center;
+            line-height: 1.4;
+        }
+
+        .teacher-photo-message {
+            display: none;
+            font-size: 11px;
+            text-align: center;
+            line-height: 1.4;
+        }
+
+        .teacher-photo-message.show {
+            display: block;
+        }
+
+        .teacher-photo-message.success {
+            color: #15803D;
+        }
+
+        .teacher-photo-message.error {
+            color: #DC2626;
+        }
+
+
         /* =========================================
            CLASS TEACHER AREA
         ========================================= */
@@ -59,7 +165,7 @@
             background: #FFFFFF;
             border-radius: 16px;
             padding: 20px;
-            box-shadow: 0 8px 24px rgba(0, 0, 0, 0.04);
+            box-shadow: 0 8px 24px rgba(0,0,0,.04);
         }
 
         .class-teacher-card-top {
@@ -332,7 +438,7 @@
 
 
         /* =========================================
-           REMARK AREA
+           REMARK
         ========================================= */
 
         .remark-box {
@@ -377,7 +483,7 @@
 
         .remark-box textarea:focus {
             border-color: #5B21B6;
-            box-shadow: 0 0 0 3px rgba(91, 33, 182, 0.08);
+            box-shadow: 0 0 0 3px rgba(91,33,182,.08);
         }
 
         .remark-actions {
@@ -393,14 +499,12 @@
             font-size: 13px;
         }
 
-
-        @media (max-width: 700px) {
-
+        @media(max-width:700px) {
             .complete-result-header {
                 flex-direction: column;
             }
-
         }
+
     </style>
 
 </head>
@@ -408,10 +512,6 @@
 
 <body>
 
-
-<!-- =========================================
-     SIDEBAR
-========================================= -->
 
 <aside
     class="sidebar"
@@ -501,11 +601,6 @@
 </aside>
 
 
-
-<!-- =========================================
-     MAIN
-========================================= -->
-
 <div class="main-wrapper">
 
 
@@ -520,6 +615,7 @@
         >
             ☰
         </button>
+
 
         <div>
 
@@ -540,12 +636,13 @@
 
         <div class="topbar-teacher">
 
-            <div
+            <img
+                src="images/PACSA LOGO.png"
+                alt="Teacher Profile"
                 class="mini-avatar"
                 id="miniAvatar"
             >
-                T
-            </div>
+
 
             <div>
 
@@ -575,13 +672,8 @@
 </header>
 
 
-
 <main class="content">
 
-
-<!-- =========================================
-     WELCOME
-========================================= -->
 
 <section
     id="dashboard"
@@ -606,6 +698,7 @@
             results from one place.
         </p>
 
+
         <div
             id="classTeacherBadge"
             class="class-teacher-badge"
@@ -623,11 +716,6 @@
 
 </section>
 
-
-
-<!-- =========================================
-     STATISTICS
-========================================= -->
 
 <section class="stats-grid">
 
@@ -689,11 +777,6 @@
 </section>
 
 
-
-<!-- =========================================
-     RESULT STATUS
-========================================= -->
-
 <section class="result-status-grid">
 
     <div class="status-summary-card">
@@ -734,11 +817,6 @@
 </section>
 
 
-
-<!-- =========================================
-     ASSIGNMENTS
-========================================= -->
-
 <section
     id="assignments"
     class="page-card"
@@ -778,11 +856,6 @@
 </section>
 
 
-
-<!-- =========================================
-     MY CLASS
-========================================= -->
-
 <section
     id="myClassSection"
     class="page-card"
@@ -813,8 +886,7 @@
     <div
         id="classTeacherCards"
         class="class-teacher-grid"
-    >
-    </div>
+    ></div>
 
 
     <div
@@ -827,8 +899,7 @@
             Select Class
         </label>
 
-        <select id="classTeacherClassSelect">
-        </select>
+        <select id="classTeacherClassSelect"></select>
 
     </div>
 
@@ -888,11 +959,6 @@
 
 </section>
 
-
-
-<!-- =========================================
-     COMPLETE CLASS RESULT
-========================================= -->
 
 <section
     id="classResultView"
@@ -1005,9 +1071,11 @@
             <tbody id="classFullResultTable">
 
                 <tr>
+
                     <td colspan="5">
                         Select a student to view result.
                     </td>
+
                 </tr>
 
             </tbody>
@@ -1020,54 +1088,26 @@
     <div class="complete-result-summary">
 
         <div class="complete-summary-card">
-
-            <span>
-                Subjects
-            </span>
-
-            <strong id="classResultSubjectCount">
-                0
-            </strong>
-
+            <span>Subjects</span>
+            <strong id="classResultSubjectCount">0</strong>
         </div>
 
 
         <div class="complete-summary-card">
-
-            <span>
-                Average
-            </span>
-
-            <strong id="classResultAverage">
-                0%
-            </strong>
-
+            <span>Average</span>
+            <strong id="classResultAverage">0%</strong>
         </div>
 
 
         <div class="complete-summary-card">
-
-            <span>
-                Passed
-            </span>
-
-            <strong id="classResultPassed">
-                0
-            </strong>
-
+            <span>Passed</span>
+            <strong id="classResultPassed">0</strong>
         </div>
 
 
         <div class="complete-summary-card">
-
-            <span>
-                Failed
-            </span>
-
-            <strong id="classResultFailed">
-                0
-            </strong>
-
+            <span>Failed</span>
+            <strong id="classResultFailed">0</strong>
         </div>
 
     </div>
@@ -1081,10 +1121,6 @@
     </div>
 
 
-    <!-- =========================================
-         CLASS TEACHER REMARK
-    ========================================= -->
-
     <div class="remark-box">
 
         <h3>
@@ -1095,9 +1131,11 @@
             Add the class teacher's remark for this student's report.
         </p>
 
+
         <label for="classTeacherRemark">
             Student Remark
         </label>
+
 
         <textarea
             id="classTeacherRemark"
@@ -1115,6 +1153,7 @@
                 Save Remark
             </button>
 
+
             <p
                 id="remarkMessage"
                 class="form-message"
@@ -1126,11 +1165,6 @@
 
 </section>
 
-
-
-<!-- =========================================
-     SUBJECT RESULT MANAGEMENT
-========================================= -->
 
 <section
     id="results"
@@ -1167,9 +1201,6 @@
 
     </div>
 
-
-
-    <!-- RESULT ENTRY -->
 
     <div
         id="resultEntryPanel"
@@ -1359,9 +1390,6 @@
     </div>
 
 
-
-    <!-- FILTERS -->
-
     <div class="result-filters">
 
         <div class="search-box">
@@ -1446,9 +1474,6 @@
     </div>
 
 
-
-    <!-- RESULT TABLE -->
-
     <div class="table-wrapper">
 
         <table>
@@ -1475,9 +1500,11 @@
             <tbody id="resultsTable">
 
                 <tr>
+
                     <td colspan="11">
                         Loading results...
                     </td>
+
                 </tr>
 
             </tbody>
@@ -1486,9 +1513,6 @@
 
     </div>
 
-
-
-    <!-- EDIT RESULT -->
 
     <div
         id="editPanel"
@@ -1504,8 +1528,7 @@
                 </h3>
 
                 <p>
-                    Editing a result sends it back to the
-                    administrator for review.
+                    Update the scores for your assigned subject.
                 </p>
 
             </div>
@@ -1645,11 +1668,6 @@
 </section>
 
 
-
-<!-- =========================================
-     PROFILE
-========================================= -->
-
 <section
     id="profile"
     class="page-card"
@@ -1681,11 +1699,57 @@
 
         <div class="teacher-profile-card">
 
-            <div
-                class="large-avatar"
-                id="teacherAvatar"
-            >
-                T
+
+            <div class="teacher-photo-section">
+
+                <div class="teacher-photo-wrapper">
+
+                    <img
+                        src="images/PACSA LOGO.png"
+                        alt="Teacher Profile"
+                        class="teacher-profile-photo"
+                        id="teacherAvatar"
+                    >
+
+
+                    <div
+                        class="teacher-photo-loading"
+                        id="teacherPhotoLoading"
+                    >
+                        Uploading...
+                    </div>
+
+                </div>
+
+
+                <input
+                    type="file"
+                    id="teacherPhotoInput"
+                    accept="image/jpeg,image/png,image/webp"
+                    hidden
+                >
+
+
+                <button
+                    type="button"
+                    class="teacher-photo-btn"
+                    id="changeTeacherPhotoBtn"
+                >
+                    📷 Change Photo
+                </button>
+
+
+                <p class="teacher-photo-help">
+                    JPG, PNG or WebP.
+                    Maximum 2 MB.
+                </p>
+
+
+                <p
+                    class="teacher-photo-message"
+                    id="teacherPhotoMessage"
+                ></p>
+
             </div>
 
 
@@ -1710,6 +1774,7 @@
 
 
         <div class="profile-information">
+
 
             <div class="profile-info-row">
 
@@ -1799,7 +1864,6 @@
 </section>
 
 
-
 <footer class="dashboard-footer">
 
     <p>
@@ -1818,16 +1882,16 @@
 </div>
 
 
-
 <div
     id="sidebarOverlay"
     class="sidebar-overlay"
->
-</div>
+></div>
 
 
 <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+
 <script src="supabase.js"></script>
+
 <script src="teacher-dashboard.js"></script>
 
 

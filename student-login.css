@@ -243,3 +243,41 @@ padding:25px;
 }
 
 }
+.login-actions {
+    display: flex;
+    gap: 12px;
+    margin-top: 18px;
+}
+
+.login-actions .login-btn,
+.create-account-btn {
+    flex: 1;
+    min-height: 52px;
+    border-radius: 12px;
+    font-family: inherit;
+    font-size: 15px;
+    font-weight: 700;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    text-decoration: none;
+    box-sizing: border-box;
+}
+
+.create-account-btn {
+    background: transparent;
+    border: 2px solid #6D28D9;
+    color: #6D28D9;
+    transition: 0.2s;
+}
+
+.create-account-btn:hover {
+    background: #6D28D9;
+    color: white;
+}
+
+@media (max-width: 520px) {
+    .login-actions {
+        flex-direction: column;
+    }
+}

@@ -1,124 +1,333 @@
 /* =========================================
    PACSA ADMIN DASHBOARD
-   SUPABASE CONNECTED
+   SECURE SUPABASE AUTH VERSION
 ========================================= */
 
-document.addEventListener("DOMContentLoaded", () => {
+const $ = id =>
+    document.getElementById(id);
 
-    /* =========================================
-       MOBILE SIDEBAR
-    ========================================= */
-
-    const menuBtn = document.getElementById("menuBtn");
-    const sidebar = document.getElementById("sidebar");
-
-    if (menuBtn && sidebar) {
-        menuBtn.addEventListener("click", () => {
-            sidebar.classList.toggle("active");
-        });
-    }
-
-    document.querySelectorAll(".nav-link").forEach(link => {
-        link.addEventListener("click", () => {
-            if (window.innerWidth <= 950 && sidebar) {
-                sidebar.classList.remove("active");
-            }
-        });
-    });
-
-
-    /* =========================================
-       CURRENT DATE
-    ========================================= */
-
-    const currentDate = document.getElementById("currentDate");
-
-    if (currentDate) {
-        currentDate.textContent = new Date().toLocaleDateString(
-            "en-US",
-            {
-                weekday: "long",
-                year: "numeric",
-                month: "long",
-                day: "numeric"
-            }
-        );
-    }
-
-
-    /* =========================================
-       LOAD DASHBOARD
-    ========================================= */
-
-    loadDashboard();
-
-
-    /* =========================================
-       LOGOUT
-    ========================================= */
-
-    const logoutBtn = document.getElementById("logoutBtn");
-
-    if (logoutBtn) {
-        logoutBtn.addEventListener("click", async e => {
-
-            e.preventDefault();
-
-            if (!confirm("Are you sure you want to logout?")) {
-                return;
-            }
-
-            try {
-                if (typeof supabaseClient !== "undefined") {
-                    await supabaseClient.auth.signOut();
-                }
-            } catch (error) {
-                console.error("Logout error:", error);
-            }
-
-            window.location.href = "login.html";
-        });
-    }
-
-
-    /* =========================================
-       NOTIFICATIONS
-    ========================================= */
-
-    const notificationBtn =
-        document.querySelector(".notification-btn");
-
-    if (notificationBtn) {
-        notificationBtn.addEventListener("click", () => {
-            alert("Your dashboard notifications are up to date.");
-        });
-    }
-
-
-    /* =========================================
-       CARD ANIMATION
-    ========================================= */
-
-    document.querySelectorAll(
-        ".dashboard-card, .stat-card"
-    ).forEach(card => {
-
-        card.style.opacity = "0";
-        card.style.transform = "translateY(15px)";
-
-        setTimeout(() => {
-            card.style.transition = "0.5s ease";
-            card.style.opacity = "1";
-            card.style.transform = "translateY(0)";
-        }, 100);
-
-    });
-
-});
+let currentAdmin = null;
 
 
 /* =========================================
-   DASHBOARD DATA
+   URL
+========================================= */
+
+function getAdminLoginUrl() {
+
+    return new URL(
+        "admin-login.html",
+        window.location.href
+    ).href;
+}
+
+
+/* =========================================
+   ADMIN AUTH GUARD
+========================================= */
+
+async function verifyAdminSession() {
+
+    try {
+
+        const {
+            data: sessionData,
+            error: sessionError
+        } =
+            await supabaseClient
+                .auth
+                .getSession();
+
+
+        if (sessionError) {
+            throw sessionError;
+        }
+
+
+        const user =
+            sessionData?.session?.user;
+
+
+        /*
+            No Supabase login = no Admin access.
+        */
+
+        if (!user) {
+
+            localStorage.removeItem(
+                "admin"
+            );
+
+            window.location.replace(
+                getAdminLoginUrl()
+            );
+
+            return false;
+        }
+
+
+        /*
+            Confirm this Auth account exists
+            inside PACSA admins table.
+        */
+
+        const {
+            data: admin,
+            error: adminError
+        } =
+            await supabaseClient
+                .from("admins")
+                .select("*")
+                .eq(
+                    "auth_user_id",
+                    user.id
+                )
+                .maybeSingle();
+
+
+        if (adminError) {
+            throw adminError;
+        }
+
+
+        /*
+            Logged into Supabase but not an Admin.
+        */
+
+        if (!admin) {
+
+            await supabaseClient
+                .auth
+                .signOut();
+
+
+            localStorage.removeItem(
+                "admin"
+            );
+
+
+            alert(
+                "This account does not have PACSA Admin access."
+            );
+
+
+            window.location.replace(
+                getAdminLoginUrl()
+            );
+
+
+            return false;
+        }
+
+
+        /*
+            Block inactive Admin.
+        */
+
+        if (
+            String(
+                admin.status ||
+                "active"
+            )
+                .trim()
+                .toLowerCase()
+            !==
+            "active"
+        ) {
+
+            await supabaseClient
+                .auth
+                .signOut();
+
+
+            localStorage.removeItem(
+                "admin"
+            );
+
+
+            alert(
+                "This Admin account is inactive."
+            );
+
+
+            window.location.replace(
+                getAdminLoginUrl()
+            );
+
+
+            return false;
+        }
+
+
+        currentAdmin =
+            admin;
+
+
+        /*
+            Compatibility only.
+
+            Auth + admins table is the
+            actual security check.
+        */
+
+        localStorage.setItem(
+            "admin",
+            JSON.stringify(
+                admin
+            )
+        );
+
+
+        displayAdminProfile();
+
+
+        return true;
+
+
+    } catch (error) {
+
+        console.error(
+            "Admin authentication error:",
+            error
+        );
+
+
+        try {
+
+            await supabaseClient
+                .auth
+                .signOut();
+
+        } catch {}
+
+
+        localStorage.removeItem(
+            "admin"
+        );
+
+
+        window.location.replace(
+            getAdminLoginUrl()
+        );
+
+
+        return false;
+    }
+}
+
+
+/* =========================================
+   ADMIN PROFILE
+========================================= */
+
+function displayAdminProfile() {
+
+    if (!currentAdmin) {
+        return;
+    }
+
+
+    const name =
+        currentAdmin.fullname ||
+        "PACSA Administrator";
+
+
+    /*
+        These only update elements if
+        they exist in your HTML.
+    */
+
+    if ($("adminName")) {
+
+        $("adminName")
+            .textContent =
+            name;
+    }
+
+
+    if ($("adminEmail")) {
+
+        $("adminEmail")
+            .textContent =
+            currentAdmin.email ||
+            "--";
+    }
+
+
+    const nameElements =
+        document.querySelectorAll(
+            ".admin-name"
+        );
+
+
+    nameElements.forEach(
+        element => {
+
+            element.textContent =
+                name;
+        }
+    );
+}
+
+
+/* =========================================
+   LOGOUT
+========================================= */
+
+async function logoutAdmin() {
+
+    const confirmed =
+        confirm(
+            "Are you sure you want to logout?"
+        );
+
+
+    if (!confirmed) {
+        return;
+    }
+
+
+    try {
+
+        await supabaseClient
+            .auth
+            .signOut();
+
+
+    } catch (error) {
+
+        console.error(
+            "Logout error:",
+            error
+        );
+
+
+    } finally {
+
+        localStorage.removeItem(
+            "admin"
+        );
+
+
+        localStorage.removeItem(
+            "teacher"
+        );
+
+
+        localStorage.removeItem(
+            "student"
+        );
+
+
+        window.location.replace(
+            getAdminLoginUrl()
+        );
+    }
+}
+
+
+/* =========================================
+   LOAD DASHBOARD DATA
 ========================================= */
 
 async function loadDashboard() {
@@ -133,23 +342,38 @@ async function loadDashboard() {
             applications,
             results,
             sessions
-        ] = await Promise.all([
+        ] =
+            await Promise.all([
 
-            getData("students"),
+                getData(
+                    "students"
+                ),
 
-            getData("Teachers"),
+                getData(
+                    "Teachers"
+                ),
 
-            getData("subjects"),
+                getData(
+                    "subjects"
+                ),
 
-            getData("classes"),
+                getData(
+                    "classes"
+                ),
 
-            getData("applications"),
+                getData(
+                    "applications"
+                ),
 
-            getData("results"),
+                getData(
+                    "results"
+                ),
 
-            getData("sessions_terms")
+                getData(
+                    "sessions_terms"
+                )
 
-        ]);
+            ]);
 
 
         updateStatistics(
@@ -159,14 +383,23 @@ async function loadDashboard() {
             classes
         );
 
-        updateApplications(applications);
 
-        updateSchoolStatus(sessions, results);
+        updateApplications(
+            applications
+        );
+
+
+        updateSchoolStatus(
+            sessions,
+            results
+        );
+
 
         updatePerformance(
             results,
             students
         );
+
 
         updateActivities(
             students,
@@ -175,9 +408,11 @@ async function loadDashboard() {
             results
         );
 
+
         console.log(
-            "PACSA Admin Dashboard connected successfully."
+            "PACSA Admin Dashboard loaded."
         );
+
 
     } catch (error) {
 
@@ -185,7 +420,6 @@ async function loadDashboard() {
             "Dashboard loading error:",
             error
         );
-
     }
 }
 
@@ -194,11 +428,18 @@ async function loadDashboard() {
    GET DATA
 ========================================= */
 
-async function getData(table) {
+async function getData(
+    table
+) {
 
-    const { data, error } = await supabaseClient
-        .from(table)
-        .select("*");
+    const {
+        data,
+        error
+    } =
+        await supabaseClient
+            .from(table)
+            .select("*");
+
 
     if (error) {
 
@@ -208,8 +449,8 @@ async function getData(table) {
         );
 
         return [];
-
     }
+
 
     return data || [];
 }
@@ -227,74 +468,112 @@ function updateStatistics(
 ) {
 
     const counters =
-        document.querySelectorAll(".stat-card .counter");
-
-    if (counters[0]) {
-        animateCounter(
-            counters[0],
-            students.length
+        document.querySelectorAll(
+            ".stat-card .counter"
         );
-    }
 
-    if (counters[1]) {
-        animateCounter(
-            counters[1],
-            teachers.length
-        );
-    }
 
-    if (counters[2]) {
-        animateCounter(
-            counters[2],
-            subjects.length
-        );
-    }
+    const values = [
 
-    if (counters[3]) {
-        animateCounter(
-            counters[3],
-            classes.length
-        );
-    }
+        students.length,
+
+        teachers.length,
+
+        subjects.length,
+
+        classes.length
+
+    ];
+
+
+    counters.forEach(
+        (
+            counter,
+            index
+        ) => {
+
+            if (
+                values[index] !==
+                undefined
+            ) {
+
+                animateCounter(
+                    counter,
+                    values[index]
+                );
+            }
+        }
+    );
 }
 
 
 /* =========================================
-   COUNTER ANIMATION
+   COUNTER
 ========================================= */
 
-function animateCounter(element, target) {
+function animateCounter(
+    element,
+    target
+) {
 
-    target = Number(target) || 0;
+    target =
+        Number(target) ||
+        0;
 
-    let current = 0;
 
-    if (target === 0) {
-        element.textContent = "0";
+    if (
+        target === 0
+    ) {
+
+        element.textContent =
+            "0";
+
         return;
     }
 
+
+    let current =
+        0;
+
+
     const increment =
-        Math.max(1, Math.ceil(target / 50));
+        Math.max(
+            1,
+            Math.ceil(
+                target / 40
+            )
+        );
+
 
     function update() {
 
-        current += increment;
+        current +=
+            increment;
 
-        if (current < target) {
+
+        if (
+            current <
+            target
+        ) {
 
             element.textContent =
-                current.toLocaleString();
+                current
+                    .toLocaleString();
 
-            requestAnimationFrame(update);
+
+            requestAnimationFrame(
+                update
+            );
+
 
         } else {
 
             element.textContent =
-                target.toLocaleString();
-
+                target
+                    .toLocaleString();
         }
     }
+
 
     update();
 }
@@ -304,32 +583,61 @@ function animateCounter(element, target) {
    RECENT APPLICATIONS
 ========================================= */
 
-function updateApplications(applications) {
+function updateApplications(
+    applications
+) {
 
     const tbody =
         document.querySelector(
             ".applications-card tbody"
         );
 
-    if (!tbody) return;
+
+    if (!tbody) {
+        return;
+    }
+
 
     const recent =
         [...applications]
+
             .sort(
-                (a, b) =>
-                    new Date(b.created_at || 0) -
-                    new Date(a.created_at || 0)
+                (
+                    a,
+                    b
+                ) =>
+
+                    new Date(
+                        b.created_at ||
+                        0
+                    )
+
+                    -
+
+                    new Date(
+                        a.created_at ||
+                        0
+                    )
             )
-            .slice(0, 5);
+
+            .slice(
+                0,
+                5
+            );
 
 
-    if (!recent.length) {
+    if (
+        !recent.length
+    ) {
 
         tbody.innerHTML = `
+
             <tr>
+
                 <td colspan="3">
                     No applications yet.
                 </td>
+
             </tr>
         `;
 
@@ -337,47 +645,85 @@ function updateApplications(applications) {
     }
 
 
-    tbody.innerHTML = recent.map(app => {
+    tbody.innerHTML =
 
-        const initials =
-            getInitials(app.full_name);
+        recent
+            .map(
+                app => {
 
-        const status =
-            app.status || "pending";
+                    const name =
+                        app.full_name ||
+                        app.fullname ||
+                        "Applicant";
 
-        return `
-            <tr>
 
-                <td>
-                    <div class="table-person">
+                    const initials =
+                        getInitials(
+                            name
+                        );
 
-                        <div class="avatar">
-                            ${escapeHtml(initials)}
-                        </div>
 
-                        ${escapeHtml(app.full_name)}
+                    const status =
+                        app.status ||
+                        "pending";
 
-                    </div>
-                </td>
 
-                <td>
-                    ${escapeHtml(app.class)}
-                </td>
+                    return `
 
-                <td>
+                        <tr>
 
-                    <span class="status-badge ${escapeHtml(status)}">
-                        ${escapeHtml(
-                            capitalize(status)
-                        )}
-                    </span>
+                            <td>
 
-                </td>
+                                <div class="table-person">
 
-            </tr>
-        `;
+                                    <div class="avatar">
+                                        ${escapeHtml(
+                                            initials
+                                        )}
+                                    </div>
 
-    }).join("");
+                                    ${escapeHtml(
+                                        name
+                                    )}
+
+                                </div>
+
+                            </td>
+
+
+                            <td>
+
+                                ${escapeHtml(
+                                    app.class ||
+                                    "--"
+                                )}
+
+                            </td>
+
+
+                            <td>
+
+                                <span
+                                    class="status-badge ${escapeHtml(
+                                        status
+                                    )}"
+                                >
+
+                                    ${escapeHtml(
+                                        capitalize(
+                                            status
+                                        )
+                                    )}
+
+                                </span>
+
+                            </td>
+
+                        </tr>
+                    `;
+                }
+            )
+            .join("");
 }
 
 
@@ -395,73 +741,113 @@ function updateSchoolStatus(
             ".school-status-card .academic-row"
         );
 
-    if (!rows.length) return;
+
+    if (!rows.length) {
+        return;
+    }
 
 
     const currentSession =
         sessions.find(
             session =>
-                session.is_current === true
+                session.is_current ===
+                true
         );
 
 
-    if (currentSession) {
+    if (
+        currentSession
+    ) {
 
         const sessionText =
-            rows[0].querySelector("strong");
+            rows[0]
+                ?.querySelector(
+                    "strong"
+                );
+
 
         const termText =
-            rows[1].querySelector("strong");
+            rows[1]
+                ?.querySelector(
+                    "strong"
+                );
 
-        if (sessionText) {
+
+        if (
+            sessionText
+        ) {
+
             sessionText.textContent =
-                currentSession.session || "--";
+                currentSession.session ||
+                "--";
         }
 
-        if (termText) {
+
+        if (
+            termText
+        ) {
+
             termText.textContent =
-                currentSession.term || "--";
+                currentSession.term ||
+                "--";
         }
     }
 
 
     const pending =
-        results.filter(
-            result =>
-                result.status === "pending"
-        ).length;
+
+        results
+            .filter(
+                result =>
+                    String(
+                        result.status ||
+                        ""
+                    )
+                        .toLowerCase()
+                    ===
+                    "pending"
+            )
+            .length;
 
 
     const resultStatus =
-        rows[2].querySelector(
-            ".status-badge"
-        );
+        rows[2]
+            ?.querySelector(
+                ".status-badge"
+            );
 
 
-    if (resultStatus) {
+    if (!resultStatus) {
+        return;
+    }
 
-        if (pending > 0) {
 
-            resultStatus.textContent =
-                `${pending} Pending`;
+    if (
+        pending > 0
+    ) {
 
-            resultStatus.className =
-                "status-badge pending";
+        resultStatus.textContent =
+            `${pending} Pending`;
 
-        } else {
 
-            resultStatus.textContent =
-                "Up to date";
+        resultStatus.className =
+            "status-badge pending";
 
-            resultStatus.className =
-                "status-badge active-status";
-        }
+
+    } else {
+
+        resultStatus.textContent =
+            "Up to date";
+
+
+        resultStatus.className =
+            "status-badge active-status";
     }
 }
 
 
 /* =========================================
-   PERFORMANCE OVERVIEW
+   PERFORMANCE
 ========================================= */
 
 function updatePerformance(
@@ -470,203 +856,392 @@ function updatePerformance(
 ) {
 
     const published =
-        results.filter(
-            result =>
-                result.status === "published"
-        );
+
+        results
+            .filter(
+                result =>
+
+                    String(
+                        result.status ||
+                        ""
+                    )
+                        .trim()
+                        .toLowerCase()
+
+                    ===
+
+                    "published"
+            );
 
 
-    const performanceNumbers =
+    const numbers =
         document.querySelectorAll(
             ".performance-number"
         );
 
 
-    if (!published.length) {
+    if (
+        !published.length
+    ) {
 
-        if (performanceNumbers[0])
-            performanceNumbers[0].textContent = "0%";
+        if (
+            numbers[0]
+        ) {
 
-        if (performanceNumbers[1])
-            performanceNumbers[1].textContent = "0%";
+            numbers[0]
+                .textContent =
+                "0%";
+        }
 
-    } else {
 
-        const scores =
-            published.map(
+        if (
+            numbers[1]
+        ) {
+
+            numbers[1]
+                .textContent =
+                "0%";
+        }
+
+
+        updatePerformanceNames(
+            [],
+            students
+        );
+
+
+        updateAttentionStudents(
+            [],
+            students
+        );
+
+
+        return;
+    }
+
+
+    const scores =
+        published
+            .map(
                 result =>
-                    Number(result.total) || 0
-            );
-
-
-        const average =
-            Math.round(
-                scores.reduce(
-                    (sum, score) =>
-                        sum + score,
+                    Number(
+                        result.total
+                    ) ||
                     0
-                ) / scores.length
             );
 
 
-        const passed =
-            scores.filter(
-                score => score >= 40
-            ).length;
+    const average =
+        Math.round(
 
+            scores.reduce(
+                (
+                    total,
+                    score
+                ) =>
+                    total +
+                    score,
+                0
+            )
 
-        const passRate =
-            Math.round(
-                (passed / scores.length) * 100
-            );
+            /
 
-
-        if (performanceNumbers[0])
-            performanceNumbers[0].textContent =
-                average + "%";
-
-
-        if (performanceNumbers[1])
-            performanceNumbers[1].textContent =
-                passRate + "%";
-    }
-
-
-    /* =====================================
-       BEST CLASS
-    ===================================== */
-
-    const classScores = {};
-
-    published.forEach(result => {
-
-        const className =
-            result.class || "Unknown";
-
-        if (!classScores[className]) {
-            classScores[className] = [];
-        }
-
-        classScores[className].push(
-            Number(result.total) || 0
-        );
-    });
-
-
-    let bestClass = "--";
-    let bestClassAverage = -1;
-
-
-    Object.entries(classScores)
-        .forEach(([className, scores]) => {
-
-            const average =
-                scores.reduce(
-                    (a, b) => a + b,
-                    0
-                ) / scores.length;
-
-            if (average > bestClassAverage) {
-
-                bestClassAverage = average;
-                bestClass = className;
-
-            }
-        });
-
-
-    const performanceTexts =
-        document.querySelectorAll(
-            ".performance-text"
+            scores.length
         );
 
 
-    if (performanceTexts[0]) {
-        performanceTexts[0].textContent =
-            bestClass;
-    }
+    const passed =
+        scores
+            .filter(
+                score =>
+                    score >= 40
+            )
+            .length;
 
 
-    /* =====================================
-       TOP STUDENT
-    ===================================== */
-
-    const studentScores = {};
-
-    published.forEach(result => {
-
-        const id = result.student_id;
-
-        if (!studentScores[id]) {
-            studentScores[id] = [];
-        }
-
-        studentScores[id].push(
-            Number(result.total) || 0
+    const passRate =
+        Math.round(
+            (
+                passed /
+                scores.length
+            )
+            *
+            100
         );
-    });
 
 
-    let topStudentId = null;
-    let topAverage = -1;
+    if (
+        numbers[0]
+    ) {
 
-
-    Object.entries(studentScores)
-        .forEach(([studentId, scores]) => {
-
-            const average =
-                scores.reduce(
-                    (a, b) => a + b,
-                    0
-                ) / scores.length;
-
-            if (average > topAverage) {
-
-                topAverage = average;
-                topStudentId = studentId;
-
-            }
-        });
-
-
-    let topStudentName = "--";
-
-
-    if (topStudentId) {
-
-        const student =
-            students.find(
-                s =>
-                    String(s.student_id) ===
-                    String(topStudentId)
-            );
-
-
-        if (student) {
-
-            topStudentName =
-                `${student.first_name || ""} ${student.last_name || ""}`
-                    .trim();
-
-            if (!topStudentName) {
-                topStudentName =
-                    student.fullname ||
-                    topStudentId;
-            }
-        }
+        numbers[0]
+            .textContent =
+            `${average}%`;
     }
 
 
-    if (performanceTexts[1]) {
-        performanceTexts[1].textContent =
-            topStudentName;
+    if (
+        numbers[1]
+    ) {
+
+        numbers[1]
+            .textContent =
+            `${passRate}%`;
     }
+
+
+    updatePerformanceNames(
+        published,
+        students
+    );
 
 
     updateAttentionStudents(
         published,
         students
     );
+}
+
+
+/* =========================================
+   BEST CLASS + TOP STUDENT
+========================================= */
+
+function updatePerformanceNames(
+    published,
+    students
+) {
+
+    const texts =
+        document.querySelectorAll(
+            ".performance-text"
+        );
+
+
+    const classScores =
+        {};
+
+
+    published.forEach(
+        result => {
+
+            const className =
+                result.class ||
+                "Unknown";
+
+
+            if (
+                !classScores[
+                    className
+                ]
+            ) {
+
+                classScores[
+                    className
+                ] = [];
+            }
+
+
+            classScores[
+                className
+            ]
+                .push(
+                    Number(
+                        result.total
+                    ) ||
+                    0
+                );
+        }
+    );
+
+
+    let bestClass =
+        "--";
+
+
+    let bestAverage =
+        -1;
+
+
+    Object.entries(
+        classScores
+    )
+        .forEach(
+            ([
+                className,
+                scores
+            ]) => {
+
+                const average =
+
+                    scores.reduce(
+                        (
+                            total,
+                            value
+                        ) =>
+                            total +
+                            value,
+                        0
+                    )
+
+                    /
+
+                    scores.length;
+
+
+                if (
+                    average >
+                    bestAverage
+                ) {
+
+                    bestAverage =
+                        average;
+
+
+                    bestClass =
+                        className;
+                }
+            }
+        );
+
+
+    if (
+        texts[0]
+    ) {
+
+        texts[0]
+            .textContent =
+            bestClass;
+    }
+
+
+    const studentScores =
+        {};
+
+
+    published.forEach(
+        result => {
+
+            const id =
+                result.student_id;
+
+
+            if (!id) {
+                return;
+            }
+
+
+            if (
+                !studentScores[id]
+            ) {
+
+                studentScores[id] =
+                    [];
+            }
+
+
+            studentScores[id]
+                .push(
+                    Number(
+                        result.total
+                    ) ||
+                    0
+                );
+        }
+    );
+
+
+    let topStudentId =
+        null;
+
+
+    let topAverage =
+        -1;
+
+
+    Object.entries(
+        studentScores
+    )
+        .forEach(
+            ([
+                id,
+                scores
+            ]) => {
+
+                const average =
+
+                    scores.reduce(
+                        (
+                            total,
+                            value
+                        ) =>
+                            total +
+                            value,
+                        0
+                    )
+
+                    /
+
+                    scores.length;
+
+
+                if (
+                    average >
+                    topAverage
+                ) {
+
+                    topAverage =
+                        average;
+
+
+                    topStudentId =
+                        id;
+                }
+            }
+        );
+
+
+    let topStudentName =
+        "--";
+
+
+    if (
+        topStudentId
+    ) {
+
+        const student =
+            students.find(
+                item =>
+                    String(
+                        item.student_id
+                    )
+                    ===
+                    String(
+                        topStudentId
+                    )
+            );
+
+
+        if (
+            student
+        ) {
+
+            topStudentName =
+                getStudentName(
+                    student
+                );
+        }
+    }
+
+
+    if (
+        texts[1]
+    ) {
+
+        texts[1]
+            .textContent =
+            topStudentName;
+    }
 }
 
 
@@ -684,139 +1259,216 @@ function updateAttentionStudents(
             ".attention-list"
         );
 
-    if (!container) return;
+
+    if (!container) {
+        return;
+    }
 
 
-    const studentScores = {};
+    const scoreMap =
+        {};
 
 
-    results.forEach(result => {
+    results.forEach(
+        result => {
 
-        const id = result.student_id;
-
-        if (!studentScores[id]) {
-            studentScores[id] = [];
-        }
-
-        studentScores[id].push(
-            Number(result.total) || 0
-        );
-    });
+            const id =
+                result.student_id;
 
 
-    const attention = Object.entries(
-        studentScores
-    )
-        .map(([studentId, scores]) => {
+            if (!id) {
+                return;
+            }
 
-            const average =
-                Math.round(
-                    scores.reduce(
-                        (a, b) => a + b,
-                        0
-                    ) / scores.length
+
+            if (
+                !scoreMap[id]
+            ) {
+
+                scoreMap[id] =
+                    [];
+            }
+
+
+            scoreMap[id]
+                .push(
+                    Number(
+                        result.total
+                    ) ||
+                    0
                 );
+        }
+    );
 
-            return {
-                studentId,
-                average
-            };
 
-        })
-        .filter(
-            student =>
-                student.average < 50
+    const attention =
+
+        Object.entries(
+            scoreMap
         )
-        .sort(
-            (a, b) =>
-                a.average - b.average
-        )
-        .slice(0, 5);
+
+            .map(
+                ([
+                    studentId,
+                    scores
+                ]) => ({
+
+                    studentId,
+
+                    average:
+                        Math.round(
+
+                            scores.reduce(
+                                (
+                                    total,
+                                    score
+                                ) =>
+                                    total +
+                                    score,
+                                0
+                            )
+
+                            /
+
+                            scores.length
+                        )
+
+                })
+            )
+
+            .filter(
+                student =>
+                    student.average <
+                    50
+            )
+
+            .sort(
+                (
+                    a,
+                    b
+                ) =>
+                    a.average -
+                    b.average
+            )
+
+            .slice(
+                0,
+                5
+            );
 
 
-    if (!attention.length) {
+    if (
+        !attention.length
+    ) {
 
         container.innerHTML = `
+
             <div class="attention-item">
+
                 <div class="attention-details">
-                    <strong>No students requiring attention</strong>
-                    <span>All published results are currently above 50%.</span>
+
+                    <strong>
+                        No students requiring attention
+                    </strong>
+
+                    <span>
+                        No published student average is currently below 50%.
+                    </span>
+
                 </div>
+
             </div>
         `;
+
 
         return;
     }
 
 
     container.innerHTML =
-        attention.map(item => {
 
-            const student =
-                students.find(
-                    s =>
-                        String(s.student_id) ===
-                        String(item.studentId)
-                );
+        attention
+            .map(
+                item => {
 
-
-            const name =
-                student
-                    ? (
-                        `${student.first_name || ""} ${student.last_name || ""}`
-                            .trim() ||
-                        student.fullname ||
-                        item.studentId
-                    )
-                    : item.studentId;
+                    const student =
+                        students.find(
+                            row =>
+                                String(
+                                    row.student_id
+                                )
+                                ===
+                                String(
+                                    item.studentId
+                                )
+                        );
 
 
-            const initials =
-                getInitials(name);
+                    const name =
+                        student
+                            ? getStudentName(
+                                student
+                            )
+                            : item.studentId;
 
 
-            const className =
-                student?.class || "--";
+                    const className =
+                        student?.class ||
+                        "--";
 
 
-            const scoreClass =
-                item.average < 40
-                    ? "low"
-                    : "warning";
+                    const scoreClass =
+                        item.average < 40
+                            ? "low"
+                            : "warning";
 
 
-            return `
-                <div class="attention-item">
+                    return `
 
-                    <div class="student-mini-avatar">
-                        ${escapeHtml(initials)}
-                    </div>
+                        <div class="attention-item">
 
-                    <div class="attention-details">
+                            <div class="student-mini-avatar">
+                                ${escapeHtml(
+                                    getInitials(
+                                        name
+                                    )
+                                )}
+                            </div>
 
-                        <strong>
-                            ${escapeHtml(name)}
-                        </strong>
 
-                        <span>
-                            ${escapeHtml(className)}
-                        </span>
+                            <div class="attention-details">
 
-                    </div>
+                                <strong>
+                                    ${escapeHtml(
+                                        name
+                                    )}
+                                </strong>
 
-                    <div class="performance-score ${scoreClass}">
-                        ${item.average}%
-                    </div>
+                                <span>
+                                    ${escapeHtml(
+                                        className
+                                    )}
+                                </span>
 
-                </div>
-            `;
+                            </div>
 
-        }).join("");
+
+                            <div
+                                class="performance-score ${scoreClass}"
+                            >
+                                ${item.average}%
+                            </div>
+
+                        </div>
+                    `;
+                }
+            )
+            .join("");
 }
 
 
 /* =========================================
-   RECENT ACTIVITIES
+   RECENT ACTIVITY
 ========================================= */
 
 function updateActivities(
@@ -831,160 +1483,211 @@ function updateActivities(
             ".activity-list"
         );
 
-    if (!container) return;
+
+    if (!container) {
+        return;
+    }
 
 
-    const activities = [];
+    const activities =
+        [];
 
 
-    students.forEach(student => {
+    students.forEach(
+        student => {
 
-        if (student.created_at) {
+            if (
+                student.created_at
+            ) {
 
-            activities.push({
-                type: "student",
-                title: "New student registered",
-                description:
-                    `${getStudentName(student)} was added to the system.`,
-                date:
-                    new Date(student.created_at)
-            });
+                activities.push({
 
+                    icon:
+                        "👨‍🎓",
+
+                    color:
+                        "purple",
+
+                    title:
+                        "New student registered",
+
+                    description:
+                        `${getStudentName(
+                            student
+                        )} was added to the system.`,
+
+                    date:
+                        new Date(
+                            student.created_at
+                        )
+
+                });
+            }
         }
-    });
+    );
 
 
-    teachers.forEach(teacher => {
+    teachers.forEach(
+        teacher => {
 
-        if (teacher.created_at) {
+            if (
+                teacher.created_at
+            ) {
 
-            activities.push({
-                type: "teacher",
-                title: "Teacher added",
-                description:
-                    `${getTeacherName(teacher)} was added to the system.`,
-                date:
-                    new Date(teacher.created_at)
-            });
+                activities.push({
 
+                    icon:
+                        "👨‍🏫",
+
+                    color:
+                        "green",
+
+                    title:
+                        "Teacher added",
+
+                    description:
+                        `${getTeacherName(
+                            teacher
+                        )} was added to the system.`,
+
+                    date:
+                        new Date(
+                            teacher.created_at
+                        )
+
+                });
+            }
         }
-    });
+    );
 
 
-    applications.forEach(application => {
+    applications.forEach(
+        app => {
 
-        if (application.created_at) {
+            if (
+                app.created_at
+            ) {
 
-            activities.push({
-                type: "application",
-                title: "New admission application",
-                description:
-                    `${application.full_name} submitted an application.`,
-                date:
-                    new Date(application.created_at)
-            });
+                const name =
+                    app.full_name ||
+                    app.fullname ||
+                    "Applicant";
 
+
+                activities.push({
+
+                    icon:
+                        "📝",
+
+                    color:
+                        "blue",
+
+                    title:
+                        "New admission application",
+
+                    description:
+                        `${name} submitted an application.`,
+
+                    date:
+                        new Date(
+                            app.created_at
+                        )
+
+                });
+            }
         }
-    });
-
-
-    results.forEach(result => {
-
-        if (result.id) {
-
-            activities.push({
-                type: "result",
-                title: "Result submitted",
-                description:
-                    `${result.subject || "A subject"} result is in the system.`,
-                date:
-                    new Date()
-            });
-
-        }
-    });
-
-
-    activities.sort(
-        (a, b) =>
-            b.date - a.date
     );
 
 
     const recent =
-        activities.slice(0, 4);
+
+        activities
+
+            .sort(
+                (
+                    a,
+                    b
+                ) =>
+                    b.date -
+                    a.date
+            )
+
+            .slice(
+                0,
+                4
+            );
 
 
-    if (!recent.length) {
+    if (
+        !recent.length
+    ) {
 
         container.innerHTML = `
+
             <div class="activity-item">
+
                 <div class="activity-details">
-                    <strong>No recent activities</strong>
-                    <p>There is no recent system activity.</p>
+
+                    <strong>
+                        No recent activities
+                    </strong>
+
+                    <p>
+                        There is no recent system activity.
+                    </p>
+
                 </div>
+
             </div>
         `;
+
 
         return;
     }
 
 
     container.innerHTML =
-        recent.map(activity => {
 
-            let icon = "📌";
-            let color = "purple";
+        recent
+            .map(
+                activity => `
 
+                    <div class="activity-item">
 
-            if (activity.type === "student") {
-                icon = "👨‍🎓";
-                color = "purple";
-            }
-
-            if (activity.type === "teacher") {
-                icon = "👨‍🏫";
-                color = "green";
-            }
-
-            if (activity.type === "result") {
-                icon = "📑";
-                color = "orange";
-            }
-
-            if (activity.type === "application") {
-                icon = "📝";
-                color = "blue";
-            }
+                        <div
+                            class="activity-icon ${activity.color}"
+                        >
+                            ${activity.icon}
+                        </div>
 
 
-            return `
-                <div class="activity-item">
+                        <div class="activity-details">
 
-                    <div class="activity-icon ${color}">
-                        ${icon}
-                    </div>
+                            <strong>
+                                ${escapeHtml(
+                                    activity.title
+                                )}
+                            </strong>
 
-                    <div class="activity-details">
+                            <p>
+                                ${escapeHtml(
+                                    activity.description
+                                )}
+                            </p>
 
-                        <strong>
-                            ${escapeHtml(activity.title)}
-                        </strong>
+                        </div>
 
-                        <p>
-                            ${escapeHtml(activity.description)}
-                        </p>
+
+                        <span class="activity-time">
+                            ${timeAgo(
+                                activity.date
+                            )}
+                        </span>
 
                     </div>
-
-                    <span class="activity-time">
-                        ${timeAgo(activity.date)}
-                    </span>
-
-                </div>
-            `;
-
-        }).join("");
+                `
+            )
+            .join("");
 }
 
 
@@ -992,97 +1695,461 @@ function updateActivities(
    HELPERS
 ========================================= */
 
-function getStudentName(student) {
+function getStudentName(
+    student
+) {
 
     return (
-        `${student.first_name || ""} ${student.last_name || ""}`
-            .trim() ||
-        student.fullname ||
-        student.student_id ||
+
+        `${student?.first_name || ""} ${student?.last_name || ""}`
+            .trim()
+
+        ||
+
+        student?.fullname
+
+        ||
+
+        student?.student_id
+
+        ||
+
         "Student"
     );
 }
 
 
-function getTeacherName(teacher) {
+function getTeacherName(
+    teacher
+) {
 
     return (
-        `${teacher.first_name || ""} ${teacher.last_name || ""}`
-            .trim() ||
-        teacher.fullname ||
-        teacher.teacher_id ||
+
+        `${teacher?.first_name || ""} ${teacher?.last_name || ""}`
+            .trim()
+
+        ||
+
+        teacher?.fullname
+
+        ||
+
+        teacher?.teacher_id
+
+        ||
+
         "Teacher"
     );
 }
 
 
-function getInitials(name) {
+function getInitials(
+    name
+) {
 
-    return String(name || "")
+    return String(
+        name ||
+        ""
+    )
         .trim()
         .split(/\s+/)
-        .slice(0, 2)
-        .map(word => word[0])
+        .slice(
+            0,
+            2
+        )
+        .map(
+            word =>
+                word[0]
+        )
         .join("")
-        .toUpperCase() || "?";
+        .toUpperCase()
+
+        ||
+
+        "?";
 }
 
 
-function capitalize(value) {
+function capitalize(
+    value
+) {
 
-    return String(value || "")
-        .charAt(0)
-        .toUpperCase() +
-        String(value || "")
-            .slice(1);
-}
-
-
-function timeAgo(date) {
-
-    const seconds =
-        Math.floor(
-            (Date.now() - new Date(date).getTime())
-            / 1000
+    value =
+        String(
+            value ||
+            ""
         );
 
 
-    if (seconds < 60)
+    return (
+        value
+            .charAt(0)
+            .toUpperCase()
+
+        +
+
+        value
+            .slice(1)
+    );
+}
+
+
+function escapeHtml(
+    value
+) {
+
+    return String(
+        value ??
+        ""
+    )
+        .replace(
+            /&/g,
+            "&amp;"
+        )
+        .replace(
+            /</g,
+            "&lt;"
+        )
+        .replace(
+            />/g,
+            "&gt;"
+        )
+        .replace(
+            /"/g,
+            "&quot;"
+        )
+        .replace(
+            /'/g,
+            "&#039;"
+        );
+}
+
+
+function timeAgo(
+    date
+) {
+
+    const seconds =
+        Math.floor(
+            (
+                Date.now() -
+                new Date(
+                    date
+                ).getTime()
+            )
+            /
+            1000
+        );
+
+
+    if (
+        seconds < 60
+    ) {
+
         return "Just now";
+    }
 
 
     const minutes =
-        Math.floor(seconds / 60);
+        Math.floor(
+            seconds /
+            60
+        );
 
-    if (minutes < 60)
+
+    if (
+        minutes < 60
+    ) {
+
         return `${minutes} min ago`;
+    }
 
 
     const hours =
-        Math.floor(minutes / 60);
+        Math.floor(
+            minutes /
+            60
+        );
 
-    if (hours < 24)
-        return `${hours} hour${hours > 1 ? "s" : ""} ago`;
+
+    if (
+        hours < 24
+    ) {
+
+        return `${hours} hour${
+            hours === 1
+                ? ""
+                : "s"
+        } ago`;
+    }
 
 
     const days =
-        Math.floor(hours / 24);
+        Math.floor(
+            hours /
+            24
+        );
 
-    if (days < 7)
-        return `${days} day${days > 1 ? "s" : ""} ago`;
+
+    if (
+        days < 7
+    ) {
+
+        return `${days} day${
+            days === 1
+                ? ""
+                : "s"
+        } ago`;
+    }
 
 
-    return new Date(date)
+    return new Date(
+        date
+    )
         .toLocaleDateString();
 }
 
 
-function escapeHtml(value) {
+/* =========================================
+   AUTH STATE
+========================================= */
 
-    return String(value ?? "")
-        .replaceAll("&", "&amp;")
-        .replaceAll("<", "&lt;")
-        .replaceAll(">", "&gt;")
-        .replaceAll('"', "&quot;")
-        .replaceAll("'", "&#039;");
-}
+supabaseClient
+    .auth
+    .onAuthStateChange(
+        (
+            event,
+            session
+        ) => {
+
+            if (
+                event ===
+                "SIGNED_OUT"
+
+                ||
+
+                !session
+            ) {
+
+                localStorage.removeItem(
+                    "admin"
+                );
+            }
+        }
+    );
+
+
+/* =========================================
+   START ADMIN DASHBOARD
+========================================= */
+
+document.addEventListener(
+    "DOMContentLoaded",
+    async () => {
+
+        /*
+            AUTH MUST PASS FIRST.
+        */
+
+        const allowed =
+            await verifyAdminSession();
+
+
+        if (!allowed) {
+            return;
+        }
+
+
+        /*
+            MOBILE SIDEBAR
+        */
+
+        const menuBtn =
+            $("menuBtn");
+
+
+        const sidebar =
+            $("sidebar");
+
+
+        if (
+            menuBtn &&
+            sidebar
+        ) {
+
+            menuBtn.addEventListener(
+                "click",
+                () => {
+
+                    sidebar
+                        .classList
+                        .toggle(
+                            "active"
+                        );
+                }
+            );
+        }
+
+
+        document
+            .querySelectorAll(
+                ".nav-link"
+            )
+            .forEach(
+                link => {
+
+                    link.addEventListener(
+                        "click",
+                        () => {
+
+                            if (
+                                window.innerWidth <=
+                                950
+
+                                &&
+
+                                sidebar
+                            ) {
+
+                                sidebar
+                                    .classList
+                                    .remove(
+                                        "active"
+                                    );
+                            }
+                        }
+                    );
+                }
+            );
+
+
+        /*
+            CURRENT DATE
+        */
+
+        const currentDate =
+            $("currentDate");
+
+
+        if (
+            currentDate
+        ) {
+
+            currentDate.textContent =
+
+                new Date()
+                    .toLocaleDateString(
+                        "en-US",
+                        {
+
+                            weekday:
+                                "long",
+
+                            year:
+                                "numeric",
+
+                            month:
+                                "long",
+
+                            day:
+                                "numeric"
+
+                        }
+                    );
+        }
+
+
+        /*
+            LOGOUT
+        */
+
+        $("logoutBtn")
+            ?.addEventListener(
+                "click",
+                event => {
+
+                    event.preventDefault();
+
+                    logoutAdmin();
+                }
+            );
+
+
+        $("sidebarLogoutBtn")
+            ?.addEventListener(
+                "click",
+                event => {
+
+                    event.preventDefault();
+
+                    logoutAdmin();
+                }
+            );
+
+
+        /*
+            NOTIFICATIONS
+        */
+
+        document
+            .querySelector(
+                ".notification-btn"
+            )
+            ?.addEventListener(
+                "click",
+                () => {
+
+                    alert(
+                        "Your dashboard notifications are up to date."
+                    );
+                }
+            );
+
+
+        /*
+            LOAD DATA ONLY AFTER AUTH.
+        */
+
+        await loadDashboard();
+
+
+        /*
+            CARD ANIMATION
+        */
+
+        document
+            .querySelectorAll(
+                ".dashboard-card, .stat-card"
+            )
+            .forEach(
+                card => {
+
+                    card.style.opacity =
+                        "0";
+
+
+                    card.style.transform =
+                        "translateY(15px)";
+
+
+                    setTimeout(
+                        () => {
+
+                            card.style.transition =
+                                "0.5s ease";
+
+
+                            card.style.opacity =
+                                "1";
+
+
+                            card.style.transform =
+                                "translateY(0)";
+
+                        },
+                        100
+                    );
+                }
+            );
+    }
+);
