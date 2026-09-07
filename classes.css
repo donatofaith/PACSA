@@ -1,516 +1,588 @@
 /* =========================================
-PACSA CLASSES PAGE
+   PACSA CLASSES MANAGEMENT
+========================================= */
+
+
+/* =========================================
+   HERO
 ========================================= */
 
 .classes-hero {
+    background:
+        linear-gradient(
+            135deg,
+            var(--primary),
+            #7c3aed
+        );
 
-```
-background:
-    linear-gradient(
-        135deg,
-        var(--primary),
-        #7C3AED
-    );
+    border-radius: 20px;
+    padding: 28px 30px;
 
-border-radius: 20px;
+    color: white;
 
-padding: 28px 30px;
+    margin-bottom: 25px;
 
-color: white;
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 20px;
 
-margin-bottom: 25px;
-
-display: flex;
-
-align-items: center;
-
-justify-content: space-between;
-
-gap: 20px;
-
-box-shadow:
-    0 15px 35px rgba(91,33,182,0.18);
-```
-
+    box-shadow:
+        0 15px 35px
+        rgba(91, 33, 182, 0.18);
 }
+
 
 .classes-hero .section-subtitle {
-
-```
-color: #E9D5FF;
-```
-
+    color: #e9d5ff;
 }
+
 
 .classes-hero h2 {
-
-```
-font-size: 26px;
-
-margin-bottom: 7px;
-```
-
+    font-size: 26px;
+    margin-bottom: 7px;
 }
+
 
 .classes-hero p:last-child {
-
-```
-font-size: 13px;
-
-opacity: 0.85;
-```
-
+    font-size: 13px;
+    opacity: 0.9;
 }
 
-/* BUTTONS */
+
+/* =========================================
+   BUTTONS
+========================================= */
 
 .primary-btn {
+    border: none;
 
-```
-border: none;
+    background: white;
+    color: var(--primary);
 
-background: white;
+    padding: 12px 18px;
 
-color: var(--primary);
+    border-radius: 10px;
 
-padding: 12px 18px;
+    font-family: inherit;
+    font-size: 12px;
+    font-weight: 700;
 
-border-radius: 10px;
+    cursor: pointer;
 
-font-family: inherit;
-
-font-size: 12px;
-
-font-weight: 700;
-
-cursor: pointer;
-
-transition: 0.25s;
-```
-
+    transition: 0.25s;
 }
+
 
 .primary-btn:hover {
+    transform: translateY(-2px);
 
-```
-transform: translateY(-2px);
-
-box-shadow: 0 8px 20px rgba(0,0,0,0.15);
-```
-
+    box-shadow:
+        0 8px 20px
+        rgba(0, 0, 0, 0.15);
 }
 
-/* STATS */
+
+.primary-btn:disabled {
+    opacity: 0.6;
+    cursor: not-allowed;
+    transform: none;
+}
+
+
+.secondary-btn {
+    border:
+        1px solid
+        var(--border);
+
+    background: white;
+    color: var(--text-dark);
+
+    padding: 12px 18px;
+
+    border-radius: 10px;
+
+    font-family: inherit;
+    font-size: 12px;
+    font-weight: 600;
+
+    cursor: pointer;
+}
+
+
+/* =========================================
+   STATS
+========================================= */
 
 .classes-stats {
-
-```
-margin-bottom: 25px;
-```
-
+    margin-bottom: 25px;
 }
 
-/* MANAGEMENT CARD */
+
+/* =========================================
+   MANAGEMENT CARD
+========================================= */
 
 .class-management-card {
-
-```
-margin-bottom: 25px;
-```
-
+    margin-bottom: 25px;
 }
 
-/* CONTROLS */
+
+/* =========================================
+   CONTROLS
+========================================= */
 
 .class-controls {
+    display: grid;
 
-```
-display: grid;
+    grid-template-columns:
+        minmax(220px, 1fr)
+        180px
+        180px;
 
-grid-template-columns: 1fr 180px 180px;
+    gap: 12px;
 
-gap: 12px;
-
-margin-bottom: 22px;
-```
-
+    margin-bottom: 22px;
 }
+
 
 .search-box {
+    display: flex;
+    align-items: center;
 
-```
-display: flex;
+    gap: 9px;
 
-align-items: center;
+    border:
+        1px solid
+        var(--border);
 
-gap: 9px;
+    background: white;
 
-border: 1px solid var(--border);
+    border-radius: 10px;
 
-background: white;
-
-border-radius: 10px;
-
-padding: 0 13px;
-```
-
+    padding:
+        0 13px;
 }
+
 
 .search-box input {
+    width: 100%;
 
-```
-width: 100%;
+    border: none;
+    outline: none;
 
-border: none;
+    padding:
+        12px 0;
 
-outline: none;
-
-padding: 12px 0;
-
-font-family: inherit;
-
-font-size: 12px;
-```
-
+    font-family: inherit;
+    font-size: 12px;
 }
+
 
 .class-controls select,
 .form-group input,
 .form-group select {
+    width: 100%;
 
-```
-border: 1px solid var(--border);
+    border:
+        1px solid
+        var(--border);
 
-background: white;
+    background: white;
 
-border-radius: 10px;
+    border-radius: 10px;
 
-padding: 12px;
+    padding: 12px;
 
-outline: none;
+    outline: none;
 
-font-family: inherit;
+    font-family: inherit;
+    font-size: 12px;
 
-font-size: 12px;
+    color: var(--text-dark);
 
-color: var(--text-dark);
-```
-
+    box-sizing: border-box;
 }
+
 
 .class-controls select:focus,
 .form-group input:focus,
 .form-group select:focus {
+    border-color:
+        var(--primary);
 
-```
-border-color: var(--primary);
-```
-
+    box-shadow:
+        0 0 0 3px
+        rgba(109, 40, 217, 0.08);
 }
 
-/* CLASS TABLE */
+
+/* =========================================
+   TABLE
+========================================= */
 
 .classes-table th:last-child,
 .classes-table td:last-child {
-
-```
-text-align: right;
-```
-
+    text-align: right;
 }
+
 
 .class-name {
-
-```
-font-weight: 700;
-```
-
+    font-weight: 700;
 }
+
 
 .class-level {
-
-```
-color: var(--text-muted);
-```
-
+    color:
+        var(--text-muted);
 }
+
 
 .student-count {
-
-```
-font-weight: 600;
-```
-
+    font-weight: 600;
 }
 
-.teacher-name {
 
-```
-color: var(--text-muted);
-```
+.class-teacher-badge {
+    display: inline-flex;
+    align-items: center;
 
+    gap: 6px;
+
+    padding:
+        6px 9px;
+
+    border-radius: 8px;
+
+    background: #f3e8ff;
+    color: #5b21b6;
+
+    font-size: 12px;
+    font-weight: 600;
 }
+
+
+.class-no-teacher {
+    color: #9ca3af;
+    font-size: 13px;
+}
+
+
+/* =========================================
+   ACTION BUTTONS
+========================================= */
 
 .action-buttons {
+    display: flex;
+    justify-content: flex-end;
 
-```
-display: flex;
-
-justify-content: flex-end;
-
-gap: 7px;
-```
-
+    gap: 7px;
 }
+
 
 .table-action {
+    border:
+        1px solid
+        var(--border);
 
-```
-border: 1px solid var(--border);
+    background: white;
 
-background: white;
+    color:
+        var(--primary);
 
-color: var(--primary);
+    padding:
+        7px 10px;
 
-padding: 7px 10px;
+    border-radius: 8px;
 
-border-radius: 8px;
+    font-family: inherit;
+    font-size: 10px;
+    font-weight: 600;
 
-font-family: inherit;
+    cursor: pointer;
 
-font-size: 10px;
-
-font-weight: 600;
-
-cursor: pointer;
-
-transition: 0.2s;
-```
-
+    transition: 0.2s;
 }
+
 
 .table-action:hover {
-
-```
-background: var(--primary-light);
-```
-
+    background:
+        var(--primary-light);
 }
 
-/* SECONDARY BUTTON */
 
-.secondary-btn {
-
-```
-border: 1px solid var(--border);
-
-background: white;
-
-color: var(--text-dark);
-
-padding: 12px 18px;
-
-border-radius: 10px;
-
-font-family: inherit;
-
-font-size: 12px;
-
-font-weight: 600;
-
-cursor: pointer;
-```
-
-}
-
-/* MODAL */
+/* =========================================
+   MODAL OVERLAY
+========================================= */
 
 .modal-overlay {
+    position: fixed;
 
-```
-position: fixed;
+    inset: 0;
 
-inset: 0;
+    background:
+        rgba(
+            17,
+            24,
+            39,
+            0.6
+        );
 
-background: rgba(17,24,39,0.55);
+    display: none;
 
-display: none;
-
-align-items: center;
-
-justify-content: center;
-
-padding: 20px;
-
-z-index: 2000;
-```
-
-}
-
-.modal-overlay.show {
-
-```
-display: flex;
-```
-
-}
-
-.class-modal {
-
-```
-width: 100%;
-
-max-width: 520px;
-
-background: white;
-
-border-radius: 18px;
-
-padding: 25px;
-
-box-shadow: 0 25px 60px rgba(0,0,0,0.2);
-```
-
-}
-
-.modal-header {
-
-```
-display: flex;
-
-align-items: flex-start;
-
-justify-content: space-between;
-
-margin-bottom: 22px;
-```
-
-}
-
-.modal-header h2 {
-
-```
-font-size: 20px;
-```
-
-}
-
-.modal-close {
-
-```
-width: 34px;
-
-height: 34px;
-
-border: none;
-
-background: #F3F4F6;
-
-border-radius: 8px;
-
-font-size: 22px;
-
-cursor: pointer;
-
-color: var(--text-muted);
-```
-
-}
-
-.form-group {
-
-```
-display: flex;
-
-flex-direction: column;
-
-gap: 7px;
-
-margin-bottom: 16px;
-```
-
-}
-
-.form-group label {
-
-```
-font-size: 11px;
-
-font-weight: 600;
-
-color: var(--text-dark);
-```
-
-}
-
-.form-row {
-
-```
-display: grid;
-
-grid-template-columns: 1fr 1fr;
-
-gap: 14px;
-```
-
-}
-
-.modal-actions {
-
-```
-display: flex;
-
-justify-content: flex-end;
-
-gap: 10px;
-
-margin-top: 22px;
-```
-
-}
-
-/* RESPONSIVE */
-
-@media (max-width: 900px) {
-
-```
-.classes-hero {
-
-    align-items: flex-start;
-
-    flex-direction: column;
-
-}
-
-.class-controls {
-
-    grid-template-columns: 1fr;
-
-}
-```
-
-}
-
-@media (max-width: 600px) {
-
-```
-.classes-stats {
-
-    grid-template-columns: 1fr;
-
-}
-
-.form-row {
-
-    grid-template-columns: 1fr;
-
-}
-
-.class-modal {
+    align-items: center;
+    justify-content: center;
 
     padding: 20px;
 
-}
-```
+    z-index: 9999;
 
+    overflow-y: auto;
+}
+
+
+.modal-overlay.show {
+    display: flex;
+}
+
+
+/* =========================================
+   MODAL
+========================================= */
+
+.class-modal {
+    width: 100%;
+    max-width: 540px;
+
+    max-height:
+        calc(
+            100vh - 40px
+        );
+
+    overflow-y: auto;
+
+    background: white;
+
+    border-radius: 18px;
+
+    padding: 25px;
+
+    box-sizing: border-box;
+
+    box-shadow:
+        0 25px 60px
+        rgba(0, 0, 0, 0.25);
+
+    animation:
+        classModalOpen
+        0.18s ease;
+}
+
+
+@keyframes classModalOpen {
+
+    from {
+        opacity: 0;
+        transform:
+            translateY(12px)
+            scale(0.98);
+    }
+
+    to {
+        opacity: 1;
+        transform:
+            translateY(0)
+            scale(1);
+    }
+}
+
+
+/* =========================================
+   MODAL HEADER
+========================================= */
+
+.modal-header {
+    display: flex;
+
+    align-items: flex-start;
+    justify-content: space-between;
+
+    gap: 15px;
+
+    margin-bottom: 22px;
+}
+
+
+.modal-header h2 {
+    font-size: 20px;
+}
+
+
+.modal-close {
+    width: 36px;
+    height: 36px;
+
+    flex-shrink: 0;
+
+    border: none;
+
+    background: #f3f4f6;
+
+    border-radius: 8px;
+
+    font-size: 22px;
+
+    cursor: pointer;
+
+    color:
+        var(--text-muted);
+}
+
+
+.modal-close:hover {
+    background: #ede9fe;
+    color: var(--primary);
+}
+
+
+/* =========================================
+   FORM
+========================================= */
+
+.form-group {
+    display: flex;
+    flex-direction: column;
+
+    gap: 7px;
+
+    margin-bottom: 16px;
+}
+
+
+.form-group label {
+    font-size: 11px;
+    font-weight: 600;
+
+    color:
+        var(--text-dark);
+}
+
+
+.form-row {
+    display: grid;
+
+    grid-template-columns:
+        1fr 1fr;
+
+    gap: 14px;
+}
+
+
+.form-group input[readonly] {
+    background: #f9fafb;
+    color: #6b7280;
+
+    cursor: not-allowed;
+}
+
+
+/* =========================================
+   SESSION NOTE
+========================================= */
+
+.class-session-note {
+    margin:
+        12px 0 0;
+
+    padding:
+        11px 13px;
+
+    border-radius: 9px;
+
+    background: #f9fafb;
+
+    color: #6b7280;
+
+    font-size: 12px;
+    line-height: 1.5;
+}
+
+
+/* =========================================
+   MODAL ACTIONS
+========================================= */
+
+.modal-actions {
+    display: flex;
+
+    justify-content: flex-end;
+
+    gap: 10px;
+
+    margin-top: 22px;
+}
+
+
+.modal-actions .primary-btn {
+    background:
+        var(--primary);
+
+    color: white;
+}
+
+
+/* =========================================
+   RESPONSIVE
+========================================= */
+
+@media (
+    max-width: 900px
+) {
+
+    .classes-hero {
+        align-items:
+            flex-start;
+
+        flex-direction:
+            column;
+    }
+
+
+    .class-controls {
+        grid-template-columns:
+            1fr;
+    }
+}
+
+
+@media (
+    max-width: 600px
+) {
+
+    .classes-stats {
+        grid-template-columns:
+            1fr;
+    }
+
+
+    .form-row {
+        grid-template-columns:
+            1fr;
+    }
+
+
+    .class-modal {
+        padding: 20px;
+    }
+
+
+    .modal-actions {
+        flex-direction:
+            column-reverse;
+    }
+
+
+    .modal-actions button {
+        width: 100%;
+    }
 }

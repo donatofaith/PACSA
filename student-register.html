@@ -2,6 +2,7 @@
 <html lang="en">
 
 <head>
+
     <meta charset="UTF-8">
 
     <meta
@@ -22,6 +23,7 @@
     >
 
     <style>
+
         .register-note {
             margin: 15px 0;
             padding: 12px;
@@ -50,6 +52,7 @@
             padding: 12px;
             border-radius: 9px;
             font-size: 13px;
+            line-height: 1.5;
         }
 
         .message.success {
@@ -63,9 +66,42 @@
             background: #FEE2E2;
             color: #B91C1C;
         }
+
+        .password-box {
+            position: relative;
+        }
+
+        .password-box input {
+            padding-right: 50px;
+        }
+
+        .password-toggle {
+            position: absolute;
+            right: 15px;
+            top: 50%;
+            transform: translateY(-50%);
+            cursor: pointer;
+            user-select: none;
+            font-size: 17px;
+        }
+
+        .resend-btn {
+            width: 100%;
+            margin-top: 12px;
+            min-height: 50px;
+            border: 2px solid #6D28D9;
+            border-radius: 10px;
+            background: white;
+            color: #6D28D9;
+            font-weight: 700;
+            cursor: pointer;
+            display: none;
+        }
+
     </style>
 
 </head>
+
 
 <body>
 
@@ -87,16 +123,21 @@
             Activate Student Portal
         </p>
 
+
         <div class="register-note">
+
             Only students already registered by PACSA
             can activate a portal account.
+
         </div>
+
 
         <form id="studentRegisterForm">
 
+
             <div class="input-group">
 
-                <label>
+                <label for="studentId">
                     Student ID
                 </label>
 
@@ -112,7 +153,7 @@
 
             <div class="input-group">
 
-                <label>
+                <label for="email">
                     Registered Email
                 </label>
 
@@ -128,7 +169,7 @@
 
             <div class="input-group">
 
-                <label>
+                <label for="password">
                     Create Password
                 </label>
 
@@ -142,7 +183,12 @@
                         required
                     >
 
-                    <span id="togglePassword">
+                    <span
+                        id="togglePassword"
+                        class="password-toggle"
+                        role="button"
+                        tabindex="0"
+                    >
                         👁
                     </span>
 
@@ -153,17 +199,30 @@
 
             <div class="input-group">
 
-                <label>
+                <label for="confirmPassword">
                     Confirm Password
                 </label>
 
-                <input
-                    type="password"
-                    id="confirmPassword"
-                    placeholder="Repeat password"
-                    minlength="8"
-                    required
-                >
+                <div class="password-box">
+
+                    <input
+                        type="password"
+                        id="confirmPassword"
+                        placeholder="Repeat password"
+                        minlength="8"
+                        required
+                    >
+
+                    <span
+                        id="toggleConfirmPassword"
+                        class="password-toggle"
+                        role="button"
+                        tabindex="0"
+                    >
+                        👁
+                    </span>
+
+                </div>
 
             </div>
 
@@ -176,6 +235,15 @@
                 Activate Account
             </button>
 
+
+            <button
+                type="button"
+                id="resendVerificationBtn"
+                class="resend-btn"
+            >
+                Resend Verification Email
+            </button>
+
         </form>
 
 
@@ -186,10 +254,13 @@
 
 
         <div class="login-link">
+
             Already activated?
+
             <a href="student-login.html">
                 Login
             </a>
+
         </div>
 
     </div>
@@ -198,8 +269,11 @@
 
 
 <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+
 <script src="supabase.js"></script>
+
 <script src="student-register.js"></script>
 
 </body>
+
 </html>

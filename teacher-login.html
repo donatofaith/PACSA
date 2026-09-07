@@ -49,12 +49,11 @@
             background: transparent;
             border: 2px solid #6D28D9;
             color: #6D28D9;
-            transition: 0.2s;
         }
 
         .activate-account-btn:hover {
             background: #6D28D9;
-            color: #FFFFFF;
+            color: white;
         }
 
         .login-message {
@@ -78,18 +77,11 @@
             color: #166534;
         }
 
-        .teacher-note {
-            margin-top: 18px;
-            text-align: center;
-            font-size: 13px;
-        }
-
         @media (max-width: 520px) {
 
             .login-actions {
                 flex-direction: column;
             }
-
         }
 
     </style>
@@ -99,15 +91,11 @@
 
 <body>
 
-
 <div class="overlay"></div>
-
 
 <div class="login-container">
 
-
     <div class="login-card">
-
 
         <img
             src="images/PACSA LOGO.png"
@@ -115,21 +103,15 @@
             class="logo"
         >
 
-
-        <h1>
-            PACSA
-        </h1>
-
+        <h1>PACSA</h1>
 
         <p class="portal-title">
             Teacher Portal
         </p>
 
-
         <p class="motto">
             Becoming Leaders Through Righteousness
         </p>
-
 
 
         <form id="teacherLoginForm">
@@ -152,13 +134,28 @@
             </div>
 
 
+            <div class="input-group">
+
+                <label for="email">
+                    Registered Email
+                </label>
+
+                <input
+                    type="email"
+                    id="email"
+                    placeholder="Enter registered email"
+                    autocomplete="email"
+                    required
+                >
+
+            </div>
+
 
             <div class="input-group">
 
                 <label for="password">
                     Password
                 </label>
-
 
                 <div class="password-box">
 
@@ -183,7 +180,6 @@
             </div>
 
 
-
             <div class="extras">
 
                 <span>
@@ -198,7 +194,6 @@
                 </a>
 
             </div>
-
 
 
             <div class="login-actions">
@@ -221,21 +216,13 @@
 
             </div>
 
-
         </form>
-
 
 
         <div
             id="loginMessage"
             class="login-message"
-        >
-        </div>
-
-
-        <p class="teacher-note">
-            First-time teachers should activate their account using the email registered by the administrator.
-        </p>
+        ></div>
 
 
         <a
@@ -245,11 +232,9 @@
             ← Back to Home
         </a>
 
-
     </div>
 
 </div>
-
 
 
 <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
@@ -257,7 +242,6 @@
 <script src="supabase.js"></script>
 
 <script src="teacher-login.js"></script>
-
 
 </body>
 

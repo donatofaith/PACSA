@@ -115,16 +115,29 @@ document.addEventListener(
 
 
 /* =========================================
-   NORMALIZE
+   HELPERS
 ========================================= */
 
 function normalize(value) {
 
     return String(
-        value || ""
+        value ?? ""
     )
         .trim()
         .toLowerCase();
+}
+
+
+function escapeHtml(value) {
+
+    return String(
+        value ?? ""
+    )
+        .replace(/&/g, "&amp;")
+        .replace(/</g, "&lt;")
+        .replace(/>/g, "&gt;")
+        .replace(/"/g, "&quot;")
+        .replace(/'/g, "&#039;");
 }
 
 
@@ -243,7 +256,6 @@ async function loadClasses() {
                         teacher_id,
                         first_name,
                         last_name,
-                        fullname,
                         email
                     `)
                     .order(
@@ -263,7 +275,6 @@ async function loadClasses() {
                         class,
                         session
                     `)
-
             ]);
 
 
@@ -288,25 +299,27 @@ async function loadClasses() {
         }
 
 
+        if (
+            classTeacherResult.error
+        ) {
+            throw classTeacherResult.error;
+        }
+
+
         classes =
-            classResult.data ||
-            [];
+            classResult.data || [];
 
 
         students =
-            studentResult.data ||
-            [];
+            studentResult.data || [];
 
 
         teachers =
-            teacherResult.data ||
-            [];
+            teacherResult.data || [];
 
 
         classTeacherAssignments =
-            classTeacherResult.error
-                ? []
-                : classTeacherResult.data || [];
+            classTeacherResult.data || [];
 
 
         populateTeacherDropdown();
@@ -377,8 +390,13 @@ function getClassTeacherAssignment(
             const sameSession =
                 !currentSession
                 ||
-                assignment.session ===
-                currentSession;
+                normalize(
+                    assignment.session
+                )
+                ===
+                normalize(
+                    currentSession
+                );
 
 
             return (
@@ -400,11 +418,11 @@ function findTeacherByTeacherId(
 
     return teachers.find(
         teacher =>
-            String(
+            normalize(
                 teacher.teacher_id
             )
             ===
-            String(
+            normalize(
                 teacherId
             )
     );
@@ -413,6 +431,7 @@ function findTeacherByTeacherId(
 
 /* =========================================
    TEACHER NAME
+   NO FULLNAME COLUMN
 ========================================= */
 
 function getTeacherName(
@@ -424,21 +443,16 @@ function getTeacherName(
     }
 
 
-    return (
-
+    const name =
         `${teacher.first_name || ""} ${teacher.last_name || ""}`
-            .trim()
+            .trim();
 
+
+    return (
+        name
         ||
-
-        teacher.fullname
-
-        ||
-
         teacher.teacher_id
-
         ||
-
         "Teacher"
     );
 }
@@ -533,8 +547,13 @@ function renderClasses() {
 
                     ||
 
-                    item.level ===
-                    level;
+                    normalize(
+                        item.level
+                    )
+                    ===
+                    normalize(
+                        level
+                    );
 
 
                 const matchesStatus =
@@ -542,8 +561,13 @@ function renderClasses() {
 
                     ||
 
-                    item.status ===
-                    status;
+                    normalize(
+                        item.status
+                    )
+                    ===
+                    normalize(
+                        status
+                    );
 
 
                 return (
@@ -571,7 +595,10 @@ function renderClasses() {
         tableBody.innerHTML = `
 
             <tr>
-                <td colspan="6" class="empty-state">
+                <td
+                    colspan="6"
+                    class="empty-state"
+                >
                     No classes found.
                 </td>
             </tr>
@@ -768,8 +795,13 @@ function updateStats() {
                     assignment =>
                         !currentSession
                         ||
-                        assignment.session ===
-                        currentSession
+                        normalize(
+                            assignment.session
+                        )
+                        ===
+                        normalize(
+                            currentSession
+                        )
                 )
 
                 .map(
@@ -982,60 +1014,25 @@ function openClassModal(
     }
 
 
-    /*
-        Support both classes.css possibilities.
-    */
-
     modal.classList.add(
         "show"
     );
-
-    modal.classList.add(
-        "active"
-    );
-
-    modal.style.display =
-        "flex";
-
-
-    modal.style.position =
-        "fixed";
-
-
-    modal.style.inset =
-        "0";
-
-
-    modal.style.zIndex =
-        "9999";
 }
 
 
 /* =========================================
-   CLOSE MODAL
+   CLOSE CLASS MODAL
 ========================================= */
 
 function closeClassModal() {
 
-    const modal =
-        $("classModal");
+    $("classModal")
+        ?.classList
+        .remove("show");
 
 
-    if (!modal) {
-        return;
-    }
-
-
-    modal.classList.remove(
-        "show"
-    );
-
-    modal.classList.remove(
-        "active"
-    );
-
-    modal.style.display =
-        "none";
+    $("classForm")
+        ?.reset();
 }
 
 
@@ -1050,180 +1047,140 @@ async function saveClass(
     event.preventDefault();
 
 
-    const recordId =
+    const classId =
         $("classId")
-            ?.value ||
-        "";
+            ?.value
+            .trim();
 
 
-    const existing =
-        recordId
-
-            ? classes.find(
-                item =>
-                    String(
-                        item.id
-                    )
-                    ===
-                    String(
-                        recordId
-                    )
-            )
-
-            : null;
+    const name =
+        $("className")
+            ?.value
+            .trim();
 
 
-    const oldClassName =
-        existing?.name ||
-        "";
+    const level =
+        $("classLevel")
+            ?.value
+            .trim();
 
 
-    const classData = {
-
-        name:
-            $("className")
-                ?.value
-                .trim() ||
-            "",
-
-        level:
-            $("classLevel")
-                ?.value ||
-            "",
-
-        arm:
-            $("classArm")
-                ?.value
-                .trim()
-                .toUpperCase() ||
-            "",
-
-        session:
-            currentSession ||
-            $("academicSession")
-                ?.value ||
-            "",
-
-        status:
-            $("classStatus")
-                ?.value ||
-            "Active"
-    };
+    const arm =
+        $("classArm")
+            ?.value
+            .trim();
 
 
-    const selectedTeacherId =
+    const session =
+        $("academicSession")
+            ?.value
+            .trim()
+        ||
+        currentSession;
+
+
+    const status =
+        $("classStatus")
+            ?.value
+            .trim()
+        ||
+        "Active";
+
+
+    const teacherId =
         $("classTeacher")
-            ?.value ||
-        "";
+            ?.value
+            .trim();
 
 
     if (
-        !classData.name ||
-        !classData.level
+        !name ||
+        !level
     ) {
 
         alert(
-            "Please enter Class Name and Level."
+            "Class name and level are required."
         );
 
         return;
     }
 
 
-    const duplicate =
-        classes.find(
-            item =>
-
-                normalize(
-                    item.name
-                )
-                ===
-                normalize(
-                    classData.name
-                )
-
-                &&
-
-                String(
-                    item.id
-                )
-                !==
-                String(
-                    recordId
-                )
-        );
-
-
-    if (
-        duplicate
-    ) {
-
-        alert(
-            "Another class already uses this name."
-        );
-
-        return;
-    }
-
-
-    const button =
+    const saveButton =
         $("saveClassBtn");
 
 
-    if (
-        button
-    ) {
+    if (saveButton) {
 
-        button.disabled =
+        saveButton.disabled =
             true;
 
-        button.textContent =
+        saveButton.textContent =
             "Saving...";
     }
 
 
     try {
 
+        let savedClass;
+
+
         if (
-            recordId
+            classId
         ) {
 
+            const oldClass =
+                classes.find(
+                    item =>
+                        String(item.id)
+                        ===
+                        String(classId)
+                );
+
+
             const {
+                data,
                 error
             } =
                 await supabaseClient
                     .from("classes")
-                    .update(
-                        classData
-                    )
+                    .update({
+                        name,
+                        level,
+                        arm,
+                        session,
+                        status
+                    })
                     .eq(
                         "id",
-                        recordId
-                    );
+                        classId
+                    )
+                    .select()
+                    .single();
 
 
-            if (error) {
+            if (error)
                 throw error;
-            }
+
+
+            savedClass =
+                data;
 
 
             if (
-                oldClassName
-
-                &&
-
+                oldClass &&
                 normalize(
-                    oldClassName
+                    oldClass.name
                 )
                 !==
                 normalize(
-                    classData.name
+                    name
                 )
             ) {
 
-                await updateCurrentClassReferences(
-                    oldClassName,
-                    classData.name
+                await updateClassNameReferences(
+                    oldClass.name,
+                    name
                 );
             }
 
@@ -1231,40 +1188,41 @@ async function saveClass(
         } else {
 
             const {
+                data,
                 error
             } =
                 await supabaseClient
                     .from("classes")
-                    .insert([
-                        classData
-                    ]);
+                    .insert({
+                        name,
+                        level,
+                        arm,
+                        session,
+                        status
+                    })
+                    .select()
+                    .single();
 
 
-            if (error) {
+            if (error)
                 throw error;
-            }
+
+
+            savedClass =
+                data;
         }
 
 
         await saveClassTeacherAssignment(
-            oldClassName ||
-            classData.name,
-            classData.name,
-            selectedTeacherId
+            savedClass.name,
+            teacherId,
+            session
         );
 
 
         closeClassModal();
 
-
         await loadClasses();
-
-
-        alert(
-            recordId
-                ? "Class updated successfully."
-                : "Class added successfully."
-        );
 
 
     } catch (error) {
@@ -1283,190 +1241,14 @@ async function saveClass(
 
     } finally {
 
-        if (
-            button
-        ) {
+        if (saveButton) {
 
-            button.disabled =
+            saveButton.disabled =
                 false;
 
-            button.textContent =
+            saveButton.textContent =
                 "Save Class";
         }
-    }
-}
-
-
-/* =========================================
-   UPDATE CURRENT CLASS REFERENCES
-========================================= */
-
-async function updateCurrentClassReferences(
-    oldClassName,
-    newClassName
-) {
-
-    const studentUpdate =
-        await supabaseClient
-            .from("students")
-            .update({
-                class:
-                    newClassName
-            })
-            .eq(
-                "class",
-                oldClassName
-            );
-
-
-    if (
-        studentUpdate.error
-    ) {
-
-        throw studentUpdate.error;
-    }
-
-
-    const teacherUpdate =
-        await supabaseClient
-            .from(
-                "teacher_assignments"
-            )
-            .update({
-                class:
-                    newClassName
-            })
-            .eq(
-                "class",
-                oldClassName
-            );
-
-
-    if (
-        teacherUpdate.error
-    ) {
-
-        throw teacherUpdate.error;
-    }
-
-
-    if (
-        currentSession
-    ) {
-
-        const subjectUpdate =
-            await supabaseClient
-                .from(
-                    "student_subjects"
-                )
-                .update({
-                    class:
-                        newClassName
-                })
-                .eq(
-                    "class",
-                    oldClassName
-                )
-                .eq(
-                    "session",
-                    currentSession
-                );
-
-
-        if (
-            subjectUpdate.error
-        ) {
-            throw subjectUpdate.error;
-        }
-
-
-        const resultUpdate =
-            await supabaseClient
-                .from("results")
-                .update({
-                    class:
-                        newClassName
-                })
-                .eq(
-                    "class",
-                    oldClassName
-                )
-                .eq(
-                    "session",
-                    currentSession
-                );
-
-
-        if (
-            resultUpdate.error
-        ) {
-            throw resultUpdate.error;
-        }
-
-
-        const reportUpdate =
-            await supabaseClient
-                .from(
-                    "student_reports"
-                )
-                .update({
-                    class:
-                        newClassName
-                })
-                .eq(
-                    "class",
-                    oldClassName
-                )
-                .eq(
-                    "session",
-                    currentSession
-                );
-
-
-        if (
-            reportUpdate.error
-        ) {
-            throw reportUpdate.error;
-        }
-    }
-
-
-    let classTeacherQuery =
-        supabaseClient
-            .from(
-                "class_teacher_assignments"
-            )
-            .update({
-                class:
-                    newClassName
-            })
-            .eq(
-                "class",
-                oldClassName
-            );
-
-
-    if (
-        currentSession
-    ) {
-
-        classTeacherQuery =
-            classTeacherQuery.eq(
-                "session",
-                currentSession
-            );
-    }
-
-
-    const classTeacherUpdate =
-        await classTeacherQuery;
-
-
-    if (
-        classTeacherUpdate.error
-    ) {
-
-        throw classTeacherUpdate.error;
     }
 }
 
@@ -1476,57 +1258,47 @@ async function updateCurrentClassReferences(
 ========================================= */
 
 async function saveClassTeacherAssignment(
-    oldClassName,
-    newClassName,
-    teacherId
+    className,
+    teacherId,
+    session
 ) {
 
+    const existing =
+        getClassTeacherAssignment(
+            className
+        );
+
+
     if (
-        !currentSession
+        !teacherId
     ) {
+
+        if (existing) {
+
+            const {
+                error
+            } =
+                await supabaseClient
+                    .from(
+                        "class_teacher_assignments"
+                    )
+                    .delete()
+                    .eq(
+                        "id",
+                        existing.id
+                    );
+
+
+            if (error)
+                throw error;
+        }
+
+
         return;
     }
 
 
-    const {
-        error: deleteCurrentError
-    } =
-        await supabaseClient
-            .from(
-                "class_teacher_assignments"
-            )
-            .delete()
-            .eq(
-                "class",
-                newClassName
-            )
-            .eq(
-                "session",
-                currentSession
-            );
-
-
-    if (
-        deleteCurrentError
-    ) {
-
-        throw deleteCurrentError;
-    }
-
-
-    if (
-        oldClassName
-
-        &&
-
-        normalize(
-            oldClassName
-        )
-        !==
-        normalize(
-            newClassName
-        )
-    ) {
+    if (existing) {
 
         const {
             error
@@ -1535,26 +1307,26 @@ async function saveClassTeacherAssignment(
                 .from(
                     "class_teacher_assignments"
                 )
-                .delete()
+                .update({
+                    teacher_id:
+                        teacherId,
+
+                    class:
+                        className,
+
+                    session:
+                        session
+                })
                 .eq(
-                    "class",
-                    oldClassName
-                )
-                .eq(
-                    "session",
-                    currentSession
+                    "id",
+                    existing.id
                 );
 
 
-        if (error) {
+        if (error)
             throw error;
-        }
-    }
 
 
-    if (
-        !teacherId
-    ) {
         return;
     }
 
@@ -1566,75 +1338,122 @@ async function saveClassTeacherAssignment(
             .from(
                 "class_teacher_assignments"
             )
-            .insert([
-                {
-                    teacher_id:
-                        teacherId,
+            .insert({
+                teacher_id:
+                    teacherId,
 
-                    class:
-                        newClassName,
+                class:
+                    className,
 
-                    session:
-                        currentSession
-                }
-            ]);
+                session:
+                    session
+            });
 
 
-    if (error) {
+    if (error)
         throw error;
-    }
 }
 
 
 /* =========================================
-   VIEW CLASS
+   UPDATE CLASS NAME REFERENCES
 ========================================= */
 
-window.viewClass =
-    function (
-        id
+async function updateClassNameReferences(
+    oldName,
+    newName
+) {
+
+    if (
+        !oldName ||
+        !newName ||
+        normalize(oldName)
+        ===
+        normalize(newName)
     ) {
-
-        const item =
-            classes.find(
-                cls =>
-                    String(
-                        cls.id
-                    )
-                    ===
-                    String(
-                        id
-                    )
-            );
+        return;
+    }
 
 
-        if (!item) {
-            return;
-        }
+    const updates = [
+
+        supabaseClient
+            .from("students")
+            .update({
+                class: newName
+            })
+            .eq(
+                "class",
+                oldName
+            ),
+
+        supabaseClient
+            .from(
+                "teacher_assignments"
+            )
+            .update({
+                class: newName
+            })
+            .eq(
+                "class",
+                oldName
+            ),
+
+        supabaseClient
+            .from(
+                "class_teacher_assignments"
+            )
+            .update({
+                class: newName
+            })
+            .eq(
+                "class",
+                oldName
+            ),
+
+        supabaseClient
+            .from(
+                "student_subjects"
+            )
+            .update({
+                class: newName
+            })
+            .eq(
+                "class",
+                oldName
+            ),
+
+        supabaseClient
+            .from("student_reports")
+            .update({
+                class: newName
+            })
+            .eq(
+                "class",
+                oldName
+            )
+    ];
 
 
-        const studentCount =
-            getClassStudentCount(
-                item.name
-            );
-
-
-        const teacherName =
-            getClassTeacherName(
-                item.name
-            );
-
-
-        alert(
-            `Class: ${item.name}\n` +
-            `Level: ${item.level || "-"}\n` +
-            `Arm: ${item.arm || "-"}\n` +
-            `Students: ${studentCount}\n` +
-            `Class Teacher: ${teacherName}\n` +
-            `Session: ${currentSession || item.session || "-"}\n` +
-            `Status: ${item.status || "Active"}`
+    const results =
+        await Promise.all(
+            updates
         );
-    };
+
+
+    const failed =
+        results.find(
+            result =>
+                result.error
+        );
+
+
+    if (
+        failed?.error
+    ) {
+        throw failed.error;
+    }
+}
 
 
 /* =========================================
@@ -1648,21 +1467,17 @@ window.editClass =
 
         const item =
             classes.find(
-                cls =>
-                    String(
-                        cls.id
-                    )
+                row =>
+                    String(row.id)
                     ===
-                    String(
-                        id
-                    )
+                    String(id)
             );
 
 
         if (!item) {
 
             alert(
-                "Class could not be found."
+                "Class was not found."
             );
 
             return;
@@ -1671,6 +1486,56 @@ window.editClass =
 
         openClassModal(
             item
+        );
+    };
+
+
+/* =========================================
+   VIEW CLASS
+========================================= */
+
+window.viewClass =
+    function (
+        id
+    ) {
+
+        const item =
+            classes.find(
+                row =>
+                    String(row.id)
+                    ===
+                    String(id)
+            );
+
+
+        if (!item) {
+
+            alert(
+                "Class was not found."
+            );
+
+            return;
+        }
+
+
+        const teacher =
+            getClassTeacherName(
+                item.name
+            );
+
+
+        const count =
+            getClassStudentCount(
+                item.name
+            );
+
+
+        alert(
+            `Class: ${item.name}\n` +
+            `Level: ${item.level || "-"}\n` +
+            `Students: ${count}\n` +
+            `Class Teacher: ${teacher}\n` +
+            `Status: ${item.status || "Active"}`
         );
     };
 
@@ -1686,188 +1551,72 @@ window.deleteClass =
 
         const item =
             classes.find(
-                cls =>
-                    String(
-                        cls.id
-                    )
+                row =>
+                    String(row.id)
                     ===
-                    String(
-                        id
-                    )
+                    String(id)
             );
 
 
         if (!item) {
+
+            alert(
+                "Class was not found."
+            );
+
             return;
         }
 
 
+        const studentCount =
+            getClassStudentCount(
+                item.name
+            );
+
+
+        if (
+            studentCount > 0
+        ) {
+
+            alert(
+                "You cannot delete this class because students are still assigned to it."
+            );
+
+            return;
+        }
+
+
+        const confirmed =
+            confirm(
+                `Delete ${item.name}?`
+            );
+
+
+        if (!confirmed)
+            return;
+
+
         try {
 
-            const [
-                studentCheck,
-                resultCheck,
-                reportCheck,
-                teacherCheck,
-                subjectCheck,
-                classTeacherCheck
-            ] =
-                await Promise.all([
-
-                    supabaseClient
-                        .from("students")
-                        .select(
-                            "student_id",
-                            {
-                                count:
-                                    "exact",
-                                head:
-                                    true
-                            }
-                        )
-                        .eq(
-                            "class",
-                            item.name
-                        ),
-
-                    supabaseClient
-                        .from("results")
-                        .select(
-                            "id",
-                            {
-                                count:
-                                    "exact",
-                                head:
-                                    true
-                            }
-                        )
-                        .eq(
-                            "class",
-                            item.name
-                        ),
-
-                    supabaseClient
-                        .from(
-                            "student_reports"
-                        )
-                        .select(
-                            "id",
-                            {
-                                count:
-                                    "exact",
-                                head:
-                                    true
-                            }
-                        )
-                        .eq(
-                            "class",
-                            item.name
-                        ),
-
-                    supabaseClient
-                        .from(
-                            "teacher_assignments"
-                        )
-                        .select(
-                            "id",
-                            {
-                                count:
-                                    "exact",
-                                head:
-                                    true
-                            }
-                        )
-                        .eq(
-                            "class",
-                            item.name
-                        ),
-
-                    supabaseClient
-                        .from(
-                            "student_subjects"
-                        )
-                        .select(
-                            "id",
-                            {
-                                count:
-                                    "exact",
-                                head:
-                                    true
-                            }
-                        )
-                        .eq(
-                            "class",
-                            item.name
-                        ),
-
-                    supabaseClient
-                        .from(
-                            "class_teacher_assignments"
-                        )
-                        .select(
-                            "id",
-                            {
-                                count:
-                                    "exact",
-                                head:
-                                    true
-                            }
-                        )
-                        .eq(
-                            "class",
-                            item.name
-                        )
-
-                ]);
-
-
-            const inUse =
-                Number(
-                    studentCheck.count || 0
-                )
-                +
-                Number(
-                    resultCheck.count || 0
-                )
-                +
-                Number(
-                    reportCheck.count || 0
-                )
-                +
-                Number(
-                    teacherCheck.count || 0
-                )
-                +
-                Number(
-                    subjectCheck.count || 0
-                )
-                +
-                Number(
-                    classTeacherCheck.count || 0
-                );
+            const {
+                error:
+                assignmentDeleteError
+            } =
+                await supabaseClient
+                    .from(
+                        "class_teacher_assignments"
+                    )
+                    .delete()
+                    .eq(
+                        "class",
+                        item.name
+                    );
 
 
             if (
-                inUse > 0
+                assignmentDeleteError
             ) {
-
-                alert(
-                    `"${item.name}" is already being used by students, teachers or academic records.\n\n` +
-                    `Change its Status to Inactive instead of deleting it.`
-                );
-
-                return;
-            }
-
-
-            const confirmed =
-                confirm(
-                    `Delete "${item.name}"?`
-                );
-
-
-            if (!confirmed) {
-                return;
+                throw assignmentDeleteError;
             }
 
 
@@ -1883,17 +1632,11 @@ window.deleteClass =
                     );
 
 
-            if (error) {
+            if (error)
                 throw error;
-            }
 
 
             await loadClasses();
-
-
-            alert(
-                "Class deleted successfully."
-            );
 
 
         } catch (error) {
@@ -1910,38 +1653,3 @@ window.deleteClass =
             );
         }
     };
-
-
-/* =========================================
-   ESCAPE HTML
-========================================= */
-
-function escapeHtml(
-    value
-) {
-
-    return String(
-        value ??
-        ""
-    )
-        .replace(
-            /&/g,
-            "&amp;"
-        )
-        .replace(
-            /</g,
-            "&lt;"
-        )
-        .replace(
-            />/g,
-            "&gt;"
-        )
-        .replace(
-            /"/g,
-            "&quot;"
-        )
-        .replace(
-            /'/g,
-            "&#039;"
-        );
-}

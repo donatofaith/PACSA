@@ -1,77 +1,109 @@
-const $ = id =>
-    document.getElementById(id);
+const $ = id => document.getElementById(id);
 
 
-/* =========================================
-   URL HELPERS
-========================================= */
-
-function getStudentLoginUrl() {
-
-    return new URL(
-        "student-login.html",
-        window.location.href
-    ).href;
-}
+const norm = value =>
+    String(value ?? "")
+        .trim()
+        .toLowerCase();
 
 
-function getStudentDashboardUrl() {
-
-    return new URL(
+const dashboardUrl = () =>
+    new URL(
         "student-dashboard.html",
         window.location.href
     ).href;
+
+
+const resetUrl = () =>
+    new URL(
+        "student-reset-password.html",
+        window.location.href
+    ).href;
+
+
+/* =====================================================
+   MESSAGE
+===================================================== */
+
+function showMessage(
+    text,
+    type = "error"
+) {
+
+    const box =
+        $("loginMessage");
+
+    if (!box) return;
+
+    box.textContent =
+        text;
+
+    box.className =
+        `login-message ${type}`;
 }
 
 
-/* =========================================
-   PASSWORD TOGGLE
-========================================= */
+function clearMessage() {
+
+    const box =
+        $("loginMessage");
+
+    if (!box) return;
+
+    box.textContent = "";
+
+    box.className =
+        "login-message";
+}
+
+
+/* =====================================================
+   PASSWORD
+===================================================== */
 
 $("togglePassword")
     ?.addEventListener(
         "click",
         () => {
 
-            const password =
+            const input =
                 $("password");
 
+            if (!input) return;
 
-            if (
-                password.type ===
-                "password"
-            ) {
 
-                password.type =
-                    "text";
+            const hidden =
+                input.type ===
+                "password";
 
-                $("togglePassword")
-                    .textContent =
-                    "🙈";
 
-            } else {
+            input.type =
+                hidden
+                    ? "text"
+                    : "password";
 
-                password.type =
-                    "password";
 
-                $("togglePassword")
-                    .textContent =
-                    "👁";
-            }
+            $("togglePassword")
+                .textContent =
+                hidden
+                    ? "🙈"
+                    : "👁";
         }
     );
 
 
-/* =========================================
+/* =====================================================
    LOGIN
-========================================= */
+===================================================== */
 
 $("studentLoginForm")
-    .addEventListener(
+    ?.addEventListener(
         "submit",
         async event => {
 
             event.preventDefault();
+
+            clearMessage();
 
 
             const email =
@@ -82,15 +114,24 @@ $("studentLoginForm")
 
 
             const password =
-                $("password")
-                    .value;
+                $("password").value;
 
 
             const button =
                 $("loginBtn");
 
 
-            hideMessage();
+            if (
+                !email ||
+                !password
+            ) {
+
+                showMessage(
+                    "Enter your registered email and password."
+                );
+
+                return;
+            }
 
 
             button.disabled =
@@ -102,63 +143,56 @@ $("studentLoginForm")
 
             try {
 
-                /*
-                    Sign in using Supabase Auth.
-                */
-
                 const {
-                    data,
-                    error
+                    data: authData,
+                    error: authError
                 } =
                     await supabaseClient
                         .auth
                         .signInWithPassword({
-
                             email,
-
                             password
                         });
 
 
-                if (error) {
-
-                    throw error;
-                }
+                if (authError)
+                    throw authError;
 
 
-                if (
-                    !data.user
-                ) {
+                if (!authData?.user) {
 
                     throw new Error(
-                        "Login failed."
+                        "Student login failed."
                     );
                 }
 
 
                 /*
-                    Ensure this Auth user is
-                    linked to a PACSA student.
+                    Secure authenticated RPC.
+
+                    Student gets only their own record.
                 */
 
                 const {
-                    data: student,
+                    data: studentRows,
                     error: studentError
                 } =
                     await supabaseClient
-                        .from("students")
-                        .select("*")
-                        .eq(
-                            "auth_user_id",
-                            data.user.id
-                        )
-                        .maybeSingle();
+                        .rpc(
+                            "pacsa_get_my_student"
+                        );
 
 
-                if (studentError) {
-
+                if (studentError)
                     throw studentError;
-                }
+
+
+                const student =
+                    Array.isArray(
+                        studentRows
+                    )
+                        ? studentRows[0]
+                        : studentRows;
 
 
                 if (!student) {
@@ -169,20 +203,17 @@ $("studentLoginForm")
 
 
                     throw new Error(
-                        "This account is not linked to a PACSA student record."
+                        "This account is not linked to a PACSA student."
                     );
                 }
 
 
                 if (
-                    String(
-                        student.status ||
-                        "active"
+                    norm(
+                        student.email
                     )
-                        .trim()
-                        .toLowerCase()
                     !==
-                    "active"
+                    norm(email)
                 ) {
 
                     await supabaseClient
@@ -191,55 +222,47 @@ $("studentLoginForm")
 
 
                     throw new Error(
-                        "Your student record is inactive. Contact the school administrator."
+                        "This email does not match the student record."
                     );
                 }
 
 
-                /*
-                    Once verified and logged in,
-                    activate the student portal.
-                */
-
                 if (
-                    student.portal_status ===
-                    "pending_verification"
+                    norm(
+                        student.status ||
+                        "active"
+                    )
+                    !== "active"
                 ) {
 
-                    const {
-                        error: updateError
-                    } =
-                        await supabaseClient
-                            .from("students")
-                            .update({
-
-                                portal_status:
-                                    "active"
-
-                            })
-                            .eq(
-                                "student_id",
-                                student.student_id
-                            );
+                    await supabaseClient
+                        .auth
+                        .signOut();
 
 
-                    if (updateError) {
-
-                        console.error(
-                            "Portal status update error:",
-                            updateError
-                        );
-                    }
-
-
-                    student.portal_status =
-                        "active";
+                    throw new Error(
+                        "Your student record is inactive."
+                    );
                 }
 
 
-                /*
-                    Keep current dashboard compatibility.
-                */
+                if (
+                    norm(
+                        student.portal_status
+                    )
+                    !== "active"
+                ) {
+
+                    await supabaseClient
+                        .auth
+                        .signOut();
+
+
+                    throw new Error(
+                        "Verify your email before logging in."
+                    );
+                }
+
 
                 localStorage.setItem(
                     "student",
@@ -249,23 +272,55 @@ $("studentLoginForm")
                 );
 
 
-                window.location.href =
-                    getStudentDashboardUrl();
+                window.location.replace(
+                    dashboardUrl()
+                );
 
 
             } catch (error) {
 
                 console.error(
-                    "Student login error:",
+                    "Student login:",
                     error
                 );
 
 
-                showMessage(
-                    getLoginErrorMessage(
-                        error
+                const text =
+                    norm(
+                        error?.message
+                    );
+
+
+                if (
+                    text.includes(
+                        "invalid login credentials"
                     )
-                );
+                ) {
+
+                    showMessage(
+                        "Invalid email or password."
+                    );
+
+
+                } else if (
+                    text.includes(
+                        "email not confirmed"
+                    )
+                ) {
+
+                    showMessage(
+                        "Verify your email before logging in."
+                    );
+
+
+                } else {
+
+                    showMessage(
+                        error?.message ||
+                        "Could not login."
+                    );
+                }
+
 
             } finally {
 
@@ -279,9 +334,9 @@ $("studentLoginForm")
     );
 
 
-/* =========================================
+/* =====================================================
    FORGOT PASSWORD
-========================================= */
+===================================================== */
 
 $("forgotPasswordLink")
     ?.addEventListener(
@@ -289,6 +344,8 @@ $("forgotPasswordLink")
         async event => {
 
             event.preventDefault();
+
+            clearMessage();
 
 
             const email =
@@ -301,7 +358,7 @@ $("forgotPasswordLink")
             if (!email) {
 
                 showMessage(
-                    "Enter your email address first, then click Forgot Password."
+                    "Enter your registered email first."
                 );
 
                 return;
@@ -309,6 +366,39 @@ $("forgotPasswordLink")
 
 
             try {
+
+                /*
+                    Safe anonymous RPC.
+                    Returns only true/false.
+                */
+
+                const {
+                    data: canReset,
+                    error: checkError
+                } =
+                    await supabaseClient
+                        .rpc(
+                            "pacsa_student_reset_check",
+                            {
+                                p_email:
+                                    email
+                            }
+                        );
+
+
+                if (checkError)
+                    throw checkError;
+
+
+                if (!canReset) {
+
+                    showMessage(
+                        "An active Student Portal account was not found for this email."
+                    );
+
+                    return;
+                }
+
 
                 const {
                     error
@@ -318,29 +408,26 @@ $("forgotPasswordLink")
                         .resetPasswordForEmail(
                             email,
                             {
-
                                 redirectTo:
-                                    getStudentLoginUrl()
-
+                                    resetUrl()
                             }
                         );
 
 
-                if (error) {
-
+                if (error)
                     throw error;
-                }
 
 
-                alert(
-                    "Password reset email sent. Check your inbox."
+                showMessage(
+                    "Password reset link sent. Check your email.",
+                    "success"
                 );
 
 
             } catch (error) {
 
                 console.error(
-                    "Password reset error:",
+                    "Student password reset:",
                     error
                 );
 
@@ -352,148 +439,3 @@ $("forgotPasswordLink")
             }
         }
     );
-
-
-/* =========================================
-   EXISTING AUTH SESSION
-========================================= */
-
-document.addEventListener(
-    "DOMContentLoaded",
-    async () => {
-
-        try {
-
-            const {
-                data
-            } =
-                await supabaseClient
-                    .auth
-                    .getSession();
-
-
-            const user =
-                data?.session?.user;
-
-
-            if (!user) {
-
-                return;
-            }
-
-
-            const {
-                data: student
-            } =
-                await supabaseClient
-                    .from("students")
-                    .select(
-                        "student_id,status"
-                    )
-                    .eq(
-                        "auth_user_id",
-                        user.id
-                    )
-                    .maybeSingle();
-
-
-            if (
-                student &&
-                String(
-                    student.status ||
-                    "active"
-                )
-                    .toLowerCase()
-                ===
-                "active"
-            ) {
-
-                window.location.href =
-                    getStudentDashboardUrl();
-            }
-
-        } catch (error) {
-
-            console.error(
-                "Existing session check error:",
-                error
-            );
-        }
-    }
-);
-
-
-/* =========================================
-   MESSAGE
-========================================= */
-
-function showMessage(text) {
-
-    const message =
-        $("loginMessage");
-
-
-    message.textContent =
-        text;
-
-
-    message.className =
-        "login-message error";
-}
-
-
-function hideMessage() {
-
-    const message =
-        $("loginMessage");
-
-
-    message.textContent =
-        "";
-
-
-    message.className =
-        "login-message";
-}
-
-
-/* =========================================
-   FRIENDLY ERRORS
-========================================= */
-
-function getLoginErrorMessage(
-    error
-) {
-
-    const text =
-        String(
-            error?.message || ""
-        )
-            .toLowerCase();
-
-
-    if (
-        text.includes(
-            "email not confirmed"
-        )
-    ) {
-
-        return "Verify your email before logging in.";
-    }
-
-
-    if (
-        text.includes(
-            "invalid login credentials"
-        )
-    ) {
-
-        return "Invalid email or password.";
-    }
-
-
-    return (
-        error?.message ||
-        "Could not login."
-    );
-}

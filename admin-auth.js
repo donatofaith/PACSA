@@ -2,6 +2,7 @@
    PACSA SHARED ADMIN AUTH GUARD
 ========================================= */
 
+
 const PACSA_ADMIN_LOGIN =
     new URL(
         "admin-login.html",
@@ -9,12 +10,7 @@ const PACSA_ADMIN_LOGIN =
     ).href;
 
 
-/*
-    Hide Admin page immediately.
-
-    This prevents the page flashing before
-    authentication has been checked.
-*/
+/* Hide Admin pages until Auth is checked */
 
 document.documentElement.style.visibility =
     "hidden";
@@ -25,8 +21,14 @@ window.currentAdmin =
 
 
 /* =========================================
-   CLEAR ADMIN STORAGE
+   HELPERS
 ========================================= */
+
+const adminNorm = value =>
+    String(value ?? "")
+        .trim()
+        .toLowerCase();
+
 
 function clearAdminStorage() {
 
@@ -37,7 +39,7 @@ function clearAdminStorage() {
 
 
 /* =========================================
-   ADMIN LOGOUT
+   LOGOUT
 ========================================= */
 
 window.adminLogout =
@@ -49,16 +51,19 @@ window.adminLogout =
                 .auth
                 .signOut();
 
+
         } catch (error) {
 
             console.error(
-                "Admin logout error:",
+                "Admin logout:",
                 error
             );
+
 
         } finally {
 
             clearAdminStorage();
+
 
             window.location.replace(
                 PACSA_ADMIN_LOGIN
@@ -68,7 +73,33 @@ window.adminLogout =
 
 
 /* =========================================
-   VERIFY ADMIN
+   SECURE ADMIN LOOKUP
+========================================= */
+
+async function getCurrentAdmin() {
+
+    const {
+        data,
+        error
+    } =
+        await supabaseClient
+            .rpc(
+                "pacsa_get_my_admin"
+            );
+
+
+    if (error)
+        throw error;
+
+
+    return Array.isArray(data)
+        ? data[0]
+        : data;
+}
+
+
+/* =========================================
+   ADMIN AUTH GUARD
 ========================================= */
 
 window.adminAuthReady =
@@ -76,9 +107,9 @@ window.adminAuthReady =
 
         try {
 
-            /*
-                1. Require Supabase Auth.
-            */
+            /* =====================================
+               1. REQUIRE AUTH SESSION
+            ===================================== */
 
             const {
                 data: sessionData,
@@ -89,12 +120,8 @@ window.adminAuthReady =
                     .getSession();
 
 
-            if (
-                sessionError
-            ) {
-
+            if (sessionError)
                 throw sessionError;
-            }
 
 
             const user =
@@ -107,38 +134,22 @@ window.adminAuthReady =
 
                 clearAdminStorage();
 
+
                 window.location.replace(
                     PACSA_ADMIN_LOGIN
                 );
+
 
                 return null;
             }
 
 
-            /*
-                2. Require matching Admin row.
-            */
+            /* =====================================
+               2. REQUIRE PACSA ADMIN RECORD
+            ===================================== */
 
-            const {
-                data: admin,
-                error: adminError
-            } =
-                await supabaseClient
-                    .from("admins")
-                    .select("*")
-                    .eq(
-                        "auth_user_id",
-                        user.id
-                    )
-                    .maybeSingle();
-
-
-            if (
-                adminError
-            ) {
-
-                throw adminError;
-            }
+            const admin =
+                await getCurrentAdmin();
 
 
             if (!admin) {
@@ -160,19 +171,16 @@ window.adminAuthReady =
             }
 
 
-            /*
-                3. Admin account must be active.
-            */
+            /* =====================================
+               3. REQUIRE ACTIVE ADMIN
+            ===================================== */
 
             if (
-                String(
+                adminNorm(
                     admin.status ||
                     "active"
                 )
-                    .trim()
-                    .toLowerCase()
-                !==
-                "active"
+                !== "active"
             ) {
 
                 await supabaseClient
@@ -197,9 +205,9 @@ window.adminAuthReady =
             }
 
 
-            /*
-                Admin is valid.
-            */
+            /* =====================================
+               4. ADMIN VALID
+            ===================================== */
 
             window.currentAdmin =
                 admin;
@@ -213,10 +221,9 @@ window.adminAuthReady =
             );
 
 
-            /*
-                Update Admin name automatically
-                wherever possible.
-            */
+            /* =====================================
+               ADMIN DISPLAY NAME
+            ===================================== */
 
             document
                 .querySelectorAll(
@@ -232,12 +239,9 @@ window.adminAuthReady =
                 );
 
 
-            /*
-                Shared logout support.
-
-                Existing Admin pages already use
-                id="logoutBtn".
-            */
+            /* =====================================
+               LOGOUT BUTTONS
+            ===================================== */
 
             document
                 .querySelectorAll(
@@ -258,12 +262,8 @@ window.adminAuthReady =
                                     );
 
 
-                                if (
-                                    !confirmed
-                                ) {
-
+                                if (!confirmed)
                                     return;
-                                }
 
 
                                 await window
@@ -273,9 +273,9 @@ window.adminAuthReady =
                 );
 
 
-            /*
-                Now the page may be shown.
-            */
+            /* =====================================
+               SHOW PAGE
+            ===================================== */
 
             document
                 .documentElement

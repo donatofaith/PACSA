@@ -1,6 +1,6 @@
 /* =========================================
    PACSA STUDENT DASHBOARD
-   AUTH + PUBLISHED RESULTS + PROFILE PHOTO
+   SECURE AUTH + PUBLISHED RESULTS + PROFILE
 ========================================= */
 
 let student = null;
@@ -10,6 +10,7 @@ let publishedReports = [];
 let allResults = [];
 let filteredResults = [];
 let currentReport = null;
+
 
 const PROFILE_BUCKET =
     "profile-photos";
@@ -37,7 +38,9 @@ const $ = id =>
 
 function normalize(value) {
 
-    return String(value ?? "")
+    return String(
+        value ?? ""
+    )
         .trim()
         .toLowerCase();
 }
@@ -45,7 +48,9 @@ function normalize(value) {
 
 function escapeHtml(value) {
 
-    return String(value ?? "")
+    return String(
+        value ?? ""
+    )
         .replace(/&/g, "&amp;")
         .replace(/</g, "&lt;")
         .replace(/>/g, "&gt;")
@@ -87,14 +92,6 @@ function getStudentName() {
     }
 
 
-    if (
-        student.fullname
-    ) {
-
-        return student.fullname;
-    }
-
-
     return (
         `${student.first_name || ""} ${student.last_name || ""}`
             .trim()
@@ -107,28 +104,34 @@ function getStudentName() {
 function getGradeClass(grade) {
 
     const value =
-        normalize(grade);
+        normalize(
+            grade
+        );
 
 
-    if (value === "a") {
-        return "grade-a";
-    }
+    if (
+        value === "a"
+    ) return "grade-a";
 
-    if (value === "b") {
-        return "grade-b";
-    }
 
-    if (value === "c") {
-        return "grade-c";
-    }
+    if (
+        value === "b"
+    ) return "grade-b";
 
-    if (value === "d") {
-        return "grade-d";
-    }
 
-    if (value === "e") {
-        return "grade-e";
-    }
+    if (
+        value === "c"
+    ) return "grade-c";
+
+
+    if (
+        value === "d"
+    ) return "grade-d";
+
+
+    if (
+        value === "e"
+    ) return "grade-e";
 
 
     return "grade-f";
@@ -144,9 +147,10 @@ function getResultTotal(result) {
 
 
     if (
-        Number.isFinite(stored)
+        Number.isFinite(
+            stored
+        )
     ) {
-
         return stored;
     }
 
@@ -273,13 +277,17 @@ async function verifyStudentSession() {
                 .getSession();
 
 
-        if (sessionError) {
+        if (
+            sessionError
+        ) {
             throw sessionError;
         }
 
 
         const user =
-            sessionData?.session?.user;
+            sessionData
+                ?.session
+                ?.user;
 
 
         if (!user) {
@@ -302,38 +310,37 @@ async function verifyStudentSession() {
             user;
 
 
+        /*
+            Secure RPC:
+            Student gets only their own record.
+        */
+
         const {
             data:
-            studentData,
+            studentRows,
 
             error:
             studentError
         } =
             await supabaseClient
-                .from("students")
-                .select(`
-                    student_id,
-                    first_name,
-                    last_name,
-                    fullname,
-                    email,
-                    phone,
-                    class,
-                    status,
-                    auth_user_id,
-                    portal_status,
-                    profile_photo_path
-                `)
-                .eq(
-                    "auth_user_id",
-                    user.id
-                )
-                .maybeSingle();
+                .rpc(
+                    "pacsa_get_my_student"
+                );
 
 
-        if (studentError) {
+        if (
+            studentError
+        ) {
             throw studentError;
         }
+
+
+        const studentData =
+            Array.isArray(
+                studentRows
+            )
+                ? studentRows[0]
+                : studentRows;
 
 
         if (!studentData) {
@@ -396,38 +403,34 @@ async function verifyStudentSession() {
 
 
         if (
-            studentData.portal_status ===
-            "pending_verification"
+            normalize(
+                studentData.portal_status
+            )
+            !==
+            "active"
         ) {
 
-            const {
-                error:
-                portalError
-            } =
-                await supabaseClient
-                    .from("students")
-                    .update({
-                        portal_status:
-                            "active"
-                    })
-                    .eq(
-                        "student_id",
-                        studentData.student_id
-                    );
+            await supabaseClient
+                .auth
+                .signOut();
 
 
-            if (!portalError) {
+            localStorage.removeItem(
+                "student"
+            );
 
-                studentData.portal_status =
-                    "active";
 
-            } else {
+            alert(
+                "Your Student Portal account is not active."
+            );
 
-                console.error(
-                    "Portal status update error:",
-                    portalError
-                );
-            }
+
+            window.location.replace(
+                getStudentLoginUrl()
+            );
+
+
+            return false;
         }
 
 
@@ -493,40 +496,90 @@ async function displayStudentProfile() {
         getStudentName();
 
 
-    $("studentName").textContent =
-        name;
+    if (
+        $("studentName")
+    ) {
+
+        $("studentName").textContent =
+            name;
+    }
 
 
-    $("studentId").textContent =
-        student.student_id || "--";
+    if (
+        $("studentId")
+    ) {
+
+        $("studentId").textContent =
+            student.student_id ||
+            "--";
+    }
 
 
-    $("studentClass").textContent =
-        student.class || "--";
+    if (
+        $("studentClass")
+    ) {
+
+        $("studentClass").textContent =
+            student.class ||
+            "--";
+    }
 
 
-    $("studentStatus").textContent =
-        student.status || "Active";
+    if (
+        $("studentStatus")
+    ) {
+
+        $("studentStatus").textContent =
+            student.status ||
+            "Active";
+    }
 
 
-    $("studentMiniName").textContent =
-        name;
+    if (
+        $("studentMiniName")
+    ) {
+
+        $("studentMiniName").textContent =
+            name;
+    }
 
 
-    $("studentMiniId").textContent =
-        student.student_id || "--";
+    if (
+        $("studentMiniId")
+    ) {
+
+        $("studentMiniId").textContent =
+            student.student_id ||
+            "--";
+    }
 
 
-    $("welcomeName").textContent =
-        `Welcome, ${name}`;
+    if (
+        $("welcomeName")
+    ) {
+
+        $("welcomeName").textContent =
+            `Welcome, ${name}`;
+    }
 
 
-    $("reportStudentName").textContent =
-        name;
+    if (
+        $("reportStudentName")
+    ) {
+
+        $("reportStudentName").textContent =
+            name;
+    }
 
 
-    $("reportStudentId").textContent =
-        student.student_id || "--";
+    if (
+        $("reportStudentId")
+    ) {
+
+        $("reportStudentId").textContent =
+            student.student_id ||
+            "--";
+    }
 
 
     setProfileImage(
@@ -539,7 +592,7 @@ async function displayStudentProfile() {
 
 
 /* =========================================
-   PROFILE IMAGE DISPLAY
+   PROFILE IMAGE
 ========================================= */
 
 function setProfileImage(url) {
@@ -552,10 +605,13 @@ function setProfileImage(url) {
         $("studentMiniAvatar");
 
 
-    if (mainAvatar) {
+    if (
+        mainAvatar
+    ) {
 
         mainAvatar.src =
-            url || DEFAULT_AVATAR;
+            url ||
+            DEFAULT_AVATAR;
 
 
         mainAvatar.onerror =
@@ -570,10 +626,13 @@ function setProfileImage(url) {
     }
 
 
-    if (miniAvatar) {
+    if (
+        miniAvatar
+    ) {
 
         miniAvatar.src =
-            url || DEFAULT_AVATAR;
+            url ||
+            DEFAULT_AVATAR;
 
 
         miniAvatar.onerror =
@@ -590,13 +649,14 @@ function setProfileImage(url) {
 
 
 /* =========================================
-   LOAD PRIVATE PROFILE PHOTO
+   LOAD PROFILE PHOTO
 ========================================= */
 
 async function loadStudentProfilePhoto() {
 
     if (
-        !student?.profile_photo_path
+        !student
+            ?.profile_photo_path
     ) {
 
         setProfileImage(
@@ -619,30 +679,23 @@ async function loadStudentProfilePhoto() {
                     PROFILE_BUCKET
                 )
                 .createSignedUrl(
-                    student.profile_photo_path,
-                    60 * 60
+                    student
+                        .profile_photo_path,
+                    3600
                 );
 
 
-        if (error) {
+        if (
+            error
+        ) {
             throw error;
         }
 
 
-        if (
-            data?.signedUrl
-        ) {
-
-            setProfileImage(
-                data.signedUrl
-            );
-
-        } else {
-
-            setProfileImage(
-                DEFAULT_AVATAR
-            );
-        }
+        setProfileImage(
+            data?.signedUrl ||
+            DEFAULT_AVATAR
+        );
 
 
     } catch (error) {
@@ -661,7 +714,7 @@ async function loadStudentProfilePhoto() {
 
 
 /* =========================================
-   PHOTO PATH
+   PHOTO HELPERS
 ========================================= */
 
 function getPhotoExtension(file) {
@@ -688,10 +741,14 @@ function getPhotoExtension(file) {
 }
 
 
-function buildStudentPhotoPath(file) {
+function buildStudentPhotoPath(
+    file
+) {
 
     const extension =
-        getPhotoExtension(file);
+        getPhotoExtension(
+            file
+        );
 
 
     return (
@@ -700,10 +757,6 @@ function buildStudentPhotoPath(file) {
 }
 
 
-/* =========================================
-   DELETE OLD PHOTO IF PATH CHANGES
-========================================= */
-
 async function removeOldProfilePhoto(
     oldPath,
     newPath
@@ -711,7 +764,8 @@ async function removeOldProfilePhoto(
 
     if (
         !oldPath ||
-        oldPath === newPath
+        oldPath ===
+        newPath
     ) {
 
         return;
@@ -766,9 +820,10 @@ async function uploadStudentProfilePhoto(
 
 
     if (
-        !ALLOWED_PHOTO_TYPES.includes(
-            file.type
-        )
+        !ALLOWED_PHOTO_TYPES
+            .includes(
+                file.type
+            )
     ) {
 
         showPhotoMessage(
@@ -807,7 +862,8 @@ async function uploadStudentProfilePhoto(
 
 
     const oldPath =
-        student.profile_photo_path ||
+        student
+            .profile_photo_path ||
         null;
 
 
@@ -817,8 +873,13 @@ async function uploadStudentProfilePhoto(
         );
 
 
-    button.disabled =
-        true;
+    if (
+        button
+    ) {
+
+        button.disabled =
+            true;
+    }
 
 
     loading
@@ -861,60 +922,42 @@ async function uploadStudentProfilePhoto(
         if (
             uploadError
         ) {
-
             throw uploadError;
         }
 
 
+        /*
+            Secure RPC:
+            only updates the logged-in
+            student's profile photo path.
+        */
+
         const {
             data:
-            updatedStudent,
+            updated,
 
             error:
             updateError
         } =
             await supabaseClient
-                .from(
-                    "students"
-                )
-                .update({
-                    profile_photo_path:
-                        newPath
-                })
-                .eq(
-                    "student_id",
-                    student.student_id
-                )
-                .eq(
-                    "auth_user_id",
-                    authUser.id
-                )
-                .select(`
-                    student_id,
-                    first_name,
-                    last_name,
-                    fullname,
-                    email,
-                    phone,
-                    class,
-                    status,
-                    auth_user_id,
-                    portal_status,
-                    profile_photo_path
-                `)
-                .maybeSingle();
+                .rpc(
+                    "pacsa_update_student_photo",
+                    {
+                        p_path:
+                            newPath
+                    }
+                );
 
 
         if (
             updateError
         ) {
-
             throw updateError;
         }
 
 
         if (
-            !updatedStudent
+            !updated
         ) {
 
             throw new Error(
@@ -923,14 +966,15 @@ async function uploadStudentProfilePhoto(
         }
 
 
-        student =
-            updatedStudent;
+        student
+            .profile_photo_path =
+            newPath;
 
 
         localStorage.setItem(
             "student",
             JSON.stringify(
-                updatedStudent
+                student
             )
         );
 
@@ -967,8 +1011,13 @@ async function uploadStudentProfilePhoto(
 
     } finally {
 
-        button.disabled =
-            false;
+        if (
+            button
+        ) {
+
+            button.disabled =
+                false;
+        }
 
 
         loading
@@ -990,175 +1039,362 @@ async function uploadStudentProfilePhoto(
 
 
 /* =========================================
-   PROFILE PHOTO EVENTS
-========================================= */
-
-$("changePhotoBtn")
-    ?.addEventListener(
-        "click",
-        () => {
-
-            hidePhotoMessage();
-
-
-            $("profilePhotoInput")
-                ?.click();
-        }
-    );
-
-
-$("profilePhotoInput")
-    ?.addEventListener(
-        "change",
-        async event => {
-
-            const file =
-                event.target
-                    .files?.[0];
-
-
-            if (!file) {
-                return;
-            }
-
-
-            await uploadStudentProfilePhoto(
-                file
-            );
-        }
-    );
-
-
-/* =========================================
    LOAD PUBLISHED REPORTS
 ========================================= */
 
 async function loadPublishedReports() {
 
-    if (!student) {
-        return;
-    }
+    hideMessage();
 
 
-    showMessage(
-        "Loading your published results..."
-    );
-
-
-    try {
-
-        const {
-            data,
-            error
-        } =
-            await supabaseClient
-                .from(
-                    "student_reports"
-                )
-                .select(`
-                    id,
-                    student_id,
-                    class,
-                    term,
-                    session,
-                    remark,
-                    status,
-                    published_at
-                `)
-                .eq(
-                    "student_id",
-                    student.student_id
-                )
-                .eq(
-                    "status",
-                    "published"
-                )
-                .order(
-                    "published_at",
-                    {
-                        ascending:
-                            false
-                    }
-                );
-
-
-        if (error) {
-            throw error;
-        }
-
-
-        publishedReports =
-            data || [];
-
-
-        if (
-            !publishedReports.length
-        ) {
-
-            allResults =
-                [];
-
-
-            filteredResults =
-                [];
-
-
-            currentReport =
-                null;
-
-
-            showMessage(
-                "No approved result is available yet.",
-                "warning"
+    const {
+        data,
+        error
+    } =
+        await supabaseClient
+            .from(
+                "student_reports"
+            )
+            .select(`
+                id,
+                student_id,
+                class,
+                term,
+                session,
+                remark,
+                status,
+                published_at
+            `)
+            .eq(
+                "student_id",
+                student.student_id
+            )
+            .eq(
+                "status",
+                "published"
+            )
+            .order(
+                "published_at",
+                {
+                    ascending: false
+                }
             );
 
 
-            renderEmptyState();
-
-
-            populateFilters();
-
-
-            return;
-        }
-
-
-        await loadResultRows();
-
-
-        populateFilters();
-
-
-        hideMessage();
-
-
-        applyFilters();
-
-
-    } catch (error) {
+    if (
+        error
+    ) {
 
         console.error(
-            "Could not load reports:",
+            "Published reports error:",
             error
         );
 
 
         showMessage(
-            "Unable to load your published results.",
-            "warning"
+            "Could not load published reports.",
+            "error"
         );
 
 
-        renderEmptyState();
+        return;
+    }
+
+
+    publishedReports =
+        data || [];
+
+
+    populateReportFilters();
+
+
+    if (
+        publishedReports.length
+    ) {
+
+        currentReport =
+            publishedReports[0];
+
+
+        selectReport(
+            currentReport
+        );
+
+
+    } else {
+
+        currentReport =
+            null;
+
+
+        allResults =
+            [];
+
+
+        filteredResults =
+            [];
+
+
+        renderResults();
+
+
+        showMessage(
+            "No published result is available yet.",
+            "info"
+        );
     }
 }
 
 
 /* =========================================
-   LOAD RESULT ROWS
+   REPORT FILTERS
 ========================================= */
 
-async function loadResultRows() {
+function populateReportFilters() {
+
+    const sessionSelect =
+        $("sessionFilter");
+
+
+    const termSelect =
+        $("termFilter");
+
+
+    if (
+        !sessionSelect ||
+        !termSelect
+    ) {
+        return;
+    }
+
+
+    const sessions =
+        uniqueValues(
+            publishedReports
+                .map(
+                    report =>
+                        report.session
+                )
+        );
+
+
+    const terms =
+        uniqueValues(
+            publishedReports
+                .map(
+                    report =>
+                        report.term
+                )
+        );
+
+
+    sessionSelect.innerHTML = `
+
+        <option value="">
+            All Sessions
+        </option>
+
+        ${sessions
+            .map(
+                value => `
+                    <option value="${escapeHtml(value)}">
+                        ${escapeHtml(value)}
+                    </option>
+                `
+            )
+            .join("")}
+    `;
+
+
+    termSelect.innerHTML = `
+
+        <option value="">
+            All Terms
+        </option>
+
+        ${terms
+            .map(
+                value => `
+                    <option value="${escapeHtml(value)}">
+                        ${escapeHtml(value)}
+                    </option>
+                `
+            )
+            .join("")}
+    `;
+
+
+    sessionSelect
+        .addEventListener(
+            "change",
+            applyReportFilter
+        );
+
+
+    termSelect
+        .addEventListener(
+            "change",
+            applyReportFilter
+        );
+}
+
+
+/* =========================================
+   APPLY REPORT FILTER
+========================================= */
+
+function applyReportFilter() {
+
+    const selectedSession =
+        $("sessionFilter")
+            ?.value ||
+        "";
+
+
+    const selectedTerm =
+        $("termFilter")
+            ?.value ||
+        "";
+
+
+    const match =
+        publishedReports.find(
+            report => {
+
+                const sessionOk =
+                    !selectedSession
+                    ||
+                    normalize(
+                        report.session
+                    )
+                    ===
+                    normalize(
+                        selectedSession
+                    );
+
+
+                const termOk =
+                    !selectedTerm
+                    ||
+                    normalize(
+                        report.term
+                    )
+                    ===
+                    normalize(
+                        selectedTerm
+                    );
+
+
+                return (
+                    sessionOk &&
+                    termOk
+                );
+            }
+        );
+
+
+    if (
+        match
+    ) {
+
+        currentReport =
+            match;
+
+
+        selectReport(
+            match
+        );
+
+
+    } else {
+
+        currentReport =
+            null;
+
+
+        allResults =
+            [];
+
+
+        filteredResults =
+            [];
+
+
+        renderResults();
+
+
+        showMessage(
+            "No published report matches the selected filters.",
+            "info"
+        );
+    }
+}
+
+
+/* =========================================
+   SELECT REPORT
+========================================= */
+
+async function selectReport(
+    report
+) {
+
+    hideMessage();
+
+
+    if (
+        $("reportSession")
+    ) {
+
+        $("reportSession").textContent =
+            report.session ||
+            "--";
+    }
+
+
+    if (
+        $("reportTerm")
+    ) {
+
+        $("reportTerm").textContent =
+            report.term ||
+            "--";
+    }
+
+
+    if (
+        $("reportClass")
+    ) {
+
+        $("reportClass").textContent =
+            report.class ||
+            "--";
+    }
+
+
+    if (
+        $("reportRemark")
+    ) {
+
+        $("reportRemark").textContent =
+            report.remark ||
+            "No remark provided.";
+    }
+
+
+    await loadResultsForReport(
+        report
+    );
+}
+
+
+/* =========================================
+   LOAD REPORT RESULTS
+========================================= */
+
+async function loadResultsForReport(
+    report
+) {
 
     const {
         data,
@@ -1182,365 +1418,58 @@ async function loadResultRows() {
             .eq(
                 "student_id",
                 student.student_id
+            )
+            .eq(
+                "class",
+                report.class
+            )
+            .eq(
+                "term",
+                report.term
+            )
+            .eq(
+                "session",
+                report.session
+            )
+            .order(
+                "subject",
+                {
+                    ascending: true
+                }
             );
 
 
-    if (error) {
-        throw error;
+    if (
+        error
+    ) {
+
+        console.error(
+            "Student result error:",
+            error
+        );
+
+
+        showMessage(
+            "Could not load this report.",
+            "error"
+        );
+
+
+        return;
     }
 
 
     allResults =
         data || [];
-}
-
-
-/* =========================================
-   POPULATE FILTERS
-========================================= */
-
-function populateFilters() {
-
-    const sessions =
-        uniqueValues(
-            publishedReports.map(
-                report =>
-                    report.session
-            )
-        );
-
-
-    const classes =
-        uniqueValues(
-            publishedReports.map(
-                report =>
-                    report.class
-            )
-        );
-
-
-    const terms =
-        uniqueValues(
-            publishedReports.map(
-                report =>
-                    report.term
-            )
-        );
-
-
-    $("sessionFilter").innerHTML = `
-        <option value="">
-            Select Session
-        </option>
-    `;
-
-
-    sessions.forEach(
-        session => {
-
-            const option =
-                document.createElement(
-                    "option"
-                );
-
-
-            option.value =
-                session;
-
-
-            option.textContent =
-                session;
-
-
-            $("sessionFilter")
-                .appendChild(
-                    option
-                );
-        }
-    );
-
-
-    $("classFilter").innerHTML = `
-        <option value="">
-            Select Class
-        </option>
-    `;
-
-
-    classes.forEach(
-        className => {
-
-            const option =
-                document.createElement(
-                    "option"
-                );
-
-
-            option.value =
-                className;
-
-
-            option.textContent =
-                className;
-
-
-            $("classFilter")
-                .appendChild(
-                    option
-                );
-        }
-    );
-
-
-    $("termFilter").innerHTML = `
-        <option value="">
-            Select Term
-        </option>
-    `;
-
-
-    terms.forEach(
-        term => {
-
-            const option =
-                document.createElement(
-                    "option"
-                );
-
-
-            option.value =
-                term;
-
-
-            option.textContent =
-                term;
-
-
-            $("termFilter")
-                .appendChild(
-                    option
-                );
-        }
-    );
-
-
-    if (
-        !publishedReports.length
-    ) {
-
-        return;
-    }
-
-
-    const firstReport =
-        publishedReports[0];
-
-
-    $("sessionFilter").value =
-        firstReport.session || "";
-
-
-    $("classFilter").value =
-        firstReport.class || "";
-
-
-    $("termFilter").value =
-        firstReport.term || "";
-}
-
-
-/* =========================================
-   APPLY FILTERS
-========================================= */
-
-function applyFilters() {
-
-    const selectedSession =
-        $("sessionFilter").value;
-
-
-    const selectedClass =
-        $("classFilter").value;
-
-
-    const selectedTerm =
-        $("termFilter").value;
-
-
-    if (
-        !selectedSession ||
-        !selectedClass ||
-        !selectedTerm
-    ) {
-
-        currentReport =
-            null;
-
-
-        filteredResults =
-            [];
-
-
-        renderEmptyState(
-            "Select a session, class and term to view your result."
-        );
-
-
-        return;
-    }
-
-
-    currentReport =
-        publishedReports.find(
-            report =>
-
-                normalize(
-                    report.session
-                )
-                ===
-                normalize(
-                    selectedSession
-                )
-
-                &&
-
-                normalize(
-                    report.class
-                )
-                ===
-                normalize(
-                    selectedClass
-                )
-
-                &&
-
-                normalize(
-                    report.term
-                )
-                ===
-                normalize(
-                    selectedTerm
-                )
-
-                &&
-
-                normalize(
-                    report.status
-                )
-                ===
-                "published"
-        )
-        || null;
-
-
-    if (
-        !currentReport
-    ) {
-
-        filteredResults =
-            [];
-
-
-        showMessage(
-            "This report has not been approved for publication.",
-            "warning"
-        );
-
-
-        renderEmptyState(
-            "No published result found for this selection."
-        );
-
-
-        return;
-    }
 
 
     filteredResults =
-        allResults.filter(
-            result =>
-
-                normalize(
-                    result.student_id
-                )
-                ===
-                normalize(
-                    student.student_id
-                )
-
-                &&
-
-                normalize(
-                    result.session
-                )
-                ===
-                normalize(
-                    selectedSession
-                )
-
-                &&
-
-                normalize(
-                    result.class
-                )
-                ===
-                normalize(
-                    selectedClass
-                )
-
-                &&
-
-                normalize(
-                    result.term
-                )
-                ===
-                normalize(
-                    selectedTerm
-                )
-        );
+        [...allResults];
 
 
-    $("resultSelectionText").textContent =
-        `${selectedClass} • ${selectedTerm} • ${selectedSession}`;
+    renderResults();
 
-
-    $("reportStudentClass").textContent =
-        selectedClass;
-
-
-    $("reportSession").textContent =
-        selectedSession;
-
-
-    $("reportTerm").textContent =
-        selectedTerm;
-
-
-    if (
-        !filteredResults.length
-    ) {
-
-        showMessage(
-            "This report is published, but no subject results were found.",
-            "warning"
-        );
-
-
-        renderEmptyState(
-            "No subject results were found for this report."
-        );
-
-
-        return;
-    }
-
-
-    hideMessage();
-
-
-    renderResults(
-        filteredResults
-    );
+    renderSummary();
 }
 
 
@@ -1548,374 +1477,307 @@ function applyFilters() {
    RENDER RESULTS
 ========================================= */
 
-function renderResults(results) {
+function renderResults() {
 
-    $("resultsTable").innerHTML =
-        "";
-
-
-    $("reportResultsTable").innerHTML =
-        "";
+    const body =
+        $("resultsTableBody");
 
 
-    let totalScore =
-        0;
+    if (!body) {
+        return;
+    }
 
 
-    let passed =
-        0;
+    if (
+        !filteredResults.length
+    ) {
+
+        body.innerHTML = `
+
+            <tr>
+
+                <td
+                    colspan="6"
+                    class="empty-state"
+                >
+                    No published result found.
+                </td>
+
+            </tr>
+        `;
+
+        return;
+    }
 
 
-    results.forEach(
-        result => {
+    body.innerHTML =
+        filteredResults
+            .map(
+                result => {
 
-            const total =
+                    const total =
+                        getResultTotal(
+                            result
+                        );
+
+
+                    const grade =
+                        result.grade ||
+                        "-";
+
+
+                    return `
+
+                        <tr>
+
+                            <td>
+                                ${escapeHtml(
+                                    result.subject ||
+                                    "-"
+                                )}
+                            </td>
+
+                            <td>
+                                ${escapeHtml(
+                                    result.ca ??
+                                    "-"
+                                )}
+                            </td>
+
+                            <td>
+                                ${escapeHtml(
+                                    result.exam ??
+                                    "-"
+                                )}
+                            </td>
+
+                            <td>
+                                <strong>
+                                    ${escapeHtml(
+                                        total
+                                    )}
+                                </strong>
+                            </td>
+
+                            <td>
+                                <span class="grade-badge ${getGradeClass(
+                                    grade
+                                )}">
+                                    ${escapeHtml(
+                                        grade
+                                    )}
+                                </span>
+                            </td>
+
+                            <td>
+                                ${
+                                    total >= 40
+                                        ? "Pass"
+                                        : "Needs Improvement"
+                                }
+                            </td>
+
+                        </tr>
+                    `;
+                }
+            )
+            .join("");
+}
+
+
+/* =========================================
+   SUMMARY
+========================================= */
+
+function renderSummary() {
+
+    const count =
+        allResults.length;
+
+
+    const totalScore =
+        allResults.reduce(
+            (
+                sum,
+                result
+            ) =>
+                sum +
                 getResultTotal(
                     result
-                );
-
-
-            const grade =
-                result.grade ||
-                "--";
-
-
-            const gradeClass =
-                getGradeClass(
-                    grade
-                );
-
-
-            if (
-                total >= 40
-            ) {
-
-                passed++;
-            }
-
-
-            totalScore +=
-                total;
-
-
-            const row = `
-                <tr>
-
-                    <td>
-                        ${escapeHtml(
-                            result.subject || "--"
-                        )}
-                    </td>
-
-                    <td>
-                        ${escapeHtml(
-                            result.ca ?? 0
-                        )}
-                    </td>
-
-                    <td>
-                        ${escapeHtml(
-                            result.exam ?? 0
-                        )}
-                    </td>
-
-                    <td>
-                        ${escapeHtml(
-                            total
-                        )}
-                    </td>
-
-                    <td>
-
-                        <span
-                            class="grade-badge ${gradeClass}"
-                        >
-                            ${escapeHtml(
-                                grade
-                            )}
-                        </span>
-
-                    </td>
-
-                </tr>
-            `;
-
-
-            $("resultsTable")
-                .insertAdjacentHTML(
-                    "beforeend",
-                    row
-                );
-
-
-            $("reportResultsTable")
-                .insertAdjacentHTML(
-                    "beforeend",
-                    row
-                );
-        }
-    );
-
-
-    const average =
-        results.length
-
-            ? totalScore /
-              results.length
-
-            : 0;
-
-
-    const roundedAverage =
-        Math.round(
-            average
+                ),
+            0
         );
 
 
-    $("average").textContent =
-        `${roundedAverage}%`;
+    const average =
+        count
+            ? (
+                totalScore /
+                count
+            ).toFixed(1)
+            : "0.0";
 
 
-    $("subjects").textContent =
-        results.length;
+    const passed =
+        allResults.filter(
+            result =>
+                getResultTotal(
+                    result
+                ) >= 40
+        ).length;
 
 
-    $("passedSubjects").textContent =
-        passed;
+    if (
+        $("subjectCount")
+    ) {
+
+        $("subjectCount").textContent =
+            count;
+    }
 
 
-    $("position").textContent =
-        "N/A";
+    if (
+        $("averageScore")
+    ) {
+
+        $("averageScore").textContent =
+            average;
+    }
 
 
-    $("reportAverage").textContent =
-        `${roundedAverage}%`;
+    if (
+        $("passedSubjects")
+    ) {
 
-
-    $("reportSubjects").textContent =
-        results.length;
-
-
-    $("reportPosition").textContent =
-        "N/A";
-
-
-    $("reportPassed").textContent =
-        passed;
-
-
-    $("reportRemark").textContent =
-        currentReport?.remark ||
-        "--";
+        $("passedSubjects").textContent =
+            passed;
+    }
 }
-
-
-/* =========================================
-   EMPTY STATE
-========================================= */
-
-function renderEmptyState(
-    message =
-        "No published results available."
-) {
-
-    const row = `
-        <tr>
-
-            <td
-                colspan="5"
-                class="empty-row"
-            >
-                ${escapeHtml(
-                    message
-                )}
-            </td>
-
-        </tr>
-    `;
-
-
-    $("resultsTable").innerHTML =
-        row;
-
-
-    $("reportResultsTable").innerHTML =
-        row;
-
-
-    $("average").textContent =
-        "0%";
-
-
-    $("subjects").textContent =
-        "0";
-
-
-    $("passedSubjects").textContent =
-        "0";
-
-
-    $("position").textContent =
-        "N/A";
-
-
-    $("reportAverage").textContent =
-        "0%";
-
-
-    $("reportSubjects").textContent =
-        "0";
-
-
-    $("reportPosition").textContent =
-        "N/A";
-
-
-    $("reportPassed").textContent =
-        "0";
-
-
-    $("reportRemark").textContent =
-        "--";
-}
-
-
-/* =========================================
-   FILTER EVENTS
-========================================= */
-
-$("sessionFilter")
-    ?.addEventListener(
-        "change",
-        applyFilters
-    );
-
-
-$("classFilter")
-    ?.addEventListener(
-        "change",
-        applyFilters
-    );
-
-
-$("termFilter")
-    ?.addEventListener(
-        "change",
-        applyFilters
-    );
-
-
-/* =========================================
-   PRINT RESULT
-========================================= */
-
-$("printResultBtn")
-    ?.addEventListener(
-        "click",
-        () => {
-
-            if (
-                !currentReport ||
-                !filteredResults.length
-            ) {
-
-                showMessage(
-                    "Select a published result before printing.",
-                    "warning"
-                );
-
-
-                return;
-            }
-
-
-            window.print();
-        }
-    );
 
 
 /* =========================================
    LOGOUT
 ========================================= */
 
-$("logoutBtn")
-    ?.addEventListener(
-        "click",
-        async () => {
+async function logoutStudent() {
 
-            try {
+    try {
 
-                await supabaseClient
-                    .auth
-                    .signOut();
-
-            } catch (error) {
-
-                console.error(
-                    "Logout error:",
-                    error
-                );
-
-            } finally {
-
-                localStorage.removeItem(
-                    "student"
-                );
+        await supabaseClient
+            .auth
+            .signOut();
 
 
-                window.location.replace(
-                    getStudentLoginUrl()
-                );
-            }
-        }
-    );
+    } catch (error) {
+
+        console.error(
+            "Student logout:",
+            error
+        );
 
 
-/* =========================================
-   AUTH WATCHER
-========================================= */
+    } finally {
 
-supabaseClient
-    .auth
-    .onAuthStateChange(
-        (
-            event,
-            session
-        ) => {
-
-            if (
-                event === "SIGNED_OUT" ||
-                !session
-            ) {
-
-                localStorage.removeItem(
-                    "student"
-                );
-            }
-        }
-    );
+        localStorage.removeItem(
+            "student"
+        );
 
 
-/* =========================================
-   START DASHBOARD
-========================================= */
-
-async function startStudentDashboard() {
-
-    const allowed =
-        await verifyStudentSession();
-
-
-    if (!allowed) {
-        return;
+        window.location.replace(
+            getStudentLoginUrl()
+        );
     }
-
-
-    await displayStudentProfile();
-
-
-    await loadPublishedReports();
 }
 
 
-startStudentDashboard();
+/* =========================================
+   EVENTS
+========================================= */
+
+function setupEvents() {
+
+    $("logoutBtn")
+        ?.addEventListener(
+            "click",
+            async event => {
+
+                event.preventDefault();
+
+                await logoutStudent();
+            }
+        );
+
+
+    $("sidebarLogoutBtn")
+        ?.addEventListener(
+            "click",
+            async event => {
+
+                event.preventDefault();
+
+                await logoutStudent();
+            }
+        );
+
+
+    $("changePhotoBtn")
+        ?.addEventListener(
+            "click",
+            () => {
+
+                $("profilePhotoInput")
+                    ?.click();
+            }
+        );
+
+
+    $("profilePhotoInput")
+        ?.addEventListener(
+            "change",
+            async event => {
+
+                const file =
+                    event
+                        .target
+                        .files
+                        ?.[0];
+
+
+                if (
+                    file
+                ) {
+
+                    await uploadStudentProfilePhoto(
+                        file
+                    );
+                }
+            }
+        );
+}
+
+
+/* =========================================
+   START
+========================================= */
+
+document.addEventListener(
+    "DOMContentLoaded",
+    async () => {
+
+        setupEvents();
+
+
+        const valid =
+            await verifyStudentSession();
+
+
+        if (!valid) {
+            return;
+        }
+
+
+        await displayStudentProfile();
+
+        await loadPublishedReports();
+    }
+);

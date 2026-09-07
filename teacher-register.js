@@ -1,49 +1,69 @@
-const $ = id =>
-    document.getElementById(id);
-
-
-/* =========================================
-   STATE
-========================================= */
+const $ = id => document.getElementById(id);
 
 let pendingTeacherEmail = "";
+let pendingTeacherId = "";
 
 
-/* =========================================
-   HELPERS
-========================================= */
-
-function normalize(value) {
-
-    return String(
-        value ?? ""
-    )
+const norm = value =>
+    String(value ?? "")
         .trim()
         .toLowerCase();
-}
 
 
-function getTeacherLoginUrl() {
-
-    return new URL(
+const loginUrl = () =>
+    new URL(
         "teacher-login.html",
         window.location.href
     ).href;
+
+
+/* =====================================================
+   MESSAGE
+===================================================== */
+
+function showMessage(
+    text,
+    type = "error"
+) {
+
+    const box =
+        $("registerMessage");
+
+    if (!box) return;
+
+    box.textContent =
+        text;
+
+    box.className =
+        `message ${type}`;
 }
 
 
-/* =========================================
-   PASSWORD TOGGLES
-========================================= */
+function clearMessage() {
 
-function setupPasswordToggle(
+    const box =
+        $("registerMessage");
+
+    if (!box) return;
+
+    box.textContent = "";
+
+    box.className =
+        "message";
+}
+
+
+/* =====================================================
+   PASSWORD TOGGLE
+===================================================== */
+
+function setupToggle(
     inputId,
     buttonId
 ) {
 
     const input =
         $(inputId);
-
 
     const button =
         $(buttonId);
@@ -52,154 +72,78 @@ function setupPasswordToggle(
     if (
         !input ||
         !button
-    ) {
-
-        return;
-    }
+    ) return;
 
 
     button.addEventListener(
         "click",
         () => {
 
-            if (
+            const hidden =
                 input.type ===
-                "password"
-            ) {
-
-                input.type =
-                    "text";
+                "password";
 
 
-                button.textContent =
-                    "🙈";
+            input.type =
+                hidden
+                    ? "text"
+                    : "password";
 
 
-                button.setAttribute(
-                    "aria-label",
-                    "Hide password"
-                );
-
-
-            } else {
-
-                input.type =
-                    "password";
-
-
-                button.textContent =
-                    "👁";
-
-
-                button.setAttribute(
-                    "aria-label",
-                    "Show password"
-                );
-            }
+            button.textContent =
+                hidden
+                    ? "🙈"
+                    : "👁";
         }
     );
 }
 
 
-setupPasswordToggle(
+setupToggle(
     "password",
     "togglePassword"
 );
 
 
-setupPasswordToggle(
+setupToggle(
     "confirmPassword",
     "toggleConfirmPassword"
 );
 
 
-/* =========================================
-   MESSAGES
-========================================= */
-
-function showMessage(
-    text,
-    type = "error"
-) {
-
-    const message =
-        $("registerMessage");
-
-
-    if (!message) {
-
-        return;
-    }
-
-
-    message.textContent =
-        text;
-
-
-    message.className =
-        `message ${type}`;
-}
-
-
-function clearMessage() {
-
-    const message =
-        $("registerMessage");
-
-
-    if (!message) {
-
-        return;
-    }
-
-
-    message.textContent =
-        "";
-
-
-    message.className =
-        "message";
-}
-
-
-/* =========================================
+/* =====================================================
    RESEND BUTTON
-========================================= */
+===================================================== */
 
-function showResendButton() {
+function showResend() {
 
     const button =
         $("resendVerificationBtn");
 
-
-    if (button) {
-
+    if (button)
         button.style.display =
             "block";
-    }
 }
 
 
-function hideResendButton() {
+function hideResend() {
 
     const button =
         $("resendVerificationBtn");
 
-
-    if (button) {
-
+    if (button)
         button.style.display =
             "none";
-    }
 }
 
 
-/* =========================================
-   FIND TEACHER
-========================================= */
+/* =====================================================
+   SAFE ACTIVATION CHECK
+===================================================== */
 
-async function findTeacher(
-    teacherId
+async function checkTeacher(
+    teacherId,
+    email
 ) {
 
     const {
@@ -207,45 +151,76 @@ async function findTeacher(
         error
     } =
         await supabaseClient
-            .from("Teachers")
-            .select(`
-                teacher_id,
-                email,
-                auth_user_id,
-                portal_status
-            `)
-            .eq(
-                "teacher_id",
-                teacherId
-            )
-            .maybeSingle();
+            .rpc(
+                "pacsa_teacher_activation_check",
+                {
+                    p_teacher_id:
+                        teacherId,
+
+                    p_email:
+                        email
+                }
+            );
 
 
-    if (error) {
-
+    if (error)
         throw error;
-    }
 
 
-    return data;
+    return Array.isArray(data)
+        ? data[0]
+        : data;
 }
 
 
-/* =========================================
-   RESEND VERIFICATION EMAIL
-========================================= */
+/* =====================================================
+   RESEND
+===================================================== */
 
-async function resendVerificationEmail() {
+async function resendVerification() {
 
     if (
-        !pendingTeacherEmail
+        !pendingTeacherEmail ||
+        !pendingTeacherId
     ) {
 
         showMessage(
-            "Enter your Teacher ID and registered email first.",
-            "error"
+            "Enter your Teacher ID and registered email first."
         );
 
+        return;
+    }
+
+
+    const teacher =
+        await checkTeacher(
+            pendingTeacherId,
+            pendingTeacherEmail
+        );
+
+
+    if (!teacher) {
+
+        showMessage(
+            "Teacher ID and email do not match."
+        );
+
+        return;
+    }
+
+
+    if (
+        norm(
+            teacher.portal_status
+        ) === "active"
+    ) {
+
+        showMessage(
+            "Your teacher account is already active. Please login.",
+            "success"
+        );
+
+        hideResend();
 
         return;
     }
@@ -255,22 +230,16 @@ async function resendVerificationEmail() {
         $("resendVerificationBtn");
 
 
-    if (button) {
+    button.disabled =
+        true;
 
-        button.disabled =
-            true;
-
-
-        button.textContent =
-            "Sending...";
-    }
+    button.textContent =
+        "Sending...";
 
 
     try {
 
-        const {
-            error
-        } =
+        const { error } =
             await supabaseClient
                 .auth
                 .resend({
@@ -284,17 +253,13 @@ async function resendVerificationEmail() {
                     options: {
 
                         emailRedirectTo:
-                            getTeacherLoginUrl()
-
+                            loginUrl()
                     }
-
                 });
 
 
-        if (error) {
-
+        if (error)
             throw error;
-        }
 
 
         showMessage(
@@ -305,69 +270,36 @@ async function resendVerificationEmail() {
 
     } catch (error) {
 
-        console.error(
-            "Verification resend error:",
-            error
+        console.error(error);
+
+
+        showMessage(
+            error?.message ||
+            "Could not resend verification email."
         );
-
-
-        const text =
-            normalize(
-                error?.message
-            );
-
-
-        if (
-            text.includes(
-                "rate"
-            )
-        ) {
-
-            showMessage(
-                "Please wait before requesting another verification email.",
-                "error"
-            );
-
-
-        } else {
-
-            showMessage(
-                error?.message ||
-                "Could not resend verification email.",
-                "error"
-            );
-        }
 
 
     } finally {
 
-        if (button) {
+        button.disabled =
+            false;
 
-            button.disabled =
-                false;
-
-
-            button.textContent =
-                "Resend Verification Email";
-        }
+        button.textContent =
+            "Resend Verification Email";
     }
 }
 
 
-/* =========================================
-   RESEND EVENT
-========================================= */
-
 $("resendVerificationBtn")
     ?.addEventListener(
         "click",
-        resendVerificationEmail
+        resendVerification
     );
 
 
-/* =========================================
-   ACTIVATION FORM
-========================================= */
+/* =====================================================
+   ACTIVATE
+===================================================== */
 
 $("teacherRegisterForm")
     ?.addEventListener(
@@ -376,11 +308,8 @@ $("teacherRegisterForm")
 
             event.preventDefault();
 
-
             clearMessage();
-
-
-            hideResendButton();
+            hideResend();
 
 
             const teacherId =
@@ -398,22 +327,16 @@ $("teacherRegisterForm")
 
 
             const password =
-                $("password")
-                    .value;
+                $("password").value;
 
 
             const confirmPassword =
-                $("confirmPassword")
-                    .value;
+                $("confirmPassword").value;
 
 
             const button =
                 $("registerBtn");
 
-
-            /* =====================================
-               VALIDATION
-            ===================================== */
 
             if (
                 !teacherId ||
@@ -421,25 +344,8 @@ $("teacherRegisterForm")
             ) {
 
                 showMessage(
-                    "Enter your Teacher ID and registered email.",
-                    "error"
+                    "Enter your Teacher ID and registered email."
                 );
-
-
-                return;
-            }
-
-
-            if (
-                !password ||
-                !confirmPassword
-            ) {
-
-                showMessage(
-                    "Enter and confirm your password.",
-                    "error"
-                );
-
 
                 return;
             }
@@ -450,10 +356,8 @@ $("teacherRegisterForm")
             ) {
 
                 showMessage(
-                    "Password must contain at least 8 characters.",
-                    "error"
+                    "Password must contain at least 8 characters."
                 );
-
 
                 return;
             }
@@ -465,10 +369,8 @@ $("teacherRegisterForm")
             ) {
 
                 showMessage(
-                    "Passwords do not match.",
-                    "error"
+                    "Passwords do not match."
                 );
-
 
                 return;
             }
@@ -477,97 +379,54 @@ $("teacherRegisterForm")
             button.disabled =
                 true;
 
-
             button.textContent =
                 "Checking teacher...";
 
 
             try {
 
-                /* =====================================
-                   STEP 1
-                   FIND TEACHER CREATED BY ADMIN
-                ===================================== */
-
                 const teacher =
-                    await findTeacher(
-                        teacherId
+                    await checkTeacher(
+                        teacherId,
+                        email
                     );
 
 
                 if (!teacher) {
 
                     showMessage(
-                        "Teacher ID was not found. Contact the administrator.",
-                        "error"
+                        "Teacher ID and registered email do not match."
                     );
-
 
                     return;
                 }
 
 
-                /* =====================================
-                   STEP 2
-                   VERIFY EMAIL
-                ===================================== */
-
-                if (
-                    !teacher.email ||
-
-                    normalize(
-                        teacher.email
-                    )
-                    !==
-                    normalize(
-                        email
-                    )
-                ) {
-
-                    showMessage(
-                        "The email does not match the email registered for this Teacher ID.",
-                        "error"
-                    );
-
-
-                    return;
-                }
-
+                pendingTeacherId =
+                    teacherId;
 
                 pendingTeacherEmail =
                     email;
 
 
                 const status =
-                    normalize(
+                    norm(
                         teacher.portal_status
                     );
 
 
-                /* =====================================
-                   STEP 3
-                   ACCOUNT ALREADY ACTIVE
-                ===================================== */
-
                 if (
-                    status ===
-                    "active"
+                    status === "active"
                 ) {
 
                     showMessage(
-                        "Your teacher account is already active. Please proceed to login.",
+                        "Your teacher account is already active. Please login.",
                         "success"
                     );
-
 
                     return;
                 }
 
-
-                /* =====================================
-                   STEP 4
-                   WAITING FOR EMAIL VERIFICATION
-                ===================================== */
 
                 if (
                     status ===
@@ -575,43 +434,34 @@ $("teacherRegisterForm")
                 ) {
 
                     showMessage(
-                        "Your account has already been created and is waiting for email verification. Check your inbox or resend the verification email.",
-                        "error"
+                        "Your account is waiting for email verification. Check your inbox or resend the verification email."
                     );
 
-
-                    showResendButton();
-
+                    showResend();
 
                     return;
                 }
 
-
-                /* =====================================
-                   STEP 5
-                   FIRST-TIME ACTIVATION
-                ===================================== */
 
                 button.textContent =
                     "Creating account...";
 
 
                 const {
-                    data: authData,
-                    error: authError
+                    data,
+                    error
                 } =
                     await supabaseClient
                         .auth
                         .signUp({
 
                             email,
-
                             password,
 
                             options: {
 
                                 emailRedirectTo:
-                                    getTeacherLoginUrl(),
+                                    loginUrl(),
 
                                 data: {
 
@@ -620,123 +470,60 @@ $("teacherRegisterForm")
 
                                     role:
                                         "teacher"
-
                                 }
                             }
                         });
 
 
-                if (authError) {
-
-                    throw authError;
-                }
-
-
-                /*
-                    IMPORTANT:
-
-                    Do NOT manually save
-                    authData.user.id into Teachers.
-
-                    The database trigger we created
-                    handles the real auth.users UUID.
-                */
-
-
-                if (
-                    authData?.session
-                ) {
-
-                    console.warn(
-                        "Signup returned a session. Confirm Email may be disabled in Supabase."
-                    );
-                }
+                if (error)
+                    throw error;
 
 
                 $("password").value =
                     "";
 
-
                 $("confirmPassword").value =
                     "";
 
 
+                if (data?.session) {
+
+                    showMessage(
+                        "Teacher account created and active. You can now login.",
+                        "success"
+                    );
+
+                    return;
+                }
+
+
                 showMessage(
-                    "Account created successfully. Check your email and click the verification link before logging in.",
+                    "Account created successfully. Check your email and verify your account before logging in.",
                     "success"
                 );
 
 
-                showResendButton();
+                showResend();
 
 
             } catch (error) {
 
                 console.error(
-                    "Teacher activation error:",
+                    "Teacher activation:",
                     error
                 );
 
 
-                const text =
-                    normalize(
-                        error?.message
-                    );
-
-
-                if (
-                    text.includes(
-                        "confirmation email"
-                    )
-                ) {
-
-                    showMessage(
-                        "The account was created, but the verification email could not be sent. Use Resend Verification Email.",
-                        "error"
-                    );
-
-
-                    showResendButton();
-
-
-                } else if (
-
-                    text.includes(
-                        "rate limit"
-                    )
-
-                    ||
-
-                    text.includes(
-                        "email rate"
-                    )
-
-                ) {
-
-                    showMessage(
-                        "Too many email requests were made. Please wait before trying again.",
-                        "error"
-                    );
-
-
-                    showResendButton();
-
-
-                } else {
-
-                    showMessage(
-                        error?.message ||
-                        "Could not activate teacher account.",
-                        "error"
-                    );
-                }
+                showMessage(
+                    error?.message ||
+                    "Could not activate teacher account."
+                );
 
 
             } finally {
 
                 button.disabled =
                     false;
-
 
                 button.textContent =
                     "Activate Account";

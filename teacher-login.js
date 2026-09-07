@@ -1,44 +1,64 @@
-const $ = id =>
-    document.getElementById(id);
+const $ = id => document.getElementById(id);
+
+const norm = value =>
+    String(value ?? "")
+        .trim()
+        .toLowerCase();
 
 
-/* =========================================
-   URL HELPERS
-========================================= */
-
-function getTeacherLoginUrl() {
-
-    return new URL(
-        "teacher-login.html",
-        window.location.href
-    ).href;
-}
-
-
-function getTeacherDashboardUrl() {
-
-    return new URL(
+const dashboardUrl = () =>
+    new URL(
         "teacher-dashboard.html",
         window.location.href
     ).href;
+
+
+const resetUrl = () =>
+    new URL(
+        "reset-password.html",
+        window.location.href
+    ).href;
+
+
+/* =====================================================
+   MESSAGES
+===================================================== */
+
+function showMessage(
+    text,
+    type = "error"
+) {
+
+    const box =
+        $("loginMessage");
+
+    if (!box) return;
+
+    box.textContent =
+        text;
+
+    box.className =
+        `login-message ${type}`;
 }
 
 
-/* =========================================
-   NORMALIZE
-========================================= */
+function clearMessage() {
 
-function normalize(value) {
+    const box =
+        $("loginMessage");
 
-    return String(value ?? "")
-        .trim()
-        .toLowerCase();
+    if (!box) return;
+
+    box.textContent = "";
+
+    box.className =
+        "login-message";
 }
 
 
-/* =========================================
+/* =====================================================
    PASSWORD TOGGLE
-========================================= */
+===================================================== */
 
 $("togglePassword")
     ?.addEventListener(
@@ -48,79 +68,31 @@ $("togglePassword")
             const input =
                 $("password");
 
+            if (!input) return;
 
-            if (
-                input.type ===
-                "password"
-            ) {
 
-                input.type =
-                    "text";
+            const hidden =
+                input.type === "password";
 
-                $("togglePassword")
-                    .textContent =
-                    "🙈";
 
-            } else {
+            input.type =
+                hidden
+                    ? "text"
+                    : "password";
 
-                input.type =
-                    "password";
 
-                $("togglePassword")
-                    .textContent =
-                    "👁";
-            }
+            $("togglePassword")
+                .textContent =
+                hidden
+                    ? "🙈"
+                    : "👁";
         }
     );
 
 
-/* =========================================
-   FIND TEACHER BY ID
-========================================= */
-
-async function getTeacherById(
-    teacherId
-) {
-
-    const {
-        data,
-        error
-    } =
-        await supabaseClient
-            .from("Teachers")
-            .select(`
-                id,
-                teacher_id,
-                fullname,
-                first_name,
-                last_name,
-                email,
-                phone,
-                subject,
-                class,
-                auth_user_id,
-                portal_status
-            `)
-            .eq(
-                "teacher_id",
-                teacherId
-            )
-            .maybeSingle();
-
-
-    if (error) {
-
-        throw error;
-    }
-
-
-    return data;
-}
-
-
-/* =========================================
+/* =====================================================
    LOGIN
-========================================= */
+===================================================== */
 
 $("teacherLoginForm")
     ?.addEventListener(
@@ -129,32 +101,39 @@ $("teacherLoginForm")
 
             event.preventDefault();
 
+            clearMessage();
+
 
             const teacherId =
                 $("teacherId")
                     .value
-                    .trim();
+                    .trim()
+                    .toUpperCase();
+
+
+            const email =
+                $("email")
+                    .value
+                    .trim()
+                    .toLowerCase();
 
 
             const password =
-                $("password")
-                    .value;
+                $("password").value;
 
 
             const button =
                 $("loginBtn");
 
 
-            hideMessage();
-
-
             if (
                 !teacherId ||
+                !email ||
                 !password
             ) {
 
                 showMessage(
-                    "Enter your Teacher ID and password."
+                    "Enter your Teacher ID, registered email and password."
                 );
 
                 return;
@@ -171,54 +150,10 @@ $("teacherLoginForm")
             try {
 
                 /*
-                    STEP 1:
-                    Find PACSA teacher record.
-                */
+                    Authenticate first.
 
-                const teacher =
-                    await getTeacherById(
-                        teacherId
-                    );
-
-
-                if (!teacher) {
-
-                    throw new Error(
-                        "Teacher ID was not found."
-                    );
-                }
-
-
-                /*
-                    Teacher must already have activated
-                    the Supabase Auth account.
-                */
-
-                if (
-                    !teacher.auth_user_id
-                ) {
-
-                    throw new Error(
-                        "Your Teacher Portal account has not been activated yet. Click Activate Account first."
-                    );
-                }
-
-
-                if (!teacher.email) {
-
-                    throw new Error(
-                        "No email address is registered for this teacher. Contact the administrator."
-                    );
-                }
-
-
-                /*
-                    STEP 2:
-                    Supabase Auth login.
-
-                    Teacher enters Teacher ID,
-                    but Auth securely uses the
-                    registered teacher email.
+                    We do NOT ask the Teachers table
+                    for the teacher's email.
                 */
 
                 const {
@@ -228,28 +163,16 @@ $("teacherLoginForm")
                     await supabaseClient
                         .auth
                         .signInWithPassword({
-
-                            email:
-                                teacher.email
-                                    .trim()
-                                    .toLowerCase(),
-
+                            email,
                             password
-
                         });
 
 
-                if (authError) {
-
+                if (authError)
                     throw authError;
-                }
 
 
-                const authUser =
-                    authData?.user;
-
-
-                if (!authUser) {
+                if (!authData?.user) {
 
                     throw new Error(
                         "Teacher login failed."
@@ -258,21 +181,79 @@ $("teacherLoginForm")
 
 
                 /*
-                    STEP 3:
-                    Very important security check.
+                    Now that the user is authenticated,
+                    securely fetch ONLY their own
+                    Teacher record.
+                */
 
-                    Auth user must match the Auth ID
-                    stored against this Teacher ID.
+                const {
+                    data: teacherRows,
+                    error: teacherError
+                } =
+                    await supabaseClient
+                        .rpc(
+                            "pacsa_get_my_teacher"
+                        );
+
+
+                if (teacherError)
+                    throw teacherError;
+
+
+                const teacher =
+                    Array.isArray(
+                        teacherRows
+                    )
+                        ? teacherRows[0]
+                        : teacherRows;
+
+
+                if (!teacher) {
+
+                    await supabaseClient
+                        .auth
+                        .signOut();
+
+
+                    throw new Error(
+                        "This account is not linked to a PACSA teacher."
+                    );
+                }
+
+
+                /*
+                    Confirm Teacher ID entered on
+                    login page matches authenticated
+                    teacher.
                 */
 
                 if (
                     String(
-                        teacher.auth_user_id
+                        teacher.teacher_id
+                    )
+                    .trim()
+                    .toUpperCase()
+                    !==
+                    teacherId
+                ) {
+
+                    await supabaseClient
+                        .auth
+                        .signOut();
+
+
+                    throw new Error(
+                        "Teacher ID does not match this account."
+                    );
+                }
+
+
+                if (
+                    norm(
+                        teacher.email
                     )
                     !==
-                    String(
-                        authUser.id
-                    )
+                    norm(email)
                 ) {
 
                     await supabaseClient
@@ -281,86 +262,16 @@ $("teacherLoginForm")
 
 
                     throw new Error(
-                        "This login does not match the selected teacher account."
+                        "Registered email does not match this Teacher ID."
                     );
                 }
 
 
-                /*
-                    STEP 4:
-                    Load subject assignments.
-                */
-
-                const {
-                    data: assignments,
-                    error: assignmentError
-                } =
-                    await supabaseClient
-                        .from(
-                            "teacher_assignments"
-                        )
-                        .select("*")
-                        .eq(
-                            "teacher_id",
-                            teacher.teacher_id
-                        );
-
-
-                if (assignmentError) {
-
-                    throw assignmentError;
-                }
-
-
-                /*
-                    STEP 5:
-                    Load class teacher assignments.
-                */
-
-                const {
-                    data: classAssignments,
-                    error: classError
-                } =
-                    await supabaseClient
-                        .from(
-                            "class_teacher_assignments"
-                        )
-                        .select("*")
-                        .eq(
-                            "teacher_id",
-                            teacher.teacher_id
-                        );
-
-
-                if (classError) {
-
-                    throw classError;
-                }
-
-
-                /*
-                    Teacher needs at least one role.
-                */
-
-                const hasSubjectRole =
-                    Array.isArray(
-                        assignments
-                    )
-                    &&
-                    assignments.length > 0;
-
-
-                const hasClassRole =
-                    Array.isArray(
-                        classAssignments
-                    )
-                    &&
-                    classAssignments.length > 0;
-
-
                 if (
-                    !hasSubjectRole &&
-                    !hasClassRole
+                    norm(
+                        teacher.portal_status
+                    )
+                    !== "active"
                 ) {
 
                     await supabaseClient
@@ -369,61 +280,76 @@ $("teacherLoginForm")
 
 
                     throw new Error(
-                        "Your teacher account has no subject or class-teacher assignment. Contact the administrator."
+                        "Verify your email before logging in."
                     );
                 }
 
 
                 /*
-                    STEP 6:
-                    Activate portal after successful
-                    verified login.
+                    RLS now protects these tables.
+                    Teacher will only receive their
+                    own assignments.
                 */
 
+                const [
+                    subjectResponse,
+                    classResponse
+                ] =
+                    await Promise.all([
+
+                        supabaseClient
+                            .from(
+                                "teacher_assignments"
+                            )
+                            .select("*"),
+
+                        supabaseClient
+                            .from(
+                                "class_teacher_assignments"
+                            )
+                            .select("*")
+                    ]);
+
+
                 if (
-                    teacher.portal_status ===
-                    "pending_verification"
+                    subjectResponse.error
                 ) {
 
-                    const {
-                        error: portalError
-                    } =
-                        await supabaseClient
-                            .from("Teachers")
-                            .update({
-
-                                portal_status:
-                                    "active"
-
-                            })
-                            .eq(
-                                "teacher_id",
-                                teacher.teacher_id
-                            );
-
-
-                    if (!portalError) {
-
-                        teacher.portal_status =
-                            "active";
-
-                    } else {
-
-                        console.error(
-                            "Teacher portal status update:",
-                            portalError
-                        );
-                    }
+                    throw subjectResponse.error;
                 }
 
 
-                /*
-                    Keep existing Teacher Dashboard
-                    compatible for now.
+                if (
+                    classResponse.error
+                ) {
 
-                    Dashboard security will be upgraded
-                    immediately after this login works.
-                */
+                    throw classResponse.error;
+                }
+
+
+                const assignments =
+                    subjectResponse.data || [];
+
+
+                const classAssignments =
+                    classResponse.data || [];
+
+
+                if (
+                    !assignments.length &&
+                    !classAssignments.length
+                ) {
+
+                    await supabaseClient
+                        .auth
+                        .signOut();
+
+
+                    throw new Error(
+                        "No teaching responsibility has been assigned to this teacher."
+                    );
+                }
+
 
                 localStorage.setItem(
                     "teacher",
@@ -436,7 +362,7 @@ $("teacherLoginForm")
                 localStorage.setItem(
                     "teacherAssignments",
                     JSON.stringify(
-                        assignments || []
+                        assignments
                     )
                 );
 
@@ -444,28 +370,59 @@ $("teacherLoginForm")
                 localStorage.setItem(
                     "classTeacherAssignments",
                     JSON.stringify(
-                        classAssignments || []
+                        classAssignments
                     )
                 );
 
 
-                window.location.href =
-                    getTeacherDashboardUrl();
+                window.location.replace(
+                    dashboardUrl()
+                );
 
 
             } catch (error) {
 
                 console.error(
-                    "Teacher login error:",
+                    "Teacher login:",
                     error
                 );
 
 
-                showMessage(
-                    getFriendlyError(
-                        error
+                const text =
+                    norm(
+                        error?.message
+                    );
+
+
+                if (
+                    text.includes(
+                        "invalid login credentials"
                     )
-                );
+                ) {
+
+                    showMessage(
+                        "Incorrect Teacher ID, email or password."
+                    );
+
+
+                } else if (
+                    text.includes(
+                        "email not confirmed"
+                    )
+                ) {
+
+                    showMessage(
+                        "Verify your email before logging in."
+                    );
+
+
+                } else {
+
+                    showMessage(
+                        error?.message ||
+                        "Could not login to the Teacher Portal."
+                    );
+                }
 
 
             } finally {
@@ -480,9 +437,9 @@ $("teacherLoginForm")
     );
 
 
-/* =========================================
+/* =====================================================
    FORGOT PASSWORD
-========================================= */
+===================================================== */
 
 $("forgotPasswordLink")
     ?.addEventListener(
@@ -491,20 +448,30 @@ $("forgotPasswordLink")
 
             event.preventDefault();
 
-
-            hideMessage();
+            clearMessage();
 
 
             const teacherId =
                 $("teacherId")
                     .value
-                    .trim();
+                    .trim()
+                    .toUpperCase();
 
 
-            if (!teacherId) {
+            const email =
+                $("email")
+                    .value
+                    .trim()
+                    .toLowerCase();
+
+
+            if (
+                !teacherId ||
+                !email
+            ) {
 
                 showMessage(
-                    "Enter your Teacher ID first, then click Forgot Password."
+                    "Enter your Teacher ID and registered email first."
                 );
 
                 return;
@@ -513,19 +480,44 @@ $("forgotPasswordLink")
 
             try {
 
+                /*
+                    Safe pre-login activation check.
+
+                    This checks ID + email without
+                    exposing the Teachers table.
+                */
+
+                const {
+                    data,
+                    error
+                } =
+                    await supabaseClient
+                        .rpc(
+                            "pacsa_teacher_activation_check",
+                            {
+                                p_teacher_id:
+                                    teacherId,
+
+                                p_email:
+                                    email
+                            }
+                        );
+
+
+                if (error)
+                    throw error;
+
+
                 const teacher =
-                    await getTeacherById(
-                        teacherId
-                    );
+                    Array.isArray(data)
+                        ? data[0]
+                        : data;
 
 
-                if (
-                    !teacher ||
-                    !teacher.email
-                ) {
+                if (!teacher) {
 
                     showMessage(
-                        "Teacher account or registered email was not found."
+                        "Teacher ID and registered email do not match."
                     );
 
                     return;
@@ -533,11 +525,14 @@ $("forgotPasswordLink")
 
 
                 if (
-                    !teacher.auth_user_id
+                    norm(
+                        teacher.portal_status
+                    )
+                    !== "active"
                 ) {
 
                     showMessage(
-                        "This Teacher Portal account has not been activated yet."
+                        "This Teacher Portal account is not active yet."
                     );
 
                     return;
@@ -545,31 +540,26 @@ $("forgotPasswordLink")
 
 
                 const {
-                    error
+                    error: resetError
                 } =
                     await supabaseClient
                         .auth
                         .resetPasswordForEmail(
-                            teacher.email
-                                .trim()
-                                .toLowerCase(),
+                            email,
                             {
-
                                 redirectTo:
-                                    getTeacherLoginUrl()
-
+                                    resetUrl()
                             }
                         );
 
 
-                if (error) {
-
-                    throw error;
-                }
+                if (resetError)
+                    throw resetError;
 
 
-                showSuccess(
-                    "Password reset email sent. Check your registered email."
+                showMessage(
+                    "Password reset link sent. Check your email.",
+                    "success"
                 );
 
 
@@ -588,156 +578,3 @@ $("forgotPasswordLink")
             }
         }
     );
-
-
-/* =========================================
-   EXISTING SESSION
-========================================= */
-
-document.addEventListener(
-    "DOMContentLoaded",
-    async () => {
-
-        try {
-
-            const {
-                data
-            } =
-                await supabaseClient
-                    .auth
-                    .getSession();
-
-
-            const user =
-                data?.session?.user;
-
-
-            if (!user) {
-
-                return;
-            }
-
-
-            /*
-                Determine whether this Supabase
-                session belongs to a teacher.
-            */
-
-            const {
-                data: teacher
-            } =
-                await supabaseClient
-                    .from("Teachers")
-                    .select(
-                        "teacher_id"
-                    )
-                    .eq(
-                        "auth_user_id",
-                        user.id
-                    )
-                    .maybeSingle();
-
-
-            if (teacher) {
-
-                window.location.href =
-                    getTeacherDashboardUrl();
-            }
-
-        } catch (error) {
-
-            console.error(
-                "Teacher session check:",
-                error
-            );
-        }
-    }
-);
-
-
-/* =========================================
-   MESSAGES
-========================================= */
-
-function showMessage(text) {
-
-    const message =
-        $("loginMessage");
-
-
-    message.textContent =
-        text;
-
-
-    message.className =
-        "login-message error";
-}
-
-
-function showSuccess(text) {
-
-    const message =
-        $("loginMessage");
-
-
-    message.textContent =
-        text;
-
-
-    message.className =
-        "login-message success";
-}
-
-
-function hideMessage() {
-
-    const message =
-        $("loginMessage");
-
-
-    message.textContent =
-        "";
-
-
-    message.className =
-        "login-message";
-}
-
-
-/* =========================================
-   FRIENDLY ERRORS
-========================================= */
-
-function getFriendlyError(error) {
-
-    const text =
-        normalize(
-            error?.message
-        );
-
-
-    if (
-        text.includes(
-            "email not confirmed"
-        )
-    ) {
-
-        return "Verify your email before logging in.";
-    }
-
-
-    if (
-        text.includes(
-            "invalid login credentials"
-        )
-    ) {
-
-        return "Incorrect Teacher ID or password.";
-    }
-
-
-    return (
-        error?.message ||
-        "Could not login to the Teacher Portal."
-    );
-}

@@ -1,73 +1,322 @@
-const $ = id =>
-    document.getElementById(id);
+const $ = id => document.getElementById(id);
+
+let pendingEmail = "";
+let pendingStudentId = "";
 
 
-/* =========================================
-   REDIRECT URL
-========================================= */
+const norm = value =>
+    String(value ?? "")
+        .trim()
+        .toLowerCase();
 
-function getStudentLoginUrl() {
 
-    return new URL(
+const loginUrl = () =>
+    new URL(
         "student-login.html",
         window.location.href
     ).href;
+
+
+/* =====================================================
+   MESSAGE
+===================================================== */
+
+function showMessage(
+    text,
+    type = "error"
+) {
+
+    const box =
+        $("registerMessage");
+
+    if (!box) return;
+
+    box.textContent =
+        text;
+
+    box.className =
+        `message ${type}`;
 }
 
 
-/* =========================================
-   PASSWORD TOGGLE
-========================================= */
+function clearMessage() {
 
-$("togglePassword")
-    ?.addEventListener(
+    const box =
+        $("registerMessage");
+
+    if (!box) return;
+
+    box.textContent = "";
+
+    box.className =
+        "message";
+}
+
+
+/* =====================================================
+   PASSWORD TOGGLES
+===================================================== */
+
+function setupToggle(
+    inputId,
+    toggleId
+) {
+
+    const input =
+        $(inputId);
+
+    const toggle =
+        $(toggleId);
+
+
+    if (
+        !input ||
+        !toggle
+    ) return;
+
+
+    toggle.addEventListener(
         "click",
         () => {
 
-            const input =
-                $("password");
-
-            if (
+            const hidden =
                 input.type ===
-                "password"
-            ) {
+                "password";
 
-                input.type =
-                    "text";
 
-                $("togglePassword")
-                    .textContent =
-                    "🙈";
+            input.type =
+                hidden
+                    ? "text"
+                    : "password";
 
-            } else {
 
-                input.type =
-                    "password";
-
-                $("togglePassword")
-                    .textContent =
-                    "👁";
-            }
+            toggle.textContent =
+                hidden
+                    ? "🙈"
+                    : "👁";
         }
+    );
+}
+
+
+setupToggle(
+    "password",
+    "togglePassword"
+);
+
+
+setupToggle(
+    "confirmPassword",
+    "toggleConfirmPassword"
+);
+
+
+/* =====================================================
+   RESEND
+===================================================== */
+
+function showResend() {
+
+    const button =
+        $("resendVerificationBtn");
+
+    if (button)
+        button.style.display =
+            "block";
+}
+
+
+function hideResend() {
+
+    const button =
+        $("resendVerificationBtn");
+
+    if (button)
+        button.style.display =
+            "none";
+}
+
+
+/* =====================================================
+   SAFE STUDENT CHECK
+===================================================== */
+
+async function checkStudent(
+    studentId,
+    email
+) {
+
+    const {
+        data,
+        error
+    } =
+        await supabaseClient
+            .rpc(
+                "pacsa_student_activation_check",
+                {
+                    p_student_id:
+                        studentId,
+
+                    p_email:
+                        email
+                }
+            );
+
+
+    if (error)
+        throw error;
+
+
+    return Array.isArray(data)
+        ? data[0]
+        : data;
+}
+
+
+/* =====================================================
+   RESEND EMAIL
+===================================================== */
+
+async function resendVerification() {
+
+    if (
+        !pendingEmail ||
+        !pendingStudentId
+    ) {
+
+        showMessage(
+            "Enter your Student ID and registered email first."
+        );
+
+        return;
+    }
+
+
+    const student =
+        await checkStudent(
+            pendingStudentId,
+            pendingEmail
+        );
+
+
+    if (!student) {
+
+        showMessage(
+            "Student ID and registered email do not match."
+        );
+
+        return;
+    }
+
+
+    if (
+        norm(
+            student.portal_status
+        ) === "active"
+    ) {
+
+        showMessage(
+            "Your Student Portal account is already active. Please login.",
+            "success"
+        );
+
+        hideResend();
+
+        return;
+    }
+
+
+    const button =
+        $("resendVerificationBtn");
+
+
+    button.disabled =
+        true;
+
+    button.textContent =
+        "Sending...";
+
+
+    try {
+
+        const { error } =
+            await supabaseClient
+                .auth
+                .resend({
+
+                    type:
+                        "signup",
+
+                    email:
+                        pendingEmail,
+
+                    options: {
+
+                        emailRedirectTo:
+                            loginUrl()
+                    }
+                });
+
+
+        if (error)
+            throw error;
+
+
+        showMessage(
+            "Verification email sent. Check your inbox and spam folder.",
+            "success"
+        );
+
+
+    } catch (error) {
+
+        console.error(error);
+
+
+        showMessage(
+            error?.message ||
+            "Could not resend verification email."
+        );
+
+
+    } finally {
+
+        button.disabled =
+            false;
+
+        button.textContent =
+            "Resend Verification Email";
+    }
+}
+
+
+$("resendVerificationBtn")
+    ?.addEventListener(
+        "click",
+        resendVerification
     );
 
 
-/* =========================================
-   REGISTER
-========================================= */
+/* =====================================================
+   ACTIVATE
+===================================================== */
 
 $("studentRegisterForm")
-    .addEventListener(
+    ?.addEventListener(
         "submit",
         async event => {
 
             event.preventDefault();
 
+            clearMessage();
+            hideResend();
+
 
             const studentId =
                 $("studentId")
                     .value
-                    .trim();
+                    .trim()
+                    .toUpperCase();
 
 
             const email =
@@ -78,30 +327,24 @@ $("studentRegisterForm")
 
 
             const password =
-                $("password")
-                    .value;
+                $("password").value;
 
 
             const confirmPassword =
-                $("confirmPassword")
-                    .value;
+                $("confirmPassword").value;
 
 
             const button =
                 $("registerBtn");
 
 
-            clearMessage();
-
-
             if (
-                password !==
-                confirmPassword
+                !studentId ||
+                !email
             ) {
 
                 showMessage(
-                    "Passwords do not match.",
-                    "error"
+                    "Enter your Student ID and registered email."
                 );
 
                 return;
@@ -113,8 +356,20 @@ $("studentRegisterForm")
             ) {
 
                 showMessage(
-                    "Password must contain at least 8 characters.",
-                    "error"
+                    "Password must contain at least 8 characters."
+                );
+
+                return;
+            }
+
+
+            if (
+                password !==
+                confirmPassword
+            ) {
+
+                showMessage(
+                    "Passwords do not match."
                 );
 
                 return;
@@ -130,44 +385,17 @@ $("studentRegisterForm")
 
             try {
 
-                /*
-                    Verify that the Student ID exists
-                    and the email matches the school record.
-                */
-
-                const {
-                    data: student,
-                    error: studentError
-                } =
-                    await supabaseClient
-                        .from("students")
-                        .select(`
-                            student_id,
-                            first_name,
-                            last_name,
-                            email,
-                            status,
-                            auth_user_id,
-                            portal_status
-                        `)
-                        .eq(
-                            "student_id",
-                            studentId
-                        )
-                        .maybeSingle();
-
-
-                if (studentError) {
-
-                    throw studentError;
-                }
+                const student =
+                    await checkStudent(
+                        studentId,
+                        email
+                    );
 
 
                 if (!student) {
 
                     showMessage(
-                        "Student ID was not found. Contact the school administrator.",
-                        "error"
+                        "Student ID and registered email do not match."
                     );
 
                     return;
@@ -175,19 +403,40 @@ $("studentRegisterForm")
 
 
                 if (
-                    String(
-                        student.status ||
-                        "active"
+                    norm(
+                        student.student_status
                     )
-                        .trim()
-                        .toLowerCase()
-                    !==
-                    "active"
+                    !== "active"
                 ) {
 
                     showMessage(
-                        "This student record is currently inactive.",
-                        "error"
+                        "This student record is inactive."
+                    );
+
+                    return;
+                }
+
+
+                pendingEmail =
+                    email;
+
+                pendingStudentId =
+                    studentId;
+
+
+                const status =
+                    norm(
+                        student.portal_status
+                    );
+
+
+                if (
+                    status === "active"
+                ) {
+
+                    showMessage(
+                        "Your Student Portal account is already active. Please login.",
+                        "success"
                     );
 
                     return;
@@ -195,30 +444,15 @@ $("studentRegisterForm")
 
 
                 if (
-                    !student.email ||
-                    student.email
-                        .trim()
-                        .toLowerCase()
-                    !== email
+                    status ===
+                    "pending_verification"
                 ) {
 
                     showMessage(
-                        "The email does not match the email registered for this Student ID.",
-                        "error"
+                        "Your account is waiting for email verification. Check your inbox or resend the verification email."
                     );
 
-                    return;
-                }
-
-
-                if (
-                    student.auth_user_id
-                ) {
-
-                    showMessage(
-                        "This student account has already been activated. Please login instead.",
-                        "error"
-                    );
+                    showResend();
 
                     return;
                 }
@@ -229,21 +463,20 @@ $("studentRegisterForm")
 
 
                 const {
-                    data: authData,
-                    error: authError
+                    data,
+                    error
                 } =
                     await supabaseClient
                         .auth
                         .signUp({
 
                             email,
-
                             password,
 
                             options: {
 
                                 emailRedirectTo:
-                                    getStudentLoginUrl(),
+                                    loginUrl(),
 
                                 data: {
 
@@ -257,93 +490,75 @@ $("studentRegisterForm")
                         });
 
 
-                if (authError) {
-
-                    throw authError;
-                }
+                if (error)
+                    throw error;
 
 
-                if (
-                    !authData.user
-                ) {
+                $("password").value =
+                    "";
 
-                    throw new Error(
-                        "Could not create the student account."
+                $("confirmPassword").value =
+                    "";
+
+
+                if (data?.session) {
+
+                    showMessage(
+                        "Student account created and active. You can now login.",
+                        "success"
                     );
+
+                    return;
                 }
-
-
-                /*
-                    Link Supabase Auth account
-                    to PACSA student record.
-                */
-
-                const {
-                    error: linkError
-                } =
-                    await supabaseClient
-                        .from("students")
-                        .update({
-
-                            auth_user_id:
-                                authData.user.id,
-
-                            portal_status:
-                                "pending_verification"
-
-                        })
-                        .eq(
-                            "student_id",
-                            student.student_id
-                        );
-
-
-                if (linkError) {
-
-                    throw linkError;
-                }
-
-
-                $("studentRegisterForm")
-                    .reset();
 
 
                 showMessage(
-                    "Account created successfully. Check your email and click the verification link before logging in.",
+                    "Account created successfully. Check your email and verify your account before logging in.",
                     "success"
                 );
+
+
+                showResend();
 
 
             } catch (error) {
 
                 console.error(
-                    "Student registration error:",
+                    "Student activation:",
                     error
                 );
 
 
-                let message =
-                    error?.message ||
-                    "Could not activate account.";
+                const text =
+                    norm(
+                        error?.message
+                    );
 
 
                 if (
-                    message
-                        .toLowerCase()
-                        .includes(
-                            "already registered"
-                        )
+                    text.includes(
+                        "error sending"
+                    )
+                    ||
+                    text.includes(
+                        "confirmation email"
+                    )
                 ) {
 
-                    message =
-                        "This email already has an account. Try logging in instead.";
+                    showMessage(
+                        "The confirmation email could not be sent. This will require the production email setup before deployment.",
+                        "error"
+                    );
+
+
+                } else {
+
+                    showMessage(
+                        error?.message ||
+                        "Could not activate the Student Portal account."
+                    );
                 }
 
-
-                showMessage(
-                    message,
-                    "error"
-                );
 
             } finally {
 
@@ -355,40 +570,3 @@ $("studentRegisterForm")
             }
         }
     );
-
-
-/* =========================================
-   MESSAGES
-========================================= */
-
-function showMessage(
-    text,
-    type
-) {
-
-    const message =
-        $("registerMessage");
-
-
-    message.textContent =
-        text;
-
-
-    message.className =
-        `message ${type}`;
-}
-
-
-function clearMessage() {
-
-    const message =
-        $("registerMessage");
-
-
-    message.textContent =
-        "";
-
-
-    message.className =
-        "message";
-}

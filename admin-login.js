@@ -2,6 +2,12 @@ const $ = id =>
     document.getElementById(id);
 
 
+const norm = value =>
+    String(value ?? "")
+        .trim()
+        .toLowerCase();
+
+
 function getAdminDashboardUrl() {
 
     return new URL(
@@ -11,10 +17,10 @@ function getAdminDashboardUrl() {
 }
 
 
-function getAdminLoginUrl() {
+function getAdminResetUrl() {
 
     return new URL(
-        "admin-login.html",
+        "admin-reset-password.html",
         window.location.href
     ).href;
 }
@@ -33,27 +39,22 @@ $("togglePassword")
                 $("password");
 
 
-            if (
+            const hidden =
                 password.type ===
-                "password"
-            ) {
+                "password";
 
-                password.type =
-                    "text";
 
-                $("togglePassword")
-                    .textContent =
-                    "🙈";
+            password.type =
+                hidden
+                    ? "text"
+                    : "password";
 
-            } else {
 
-                password.type =
-                    "password";
-
-                $("togglePassword")
-                    .textContent =
-                    "👁";
-            }
+            $("togglePassword")
+                .textContent =
+                hidden
+                    ? "🙈"
+                    : "👁";
         }
     );
 
@@ -69,7 +70,6 @@ $("loginForm")
 
             event.preventDefault();
 
-
             hideMessage();
 
 
@@ -81,17 +81,28 @@ $("loginForm")
 
 
             const password =
-                $("password")
-                    .value;
+                $("password").value;
 
 
             const button =
                 $("loginBtn");
 
 
+            if (
+                !email ||
+                !password
+            ) {
+
+                showMessage(
+                    "Enter your Admin email and password."
+                );
+
+                return;
+            }
+
+
             button.disabled =
                 true;
-
 
             button.textContent =
                 "Logging in...";
@@ -99,9 +110,9 @@ $("loginForm")
 
             try {
 
-                /*
-                    1. Login through Supabase Auth
-                */
+                /* =====================================
+                   1. SUPABASE AUTH
+                ===================================== */
 
                 const {
                     data: authData,
@@ -110,27 +121,16 @@ $("loginForm")
                     await supabaseClient
                         .auth
                         .signInWithPassword({
-
                             email,
-
                             password
-
                         });
 
 
-                if (
-                    authError
-                ) {
-
+                if (authError)
                     throw authError;
-                }
 
 
-                const user =
-                    authData?.user;
-
-
-                if (!user) {
+                if (!authData?.user) {
 
                     throw new Error(
                         "Admin login failed."
@@ -138,31 +138,30 @@ $("loginForm")
                 }
 
 
-                /*
-                    2. Confirm this Auth user
-                       is actually an Admin.
-                */
+                /* =====================================
+                   2. SECURE ADMIN PROFILE RPC
+                ===================================== */
 
                 const {
-                    data: admin,
+                    data: adminRows,
                     error: adminError
                 } =
                     await supabaseClient
-                        .from("admins")
-                        .select("*")
-                        .eq(
-                            "auth_user_id",
-                            user.id
-                        )
-                        .maybeSingle();
+                        .rpc(
+                            "pacsa_get_my_admin"
+                        );
 
 
-                if (
-                    adminError
-                ) {
-
+                if (adminError)
                     throw adminError;
-                }
+
+
+                const admin =
+                    Array.isArray(
+                        adminRows
+                    )
+                        ? adminRows[0]
+                        : adminRows;
 
 
                 if (!admin) {
@@ -179,14 +178,11 @@ $("loginForm")
 
 
                 if (
-                    String(
+                    norm(
                         admin.status ||
                         "active"
                     )
-                        .trim()
-                        .toLowerCase()
-                    !==
-                    "active"
+                    !== "active"
                 ) {
 
                     await supabaseClient
@@ -200,11 +196,9 @@ $("loginForm")
                 }
 
 
-                /*
-                    Compatibility only.
-                    Security comes from Supabase Auth,
-                    not localStorage.
-                */
+                /* =====================================
+                   3. SAVE COMPATIBILITY DATA
+                ===================================== */
 
                 localStorage.setItem(
                     "admin",
@@ -214,8 +208,9 @@ $("loginForm")
                 );
 
 
-                window.location.href =
-                    getAdminDashboardUrl();
+                window.location.replace(
+                    getAdminDashboardUrl()
+                );
 
 
             } catch (error) {
@@ -238,7 +233,6 @@ $("loginForm")
                 button.disabled =
                     false;
 
-
                 button.textContent =
                     "Login";
             }
@@ -256,7 +250,6 @@ $("forgotPasswordLink")
         async event => {
 
             event.preventDefault();
-
 
             hideMessage();
 
@@ -281,41 +274,13 @@ $("forgotPasswordLink")
             try {
 
                 /*
-                    Only send reset if this
-                    email belongs to an Admin.
+                    We do not expose the admins
+                    table anonymously.
+
+                    Supabase handles whether an
+                    account exists without leaking
+                    account information.
                 */
-
-                const {
-                    data: admin,
-                    error: adminError
-                } =
-                    await supabaseClient
-                        .from("admins")
-                        .select("email")
-                        .eq(
-                            "email",
-                            email
-                        )
-                        .maybeSingle();
-
-
-                if (
-                    adminError
-                ) {
-
-                    throw adminError;
-                }
-
-
-                if (!admin) {
-
-                    showMessage(
-                        "Admin account was not found."
-                    );
-
-                    return;
-                }
-
 
                 const {
                     error
@@ -325,22 +290,18 @@ $("forgotPasswordLink")
                         .resetPasswordForEmail(
                             email,
                             {
-
                                 redirectTo:
-                                    getAdminLoginUrl()
-
+                                    getAdminResetUrl()
                             }
                         );
 
 
-                if (error) {
-
+                if (error)
                     throw error;
-                }
 
 
                 showSuccess(
-                    "Password reset email sent."
+                    "If this email belongs to an Admin account, a password reset email will be sent."
                 );
 
 
@@ -354,7 +315,7 @@ $("forgotPasswordLink")
 
                 showMessage(
                     error?.message ||
-                    "Could not send reset email."
+                    "Could not send password reset email."
                 );
             }
         }
@@ -383,48 +344,59 @@ document.addEventListener(
                 data?.session?.user;
 
 
-            if (!user) {
-
+            if (!user)
                 return;
-            }
 
 
             const {
-                data: admin
+                data: adminRows,
+                error
             } =
                 await supabaseClient
-                    .from("admins")
-                    .select(
-                        "id,status"
-                    )
-                    .eq(
-                        "auth_user_id",
-                        user.id
-                    )
-                    .maybeSingle();
+                    .rpc(
+                        "pacsa_get_my_admin"
+                    );
+
+
+            if (error)
+                throw error;
+
+
+            const admin =
+                Array.isArray(
+                    adminRows
+                )
+                    ? adminRows[0]
+                    : adminRows;
 
 
             if (
                 admin &&
-                String(
+                norm(
                     admin.status ||
                     "active"
                 )
-                    .trim()
-                    .toLowerCase()
-                ===
-                "active"
+                === "active"
             ) {
 
-                window.location.href =
-                    getAdminDashboardUrl();
+                localStorage.setItem(
+                    "admin",
+                    JSON.stringify(
+                        admin
+                    )
+                );
+
+
+                window.location.replace(
+                    getAdminDashboardUrl()
+                );
             }
 
 
         } catch (error) {
 
             console.error(
-                "Admin session check error:",
+                "Admin session check:",
                 error
             );
         }
@@ -440,13 +412,19 @@ function showMessage(
     text
 ) {
 
-    $("loginMessage")
-        .textContent =
+    const box =
+        $("loginMessage");
+
+
+    if (!box)
+        return;
+
+
+    box.textContent =
         text;
 
 
-    $("loginMessage")
-        .className =
+    box.className =
         "login-message error";
 }
 
@@ -455,40 +433,54 @@ function showSuccess(
     text
 ) {
 
-    $("loginMessage")
-        .textContent =
+    const box =
+        $("loginMessage");
+
+
+    if (!box)
+        return;
+
+
+    box.textContent =
         text;
 
 
-    $("loginMessage")
-        .className =
+    box.className =
         "login-message success";
 }
 
 
 function hideMessage() {
 
-    $("loginMessage")
-        .textContent =
+    const box =
+        $("loginMessage");
+
+
+    if (!box)
+        return;
+
+
+    box.textContent =
         "";
 
 
-    $("loginMessage")
-        .className =
+    box.className =
         "login-message";
 }
 
+
+/* ========================================
+   FRIENDLY ERRORS
+======================================== */
 
 function friendlyError(
     error
 ) {
 
     const text =
-        String(
-            error?.message ||
-            ""
-        )
-            .toLowerCase();
+        norm(
+            error?.message
+        );
 
 
     if (
