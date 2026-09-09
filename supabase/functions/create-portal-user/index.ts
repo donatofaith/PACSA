@@ -21,6 +21,12 @@ const fail = (message: string, status = 200) =>
 const norm = (value: unknown) =>
   String(value ?? "").trim().toLowerCase();
 
+const makeTemporaryPassword = () => {
+  const chars = "ABCDEFGHJKLMNPQRSTUVWXYZabcdefghijkmnopqrstuvwxyz23456789!@$%*?";
+  const bytes = crypto.getRandomValues(new Uint8Array(18));
+  return Array.from(bytes, (byte) => chars[byte % chars.length]).join("") + "9a!";
+};
+
 Deno.serve(async (req) => {
   if (req.method === "OPTIONS") {
     return new Response("ok", { headers: corsHeaders });
@@ -169,22 +175,74 @@ Deno.serve(async (req) => {
       },
     );
 
-    if (inviteError) {
-      const message = norm(inviteError.message);
+    if (!inviteError) {
+      const {
+        data: refreshed,
+      } = await adminClient
+        .from(config.table)
+        .select(`${config.idColumn}, auth_user_id, portal_status`)
+        .eq(config.idColumn, recordId)
+        .maybeSingle();
+
+      return json({
+        ok: true,
+        invited: true,
+        auth_user_id: inviteData?.user?.id || null,
+        linked: Boolean(refreshed?.auth_user_id),
+        portal_status: refreshed?.portal_status || null,
+        message:
+          `Portal invitation sent to ${email}. The ${role} should use the email link to set a password.`,
+      });
+    }
+
+    const inviteMessage = norm(inviteError.message);
+
+    if (
+      inviteMessage.includes("already") ||
+      inviteMessage.includes("registered") ||
+      inviteMessage.includes("exists")
+    ) {
+      return fail(
+        "An Auth account already exists for this email. Use the existing activation/reset flow or review the account link in Supabase Auth.",
+        409,
+      );
+    }
+
+    console.error("Invite email failed, creating temporary password account instead:", inviteError);
+
+    const temporaryPassword = makeTemporaryPassword();
+
+    const {
+      data: createdData,
+      error: createError,
+    } = await adminClient.auth.admin.createUser({
+      email,
+      password: temporaryPassword,
+      email_confirm: true,
+      user_metadata: {
+        role,
+        [config.metadataKey]: recordId,
+        provisioned_by_admin: true,
+        temporary_password: true,
+      },
+    });
+
+    if (createError) {
+      const createMessage = norm(createError.message);
 
       if (
-        message.includes("already") ||
-        message.includes("registered") ||
-        message.includes("exists")
+        createMessage.includes("already") ||
+        createMessage.includes("registered") ||
+        createMessage.includes("exists")
       ) {
         return fail(
-          "An Auth account already exists for this email. Use the existing activation/reset flow or review the account link in Supabase Auth.",
+          "An Auth account already exists for this email. Use password reset or review the account link in Supabase Auth.",
           409,
         );
       }
 
-      console.error("Invite failed:", inviteError);
-      return fail(inviteError.message || "Could not send Portal invitation.", 400);
+      console.error("Temporary account creation failed:", createError);
+      return fail(createError.message || "Could not create Portal access.", 400);
     }
 
     const {
@@ -197,12 +255,13 @@ Deno.serve(async (req) => {
 
     return json({
       ok: true,
-      invited: true,
-      auth_user_id: inviteData?.user?.id || null,
+      invited: false,
+      temporary_password_created: true,
+      auth_user_id: createdData?.user?.id || null,
       linked: Boolean(refreshed?.auth_user_id),
       portal_status: refreshed?.portal_status || null,
       message:
-        `Portal invitation sent to ${email}. The ${role} should use the email link to set a password.`,
+        `Email invitation could not be sent, so Portal access was created with a temporary password.\n\n${role.toUpperCase()} EMAIL: ${email}\nTEMPORARY PASSWORD: ${temporaryPassword}\n\nGive this password to the ${role} securely, then have them log in and change it.`,
     });
   } catch (error) {
     console.error("create-portal-user error:", error);
