@@ -111,12 +111,18 @@ Deno.serve(async (req) => {
           idColumn: "student_id",
           metadataKey: "student_id",
           redirectPage: "student-reset-password.html",
+          profileSelect: "student_id, email, auth_user_id, portal_status, status",
+          refreshedSelect: "student_id, auth_user_id, portal_status",
+          hasStatusColumn: true,
         }
       : {
           table: "Teachers",
           idColumn: "teacher_id",
           metadataKey: "teacher_id",
           redirectPage: "reset-password.html",
+          profileSelect: "teacher_id, email, auth_user_id, portal_status",
+          refreshedSelect: "teacher_id, auth_user_id, portal_status",
+          hasStatusColumn: false,
         };
 
     const {
@@ -124,13 +130,16 @@ Deno.serve(async (req) => {
       error: recordError,
     } = await adminClient
       .from(config.table)
-      .select(`${config.idColumn}, email, auth_user_id, portal_status, status`)
+      .select(config.profileSelect)
       .eq(config.idColumn, recordId)
       .maybeSingle();
 
     if (recordError) {
       console.error("Profile lookup failed:", recordError);
-      return fail(`Could not load the ${role} record.`, 500);
+      return fail(
+        `Could not load the ${role} record. ${recordError.message || ""}`.trim(),
+        500,
+      );
     }
 
     if (!record) {
@@ -141,8 +150,12 @@ Deno.serve(async (req) => {
       return fail(`The email does not match the ${role} record. Update the profile first.`, 400);
     }
 
-    if (norm(record.status || "active") !== "active") {
+    if (config.hasStatusColumn && norm(record.status || "active") !== "active") {
       return fail(`This ${role} record is inactive.`, 400);
+    }
+
+    if (norm(record.portal_status || "active") === "inactive") {
+      return fail(`This ${role} portal account is inactive.`, 400);
     }
 
     if (record.auth_user_id) {
@@ -180,7 +193,7 @@ Deno.serve(async (req) => {
         data: refreshed,
       } = await adminClient
         .from(config.table)
-        .select(`${config.idColumn}, auth_user_id, portal_status`)
+        .select(config.refreshedSelect)
         .eq(config.idColumn, recordId)
         .maybeSingle();
 
@@ -203,7 +216,7 @@ Deno.serve(async (req) => {
       inviteMessage.includes("exists")
     ) {
       return fail(
-        "An Auth account already exists for this email. Use the existing activation/reset flow or review the account link in Supabase Auth.",
+        "An Auth account already exists for this email. Use password reset or review the account link in Supabase Auth.",
         409,
       );
     }
@@ -249,7 +262,7 @@ Deno.serve(async (req) => {
       data: refreshed,
     } = await adminClient
       .from(config.table)
-      .select(`${config.idColumn}, auth_user_id, portal_status`)
+      .select(config.refreshedSelect)
       .eq(config.idColumn, recordId)
       .maybeSingle();
 
