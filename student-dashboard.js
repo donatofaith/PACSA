@@ -633,90 +633,248 @@ async function renderPosition(report) {
     renderSummary(position);
 }
 
+function getCleanReportPrintHtml(reportCardHtml) {
+    return `
+        <!DOCTYPE html>
+        <html lang="en">
+        <head>
+            <meta charset="UTF-8">
+            <title>PACSA Report Card</title>
+            <link href="https://fonts.googleapis.com/css2?family=Outfit:wght@300;400;500;600;700;800&display=swap" rel="stylesheet">
+            <style>
+                @page {
+                    size: A4 portrait;
+                    margin: 8mm;
+                }
+
+                * {
+                    box-sizing: border-box;
+                }
+
+                body {
+                    margin: 0;
+                    background: #fff;
+                    color: #111827;
+                    font-family: "Outfit", Arial, sans-serif;
+                    -webkit-print-color-adjust: exact;
+                    print-color-adjust: exact;
+                }
+
+                .print-page {
+                    width: 100%;
+                    max-width: 190mm;
+                    min-height: 277mm;
+                    margin: 0 auto;
+                    background: #fff;
+                    padding: 0;
+                }
+
+                .report-card {
+                    width: 100%;
+                    padding: 0;
+                    border: none;
+                    box-shadow: none;
+                    background: #fff;
+                }
+
+                .report-header {
+                    text-align: center;
+                    padding-bottom: 8px;
+                    margin-bottom: 12px;
+                    border-bottom: 2px solid #111827;
+                }
+
+                .report-header img {
+                    width: 50px;
+                    height: 50px;
+                    object-fit: contain;
+                    margin-bottom: 4px;
+                }
+
+                .report-header h2 {
+                    margin: 0;
+                    color: #111827;
+                    font-size: 24px;
+                    line-height: 1.15;
+                    letter-spacing: .02em;
+                }
+
+                .report-header p {
+                    margin: 3px 0 0;
+                    font-size: 11px;
+                    color: #374151;
+                }
+
+                .student-info-grid {
+                    display: grid;
+                    grid-template-columns: repeat(2, 1fr);
+                    gap: 8px;
+                    margin-bottom: 12px;
+                }
+
+                .student-info-item,
+                .summary-box,
+                .remark-display {
+                    border: 1px solid #D1D5DB;
+                    border-radius: 8px;
+                    background: #F9FAFB;
+                    break-inside: avoid;
+                }
+
+                .student-info-item {
+                    padding: 8px 10px;
+                }
+
+                .student-info-item span,
+                .summary-box span,
+                .remark-display span {
+                    display: block;
+                    margin-bottom: 3px;
+                    color: #6B7280;
+                    font-size: 8.5px;
+                    text-transform: uppercase;
+                    letter-spacing: .04em;
+                }
+
+                .student-info-item strong,
+                .summary-box strong,
+                .remark-display strong {
+                    display: block;
+                    color: #111827;
+                    font-size: 11px;
+                    line-height: 1.3;
+                }
+
+                .table-wrap {
+                    width: 100%;
+                    overflow: visible;
+                }
+
+                table,
+                .report-table {
+                    width: 100%;
+                    min-width: 0 !important;
+                    border-collapse: collapse;
+                    table-layout: fixed;
+                    margin-top: 4px;
+                    break-inside: avoid;
+                }
+
+                th {
+                    background: #374151 !important;
+                    color: #fff !important;
+                    padding: 7px 6px;
+                    font-size: 9px;
+                    text-align: center;
+                    text-transform: uppercase;
+                    letter-spacing: .04em;
+                }
+
+                td {
+                    padding: 7px 6px;
+                    border-bottom: 1px solid #E5E7EB;
+                    font-size: 10px;
+                    line-height: 1.25;
+                    text-align: center;
+                }
+
+                th:first-child,
+                td:first-child {
+                    text-align: left;
+                    width: 42%;
+                }
+
+                td strong {
+                    font-weight: 800;
+                }
+
+                .grade-badge {
+                    display: inline-flex;
+                    min-width: 26px;
+                    justify-content: center;
+                    padding: 2px 6px;
+                    border-radius: 999px;
+                    font-size: 9px;
+                    font-weight: 800;
+                    background: transparent !important;
+                    color: #111827 !important;
+                }
+
+                .report-summary {
+                    display: grid;
+                    grid-template-columns: repeat(4, 1fr);
+                    gap: 8px;
+                    margin-top: 12px;
+                }
+
+                .summary-box {
+                    padding: 8px 10px;
+                }
+
+                .remark-display {
+                    margin-top: 10px;
+                    padding: 9px 10px;
+                }
+
+                .remark-display strong {
+                    min-height: 22px;
+                }
+
+                .report-actions-bottom {
+                    display: none !important;
+                }
+
+                @media print {
+                    body {
+                        background: #fff !important;
+                    }
+
+                    .print-page {
+                        margin: 0;
+                        width: 100%;
+                        max-width: none;
+                        min-height: 0;
+                    }
+                }
+            </style>
+        </head>
+        <body>
+            <main class="print-page">
+                ${reportCardHtml}
+            </main>
+        </body>
+        </html>
+    `;
+}
+
 function printCurrentResult() {
     if (!currentReport || !filteredResults.length) {
         showMessage("Select a published result before printing.", "warning");
         return;
     }
 
-    const report = document.querySelector(".report-wrapper");
-    if (!report) {
-        showMessage("Report card is not available for printing.", "warning");
+    const reportCard = document.querySelector(".report-card");
+
+    if (!reportCard) {
+        showMessage("Report card is not ready for printing.", "warning");
         return;
     }
 
-    const printWindow = window.open("", "_blank", "width=900,height=700");
+    const printWindow = window.open("", "_blank", "width=900,height=1100");
 
     if (!printWindow) {
         window.print();
         return;
     }
 
-    const pageStyles = Array.from(document.querySelectorAll("style"))
-        .map(style => style.textContent || "")
-        .join("\n");
-
-    const reportClone = report.cloneNode(true);
-    reportClone.querySelector(".report-actions-bottom")?.remove();
-
     printWindow.document.open();
-    printWindow.document.write(`
-        <!DOCTYPE html>
-        <html>
-        <head>
-            <title>PACSA Report Card</title>
-            <style>
-                ${pageStyles}
-
-                body {
-                    background: #fff !important;
-                    padding: 0 !important;
-                    margin: 0 !important;
-                }
-
-                .report-wrapper {
-                    display: block !important;
-                    width: 100% !important;
-                    max-width: 100% !important;
-                    margin: 0 !important;
-                    border: none !important;
-                    border-radius: 0 !important;
-                    box-shadow: none !important;
-                    overflow: visible !important;
-                }
-
-                .report-card {
-                    padding: 16px !important;
-                }
-
-                .table-wrap {
-                    overflow: visible !important;
-                }
-
-                table,
-                .report-table {
-                    min-width: 0 !important;
-                    width: 100% !important;
-                }
-
-                .report-actions-bottom {
-                    display: none !important;
-                }
-            </style>
-        </head>
-        <body>
-            ${reportClone.outerHTML}
-        </body>
-        </html>
-    `);
+    printWindow.document.write(getCleanReportPrintHtml(reportCard.outerHTML));
     printWindow.document.close();
 
-    printWindow.focus();
-
-    setTimeout(() => {
+    printWindow.onload = () => {
+        printWindow.focus();
         printWindow.print();
-        printWindow.close();
-    }, 350);
+    };
 }
 
 async function logoutStudent() {
