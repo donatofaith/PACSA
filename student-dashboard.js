@@ -639,7 +639,84 @@ function printCurrentResult() {
         return;
     }
 
-    window.print();
+    const report = document.querySelector(".report-wrapper");
+    if (!report) {
+        showMessage("Report card is not available for printing.", "warning");
+        return;
+    }
+
+    const printWindow = window.open("", "_blank", "width=900,height=700");
+
+    if (!printWindow) {
+        window.print();
+        return;
+    }
+
+    const pageStyles = Array.from(document.querySelectorAll("style"))
+        .map(style => style.textContent || "")
+        .join("\n");
+
+    const reportClone = report.cloneNode(true);
+    reportClone.querySelector(".report-actions-bottom")?.remove();
+
+    printWindow.document.open();
+    printWindow.document.write(`
+        <!DOCTYPE html>
+        <html>
+        <head>
+            <title>PACSA Report Card</title>
+            <style>
+                ${pageStyles}
+
+                body {
+                    background: #fff !important;
+                    padding: 0 !important;
+                    margin: 0 !important;
+                }
+
+                .report-wrapper {
+                    display: block !important;
+                    width: 100% !important;
+                    max-width: 100% !important;
+                    margin: 0 !important;
+                    border: none !important;
+                    border-radius: 0 !important;
+                    box-shadow: none !important;
+                    overflow: visible !important;
+                }
+
+                .report-card {
+                    padding: 16px !important;
+                }
+
+                .table-wrap {
+                    overflow: visible !important;
+                }
+
+                table,
+                .report-table {
+                    min-width: 0 !important;
+                    width: 100% !important;
+                }
+
+                .report-actions-bottom {
+                    display: none !important;
+                }
+            </style>
+        </head>
+        <body>
+            ${reportClone.outerHTML}
+        </body>
+        </html>
+    `);
+    printWindow.document.close();
+
+    printWindow.focus();
+
+    setTimeout(() => {
+        printWindow.print();
+        printWindow.close();
+    }, 350);
 }
 
 async function logoutStudent() {
