@@ -1,6 +1,6 @@
 /* =========================================
    PACSA STUDENT DASHBOARD
-   SECURE AUTH + PUBLISHED RESULTS + PROFILE
+   SECURE AUTH + PUBLISHED REPORT CARD ONLY
 ========================================= */
 
 let student = null;
@@ -13,11 +13,7 @@ let currentReport = null;
 const PROFILE_BUCKET = "profile-photos";
 const DEFAULT_AVATAR = "images/PACSA LOGO.png";
 const MAX_PHOTO_SIZE = 2 * 1024 * 1024;
-const ALLOWED_PHOTO_TYPES = [
-    "image/jpeg",
-    "image/png",
-    "image/webp"
-];
+const ALLOWED_PHOTO_TYPES = ["image/jpeg", "image/png", "image/webp"];
 
 const $ = id => document.getElementById(id);
 
@@ -49,17 +45,28 @@ function uniqueValues(values) {
     ];
 }
 
+function ordinal(number) {
+    const n = Number(number);
+    if (!Number.isFinite(n) || n < 1) return "N/A";
+
+    const mod100 = n % 100;
+    if (mod100 >= 11 && mod100 <= 13) return `${n}th`;
+
+    switch (n % 10) {
+        case 1: return `${n}st`;
+        case 2: return `${n}nd`;
+        case 3: return `${n}rd`;
+        default: return `${n}th`;
+    }
+}
+
 function getStudentLoginUrl() {
     return new URL("student-login.html", window.location.href).href;
 }
 
 function getStudentName() {
     if (!student) return "Student";
-
-    return (
-        `${student.first_name || ""} ${student.last_name || ""}`.trim() ||
-        "Student"
-    );
+    return `${student.first_name || ""} ${student.last_name || ""}`.trim() || "Student";
 }
 
 function getGradeClass(grade) {
@@ -76,149 +83,24 @@ function getGradeClass(grade) {
 
 function getResultTotal(result) {
     const stored = Number(result.total);
-
     if (Number.isFinite(stored)) return stored;
-
     return (Number(result.ca) || 0) + (Number(result.exam) || 0);
 }
 
-function getOrdinalPosition(rank) {
-    const value = Number(rank);
+function calculateAverage(results) {
+    if (!results.length) return 0;
 
-    if (!Number.isFinite(value) || value <= 0) {
-        return "N/A";
-    }
-
-    const lastTwo = value % 100;
-
-    if (lastTwo >= 11 && lastTwo <= 13) {
-        return `${value}th`;
-    }
-
-    switch (value % 10) {
-        case 1:
-            return `${value}st`;
-        case 2:
-            return `${value}nd`;
-        case 3:
-            return `${value}rd`;
-        default:
-            return `${value}th`;
-    }
-}
-
-function averageFromRows(rows) {
-    const validRows = Array.isArray(rows) ? rows : [];
-
-    if (!validRows.length) {
-        return null;
-    }
-
-    const total = validRows.reduce(
+    const total = results.reduce(
         (sum, result) => sum + getResultTotal(result),
         0
     );
 
-    return total / validRows.length;
+    return total / results.length;
 }
 
-async function calculatePositionForReport(report) {
-    if (!report?.class || !report?.term || !report?.session) {
-        return "N/A";
-    }
-
-    try {
-        const { data: classReports, error: reportError } = await supabaseClient
-            .from("student_reports")
-            .select("student_id")
-            .eq("class", report.class)
-            .eq("term", report.term)
-            .eq("session", report.session)
-            .eq("status", "published");
-
-        if (reportError) throw reportError;
-
-        const studentIds = uniqueValues(
-            (classReports || []).map(row => row.student_id)
-        );
-
-        if (!studentIds.length) {
-            return "N/A";
-        }
-
-        const { data: classResults, error: resultError } = await supabaseClient
-            .from("results")
-            .select("student_id, ca, exam, total")
-            .eq("class", report.class)
-            .eq("term", report.term)
-            .eq("session", report.session)
-            .in("student_id", studentIds);
-
-        if (resultError) throw resultError;
-
-        const resultsByStudent = new Map();
-
-        (classResults || []).forEach(result => {
-            const id = String(result.student_id || "");
-
-            if (!id) return;
-
-            if (!resultsByStudent.has(id)) {
-                resultsByStudent.set(id, []);
-            }
-
-            resultsByStudent.get(id).push(result);
-        });
-
-        const ranking = studentIds
-            .map(id => ({
-                student_id: id,
-                average: averageFromRows(resultsByStudent.get(id) || [])
-            }))
-            .filter(item => Number.isFinite(item.average))
-            .sort((a, b) => b.average - a.average);
-
-        if (!ranking.length) {
-            return "N/A";
-        }
-
-        if (
-            studentIds.length > 1 &&
-            ranking.length < studentIds.length &&
-            ranking.some(item => String(item.student_id) === String(student.student_id))
-        ) {
-            console.warn(
-                "Position may be unavailable because not all class results are readable by this account."
-            );
-
-            return "N/A";
-        }
-
-        let previousAverage = null;
-        let previousRank = 0;
-
-        for (let index = 0; index < ranking.length; index++) {
-            const item = ranking[index];
-            const rank =
-                previousAverage !== null &&
-                Number(item.average.toFixed(4)) === Number(previousAverage.toFixed(4))
-                    ? previousRank
-                    : index + 1;
-
-            if (String(item.student_id) === String(student.student_id)) {
-                return getOrdinalPosition(rank);
-            }
-
-            previousAverage = item.average;
-            previousRank = rank;
-        }
-
-        return "N/A";
-
-    } catch (error) {
-        console.error("Position calculation error:", error);
-        return "N/A";
-    }
+function hideDuplicateResultsList() {
+    const duplicateCard = document.querySelector(".results-card");
+    if (duplicateCard) duplicateCard.style.display = "none";
 }
 
 function showMessage(message, type = "info") {
@@ -305,7 +187,6 @@ async function verifyStudentSession() {
 
         student = studentData;
         localStorage.setItem("student", JSON.stringify(studentData));
-
         return true;
 
     } catch (error) {
@@ -366,7 +247,6 @@ async function loadStudentProfilePhoto() {
             .createSignedUrl(student.profile_photo_path, 3600);
 
         if (error) throw error;
-
         setProfileImage(data?.signedUrl || DEFAULT_AVATAR);
 
     } catch (error) {
@@ -494,7 +374,7 @@ async function loadPublishedReports() {
         allResults = [];
         filteredResults = [];
         renderResults();
-        renderSummary();
+        renderSummary("N/A");
         showMessage("No published result is available yet.", "info");
     }
 }
@@ -567,7 +447,7 @@ function applyReportFilter() {
         allResults = [];
         filteredResults = [];
         renderResults();
-        renderSummary();
+        renderSummary("N/A");
         showMessage("No published report matches the selected filters.", "info");
     }
 }
@@ -579,12 +459,6 @@ async function selectReport(report) {
     setText("reportTerm", report.term || "--");
     setText("reportStudentClass", report.class || "--");
     setText("reportRemark", report.remark || "No remark provided.");
-
-    const selectionText = $("resultSelectionText");
-    if (selectionText) {
-        selectionText.textContent =
-            `${report.class || "Class"} • ${report.term || "Term"} • ${report.session || "Session"}`;
-    }
 
     await loadResultsForReport(report);
 }
@@ -621,7 +495,7 @@ async function loadResultsForReport(report) {
     filteredResults = [...allResults];
 
     renderResults();
-    renderSummary();
+    renderSummary("Calculating...");
     await renderPosition(report);
 }
 
@@ -659,44 +533,104 @@ function resultRowsHtml() {
 }
 
 function renderResults() {
-    const mainBody = $("resultsTable");
     const reportBody = $("reportResultsTable");
-    const rows = resultRowsHtml();
-
-    if (mainBody) mainBody.innerHTML = rows;
-    if (reportBody) reportBody.innerHTML = rows;
+    if (reportBody) reportBody.innerHTML = resultRowsHtml();
 }
 
-function renderSummary() {
+function renderSummary(positionText = "N/A") {
     const count = allResults.length;
-
-    const totalScore = allResults.reduce(
-        (sum, result) => sum + getResultTotal(result),
-        0
-    );
-
-    const average = count ? (totalScore / count).toFixed(1) : "0.0";
+    const average = calculateAverage(allResults);
+    const averageText = count ? `${average.toFixed(1)}%` : "0%";
 
     const passed = allResults.filter(
         result => getResultTotal(result) >= 40
     ).length;
 
     setText("subjects", count);
-    setText("average", `${average}%`);
+    setText("average", averageText);
     setText("passedSubjects", passed);
-    setText("position", "Calculating...");
+    setText("position", positionText);
 
     setText("reportSubjects", count);
-    setText("reportAverage", `${average}%`);
+    setText("reportAverage", averageText);
     setText("reportPassed", passed);
-    setText("reportPosition", "Calculating...");
+    setText("reportPosition", positionText);
+}
+
+async function calculatePositionForReport(report) {
+    try {
+        const { data: classReports, error: reportsError } = await supabaseClient
+            .from("student_reports")
+            .select("student_id")
+            .eq("class", report.class)
+            .eq("term", report.term)
+            .eq("session", report.session)
+            .eq("status", "published");
+
+        if (reportsError) throw reportsError;
+
+        const studentIds = uniqueValues(
+            (classReports || []).map(item => item.student_id)
+        );
+
+        if (!studentIds.length) return "N/A";
+
+        const { data: classResults, error: resultsError } = await supabaseClient
+            .from("results")
+            .select("student_id, ca, exam, total")
+            .eq("class", report.class)
+            .eq("term", report.term)
+            .eq("session", report.session)
+            .in("student_id", studentIds);
+
+        if (resultsError) throw resultsError;
+
+        const averages = studentIds
+            .map(studentId => {
+                const results = (classResults || []).filter(
+                    result => normalize(result.student_id) === normalize(studentId)
+                );
+
+                return {
+                    studentId,
+                    average: calculateAverage(results)
+                };
+            })
+            .filter(item => Number.isFinite(item.average));
+
+        averages.sort((a, b) => b.average - a.average);
+
+        let previousAverage = null;
+        let previousPosition = 0;
+
+        for (let index = 0; index < averages.length; index += 1) {
+            const item = averages[index];
+            const sameAverage = previousAverage !== null &&
+                Number(item.average.toFixed(2)) === Number(previousAverage.toFixed(2));
+
+            const position = sameAverage
+                ? previousPosition
+                : index + 1;
+
+            if (normalize(item.studentId) === normalize(student.student_id)) {
+                return ordinal(position);
+            }
+
+            previousAverage = item.average;
+            previousPosition = position;
+        }
+
+        return "N/A";
+
+    } catch (error) {
+        console.error("Position calculation error:", error);
+        return "N/A";
+    }
 }
 
 async function renderPosition(report) {
     const position = await calculatePositionForReport(report);
-
-    setText("position", position);
-    setText("reportPosition", position);
+    renderSummary(position);
 }
 
 function printCurrentResult() {
@@ -720,6 +654,8 @@ async function logoutStudent() {
 }
 
 function setupEvents() {
+    hideDuplicateResultsList();
+
     $("logoutBtn")?.addEventListener("click", async event => {
         event.preventDefault();
         await logoutStudent();
