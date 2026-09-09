@@ -10,6 +10,14 @@ const PACSA_ADMIN_LOGIN =
     ).href;
 
 
+const PACSA_ADMIN_SESSION_KEY =
+    "pacsa_admin_login_verified";
+
+
+const PACSA_ADMIN_MAX_SESSION_MS =
+    4 * 60 * 60 * 1000;
+
+
 /* Hide Admin pages until Auth is checked */
 
 document.documentElement.style.visibility =
@@ -34,6 +42,65 @@ function clearAdminStorage() {
 
     localStorage.removeItem(
         "admin"
+    );
+
+    sessionStorage.removeItem(
+        PACSA_ADMIN_SESSION_KEY
+    );
+}
+
+
+function getAdminSessionMarker() {
+
+    try {
+
+        return JSON.parse(
+            sessionStorage.getItem(
+                PACSA_ADMIN_SESSION_KEY
+            ) ||
+            "null"
+        );
+
+    } catch {
+
+        return null;
+    }
+}
+
+
+function hasFreshAdminLogin(
+    userId
+) {
+
+    const marker =
+        getAdminSessionMarker();
+
+
+    if (
+        !marker ||
+        marker.userId !== userId ||
+        !Number.isFinite(
+            Number(
+                marker.verifiedAt
+            )
+        )
+    ) {
+
+        return false;
+    }
+
+
+    const age =
+        Date.now() -
+        Number(
+            marker.verifiedAt
+        );
+
+
+    return (
+        age >= 0 &&
+        age <=
+        PACSA_ADMIN_MAX_SESSION_MS
     );
 }
 
@@ -145,7 +212,38 @@ window.adminAuthReady =
 
 
             /* =====================================
-               2. REQUIRE PACSA ADMIN RECORD
+               2. REQUIRE EXPLICIT ADMIN LOGIN
+            ===================================== */
+
+            if (
+                !hasFreshAdminLogin(
+                    user.id
+                )
+            ) {
+
+                clearAdminStorage();
+
+
+                try {
+
+                    await supabaseClient
+                        .auth
+                        .signOut();
+
+                } catch {}
+
+
+                window.location.replace(
+                    PACSA_ADMIN_LOGIN
+                );
+
+
+                return null;
+            }
+
+
+            /* =====================================
+               3. REQUIRE PACSA ADMIN RECORD
             ===================================== */
 
             const admin =
@@ -172,7 +270,7 @@ window.adminAuthReady =
 
 
             /* =====================================
-               3. REQUIRE ACTIVE ADMIN
+               4. REQUIRE ACTIVE ADMIN
             ===================================== */
 
             if (
@@ -206,7 +304,7 @@ window.adminAuthReady =
 
 
             /* =====================================
-               4. ADMIN VALID
+               5. ADMIN VALID
             ===================================== */
 
             window.currentAdmin =
