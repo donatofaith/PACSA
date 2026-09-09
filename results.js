@@ -100,10 +100,6 @@ function getStudentName(studentId) {
 
         ||
 
-        student.fullname
-
-        ||
-
         student.student_id
     );
 }
@@ -1736,7 +1732,6 @@ async function loadData() {
                         student_id,
                         first_name,
                         last_name,
-                        fullname,
                         class
                     `),
 
