@@ -8,6 +8,10 @@ const norm = value =>
         .toLowerCase();
 
 
+const PACSA_ADMIN_SESSION_KEY =
+    "pacsa_admin_login_verified";
+
+
 function getAdminDashboardUrl() {
 
     return new URL(
@@ -110,10 +114,6 @@ $("loginForm")
 
             try {
 
-                /* =====================================
-                   1. SUPABASE AUTH
-                ===================================== */
-
                 const {
                     data: authData,
                     error: authError
@@ -137,10 +137,6 @@ $("loginForm")
                     );
                 }
 
-
-                /* =====================================
-                   2. SECURE ADMIN PROFILE RPC
-                ===================================== */
 
                 const {
                     data: adminRows,
@@ -196,9 +192,23 @@ $("loginForm")
                 }
 
 
-                /* =====================================
-                   3. SAVE COMPATIBILITY DATA
-                ===================================== */
+                /*
+                    Require an explicit Admin login in this
+                    browser tab/session. Supabase may remember
+                    an Auth session, but that alone must not
+                    silently reopen the Admin portal.
+                */
+
+                sessionStorage.setItem(
+                    PACSA_ADMIN_SESSION_KEY,
+                    JSON.stringify({
+                        userId:
+                            authData.user.id,
+                        verifiedAt:
+                            Date.now()
+                    })
+                );
+
 
                 localStorage.setItem(
                     "admin",
@@ -214,6 +224,11 @@ $("loginForm")
 
 
             } catch (error) {
+
+                sessionStorage.removeItem(
+                    PACSA_ADMIN_SESSION_KEY
+                );
+
 
                 console.error(
                     "Admin login error:",
@@ -273,15 +288,6 @@ $("forgotPasswordLink")
 
             try {
 
-                /*
-                    We do not expose the admins
-                    table anonymously.
-
-                    Supabase handles whether an
-                    account exists without leaking
-                    account information.
-                */
-
                 const {
                     error
                 } =
@@ -323,12 +329,21 @@ $("forgotPasswordLink")
 
 
 /* ========================================
-   EXISTING ADMIN SESSION
+   REQUIRE FRESH LOGIN ON LOGIN PAGE
 ======================================== */
 
 document.addEventListener(
     "DOMContentLoaded",
     async () => {
+
+        sessionStorage.removeItem(
+            PACSA_ADMIN_SESSION_KEY
+        );
+
+        localStorage.removeItem(
+            "admin"
+        );
+
 
         try {
 
@@ -340,63 +355,20 @@ document.addEventListener(
                     .getSession();
 
 
-            const user =
-                data?.session?.user;
-
-
-            if (!user)
-                return;
-
-
-            const {
-                data: adminRows,
-                error
-            } =
-                await supabaseClient
-                    .rpc(
-                        "pacsa_get_my_admin"
-                    );
-
-
-            if (error)
-                throw error;
-
-
-            const admin =
-                Array.isArray(
-                    adminRows
-                )
-                    ? adminRows[0]
-                    : adminRows;
-
-
             if (
-                admin &&
-                norm(
-                    admin.status ||
-                    "active"
-                )
-                === "active"
+                data?.session
             ) {
 
-                localStorage.setItem(
-                    "admin",
-                    JSON.stringify(
-                        admin
-                    )
-                );
-
-
-                window.location.replace(
-                    getAdminDashboardUrl()
-                );
+                await supabaseClient
+                    .auth
+                    .signOut();
             }
 
 
         } catch (error) {
 
             console.error(
-                "Admin session check:",
+                "Admin stale-session cleanup:",
                 error
             );
         }
