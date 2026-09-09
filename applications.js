@@ -78,6 +78,19 @@ function splitFullName(fullName) {
 }
 
 
+function getStudentDisplayName(student) {
+
+    return [
+        student?.first_name,
+        student?.last_name
+    ]
+        .filter(Boolean)
+        .join(" ")
+        .trim() ||
+        "Student";
+}
+
+
 function formatDate(value) {
 
     if (!value) {
@@ -199,85 +212,33 @@ function renderApplications() {
 
                     return `
                         <tr>
-
                             <td>
-
                                 <strong>
-                                    ${escapeHtml(
-                                        app.full_name || "-"
-                                    )}
+                                    ${escapeHtml(app.full_name || "-")}
                                 </strong>
 
-                                ${
-                                    app.email
-                                        ? `
-                                            <br>
-
-                                            <small>
-                                                ${escapeHtml(
-                                                    app.email
-                                                )}
-                                            </small>
-                                        `
-                                        : ""
+                                ${app.email
+                                    ? `
+                                        <br>
+                                        <small>${escapeHtml(app.email)}</small>
+                                    `
+                                    : ""
                                 }
-
                             </td>
 
+                            <td>${escapeHtml(app.gender || "-")}</td>
+                            <td>${escapeHtml(app.class || "-")}</td>
+                            <td>${escapeHtml(app.parent_name || "-")}</td>
+                            <td>${formatDate(app.created_at)}</td>
 
                             <td>
-                                ${escapeHtml(
-                                    app.gender || "-"
-                                )}
-                            </td>
-
-
-                            <td>
-                                ${escapeHtml(
-                                    app.class || "-"
-                                )}
-                            </td>
-
-
-                            <td>
-                                ${escapeHtml(
-                                    app.parent_name || "-"
-                                )}
-                            </td>
-
-
-                            <td>
-                                ${formatDate(
-                                    app.created_at
-                                )}
-                            </td>
-
-
-                            <td>
-
-                                <span
-                                    class="status-badge ${escapeHtml(
-                                        status
-                                    )}"
-                                >
-                                    ${escapeHtml(
-                                        capitalize(status)
-                                    )}
+                                <span class="status-badge ${escapeHtml(status)}">
+                                    ${escapeHtml(capitalize(status))}
                                 </span>
-
                             </td>
 
-
                             <td>
-
-                                <div
-                                    style="
-                                        display:flex;
-                                        gap:6px;
-                                        flex-wrap:wrap;
-                                    "
-                                >
-
+                                <div style="display:flex;gap:6px;flex-wrap:wrap;">
                                     <button
                                         type="button"
                                         class="btn btn-light"
@@ -286,49 +247,37 @@ function renderApplications() {
                                         View
                                     </button>
 
+                                    ${status === "pending"
+                                        ? `
+                                            <button
+                                                type="button"
+                                                class="btn btn-light"
+                                                onclick="approveApplication('${app.id}')"
+                                            >
+                                                Approve
+                                            </button>
 
-                                    ${
-                                        status === "pending"
-
-                                            ? `
-                                                <button
-                                                    type="button"
-                                                    class="btn btn-light"
-                                                    onclick="approveApplication('${app.id}')"
-                                                >
-                                                    Approve
-                                                </button>
-
-
-                                                <button
-                                                    type="button"
-                                                    class="btn btn-light"
-                                                    onclick="rejectApplication('${app.id}')"
-                                                >
-                                                    Reject
-                                                </button>
-                                            `
-
-                                            : ""
+                                            <button
+                                                type="button"
+                                                class="btn btn-light"
+                                                onclick="rejectApplication('${app.id}')"
+                                            >
+                                                Reject
+                                            </button>
+                                        `
+                                        : ""
                                     }
-
 
                                     <button
                                         type="button"
                                         class="btn btn-light"
                                         onclick="deleteApplication('${app.id}')"
-                                        style="
-                                            color:#DC2626;
-                                            border-color:#FECACA;
-                                        "
+                                        style="color:#DC2626;border-color:#FECACA;"
                                     >
                                         Delete
                                     </button>
-
                                 </div>
-
                             </td>
-
                         </tr>
                     `;
                 }
@@ -336,81 +285,33 @@ function renderApplications() {
             .join("");
 
 
-    if (
-        $("emptyApplicationState")
-    ) {
+    $("emptyApplicationState") &&
+        ($("emptyApplicationState").style.display =
+            filtered.length ? "none" : "block");
 
-        $("emptyApplicationState")
-            .style.display =
-            filtered.length
-                ? "none"
-                : "block";
-    }
+    $("applicationCount") &&
+        ($("applicationCount").textContent = filtered.length);
 
+    $("totalApplications") &&
+        ($("totalApplications").textContent = applications.length);
 
-    if (
-        $("applicationCount")
-    ) {
-
-        $("applicationCount")
-            .textContent =
-            filtered.length;
-    }
-
-
-    if (
-        $("totalApplications")
-    ) {
-
-        $("totalApplications")
-            .textContent =
-            applications.length;
-    }
-
-
-    if (
-        $("pendingApplications")
-    ) {
-
-        $("pendingApplications")
-            .textContent =
+    $("pendingApplications") &&
+        ($("pendingApplications").textContent =
             applications.filter(
-                app =>
-                    normalize(
-                        app.status || "pending"
-                    ) === "pending"
-            ).length;
-    }
+                app => normalize(app.status || "pending") === "pending"
+            ).length);
 
-
-    if (
-        $("approvedApplications")
-    ) {
-
-        $("approvedApplications")
-            .textContent =
+    $("approvedApplications") &&
+        ($("approvedApplications").textContent =
             applications.filter(
-                app =>
-                    normalize(
-                        app.status
-                    ) === "approved"
-            ).length;
-    }
+                app => normalize(app.status) === "approved"
+            ).length);
 
-
-    if (
-        $("rejectedApplications")
-    ) {
-
-        $("rejectedApplications")
-            .textContent =
+    $("rejectedApplications") &&
+        ($("rejectedApplications").textContent =
             applications.filter(
-                app =>
-                    normalize(
-                        app.status
-                    ) === "rejected"
-            ).length;
-    }
+                app => normalize(app.status) === "rejected"
+            ).length);
 }
 
 
@@ -425,12 +326,9 @@ async function loadApplications() {
 
 
     if (table) {
-
         table.innerHTML = `
             <tr>
-                <td colspan="7">
-                    Loading applications...
-                </td>
+                <td colspan="7">Loading applications...</td>
             </tr>
         `;
     }
@@ -462,6 +360,7 @@ async function loadApplications() {
             data || [];
 
 
+        populateClassFilter();
         renderApplications();
 
 
@@ -474,22 +373,62 @@ async function loadApplications() {
 
 
         if (table) {
-
             table.innerHTML = `
                 <tr>
-
                     <td colspan="7">
-
-                        Could not load applications:
-                        ${escapeHtml(
-                            error.message
-                        )}
-
+                        Could not load applications: ${escapeHtml(error.message)}
                     </td>
-
                 </tr>
             `;
         }
+    }
+}
+
+
+function populateClassFilter() {
+
+    const filter =
+        $("classFilter");
+
+
+    if (!filter) {
+        return;
+    }
+
+
+    const currentValue =
+        filter.value;
+
+
+    const classes =
+        [...new Set(
+            applications
+                .map(app => app.class)
+                .filter(Boolean)
+        )].sort();
+
+
+    filter.innerHTML =
+        `<option value="">All Classes</option>`;
+
+
+    classes.forEach(className => {
+
+        const option =
+            document.createElement("option");
+
+        option.value =
+            className;
+
+        option.textContent =
+            className;
+
+        filter.appendChild(option);
+    });
+
+
+    if (classes.includes(currentValue)) {
+        filter.value = currentValue;
     }
 }
 
@@ -525,9 +464,7 @@ window.viewApplication =
             `Address: ${app.address || "--"}\n` +
             `Previous School: ${app.previous_school || "--"}\n` +
             `Additional Information: ${app.additional_information || "--"}\n\n` +
-            `Status: ${capitalize(
-                app.status || "pending"
-            )}`
+            `Status: ${capitalize(app.status || "pending")}`
         );
     };
 
@@ -556,52 +493,39 @@ async function generateStudentId() {
 
 
     (data || [])
-        .forEach(
-            student => {
+        .forEach(student => {
 
-                const value =
-                    String(
-                        student.student_id || ""
-                    )
-                        .trim()
-                        .toUpperCase();
+            const value =
+                String(student.student_id || "")
+                    .trim()
+                    .toUpperCase();
 
 
-                const match =
-                    value.match(
-                        /^PACSA(\d+)$/
-                    );
+            const match =
+                value.match(/^PACSA(\d+)$/);
 
 
-                if (!match) {
-                    return;
-                }
-
-
-                const number =
-                    Number(match[1]);
-
-
-                if (
-                    Number.isFinite(number) &&
-                    number > highestNumber
-                ) {
-
-                    highestNumber =
-                        number;
-                }
+            if (!match) {
+                return;
             }
-        );
+
+
+            const number =
+                Number(match[1]);
+
+
+            if (
+                Number.isFinite(number) &&
+                number > highestNumber
+            ) {
+                highestNumber = number;
+            }
+        });
 
 
     return (
         "PACSA" +
-        String(
-            highestNumber + 1
-        ).padStart(
-            3,
-            "0"
-        )
+        String(highestNumber + 1).padStart(3, "0")
     );
 }
 
@@ -627,7 +551,6 @@ async function findExistingStudent(app) {
                 student_id,
                 first_name,
                 last_name,
-                fullname,
                 email,
                 class,
                 status,
@@ -669,44 +592,19 @@ async function createStudentFromApplication(app) {
 
 
     const names =
-        splitFullName(
-            app.full_name
-        );
+        splitFullName(app.full_name);
 
 
     const studentData = {
-
-        student_id:
-            studentId,
-
-        first_name:
-            names.first_name,
-
-        last_name:
-            names.last_name,
-
-        fullname:
-            app.full_name ||
-            `${names.first_name} ${names.last_name}`
-                .trim(),
-
-        email:
-            app.email || null,
-
-        phone:
-            app.phone || null,
-
-        class:
-            app.class || null,
-
-        status:
-            "Active",
-
-        portal_status:
-            "not_activated",
-
-        auth_user_id:
-            null
+        student_id: studentId,
+        first_name: names.first_name,
+        last_name: names.last_name,
+        email: app.email || null,
+        phone: app.phone || null,
+        class: app.class || null,
+        status: "Active",
+        portal_status: "not_activated",
+        auth_user_id: null
     };
 
 
@@ -723,7 +621,6 @@ async function createStudentFromApplication(app) {
                 student_id,
                 first_name,
                 last_name,
-                fullname,
                 email,
                 class,
                 status,
@@ -782,10 +679,7 @@ window.approveApplication =
                 await supabaseClient
                     .from("applications")
                     .select("*")
-                    .eq(
-                        "id",
-                        id
-                    )
+                    .eq("id", id)
                     .maybeSingle();
 
 
@@ -795,44 +689,26 @@ window.approveApplication =
 
 
             if (!freshApp) {
-
-                throw new Error(
-                    "This application no longer exists."
-                );
+                throw new Error("This application no longer exists.");
             }
 
 
-            if (
-                normalize(
-                    freshApp.status || "pending"
-                ) !== "pending"
-            ) {
+            if (normalize(freshApp.status || "pending") !== "pending") {
 
-                alert(
-                    `This application is already ${freshApp.status}.`
-                );
-
-
+                alert(`This application is already ${freshApp.status}.`);
                 await loadApplications();
-
                 return;
             }
 
 
             if (!freshApp.email) {
-
-                alert(
-                    "This applicant has no email address. Student Portal activation requires an email."
-                );
-
+                alert("This applicant has no email address. Student Portal activation requires an email.");
                 return;
             }
 
 
             const student =
-                await createStudentFromApplication(
-                    freshApp
-                );
+                await createStudentFromApplication(freshApp);
 
 
             const {
@@ -842,17 +718,10 @@ window.approveApplication =
                 await supabaseClient
                     .from("applications")
                     .update({
-                        status:
-                            "approved"
+                        status: "approved"
                     })
-                    .eq(
-                        "id",
-                        id
-                    )
-                    .eq(
-                        "status",
-                        freshApp.status
-                    )
+                    .eq("id", id)
+                    .eq("status", freshApp.status)
                     .select();
 
 
@@ -861,18 +730,10 @@ window.approveApplication =
             }
 
 
-            if (
-                !updatedApplication ||
-                updatedApplication.length !== 1
-            ) {
+            if (!updatedApplication || updatedApplication.length !== 1) {
 
-                alert(
-                    "The application changed before approval completed."
-                );
-
-
+                alert("The application changed before approval completed.");
                 await loadApplications();
-
                 return;
             }
 
@@ -880,8 +741,7 @@ window.approveApplication =
             await loadApplications();
 
 
-            let emailSent =
-                false;
+            let emailSent = false;
 
 
             try {
@@ -895,56 +755,38 @@ window.approveApplication =
                             "smooth-api",
                             {
                                 body: {
-
-                                    application_id:
-                                        freshApp.id,
-
-                                    full_name:
-                                        freshApp.full_name,
-
-                                    email:
-                                        freshApp.email,
-
-                                    class:
-                                        freshApp.class,
-
-                                    student_id:
-                                        student.student_id,
-
-                                    portal_status:
-                                        student.portal_status
+                                    application_id: freshApp.id,
+                                    full_name: freshApp.full_name,
+                                    email: freshApp.email,
+                                    class: freshApp.class,
+                                    student_id: student.student_id,
+                                    portal_status: student.portal_status
                                 }
                             }
                         );
 
 
                 if (!emailError) {
-
-                    emailSent =
-                        true;
-
+                    emailSent = true;
                 } else {
-
-                    console.error(
-                        "Approval email error:",
-                        emailError
-                    );
+                    console.error("Approval email error:", emailError);
                 }
 
 
             } catch (emailError) {
-
-                console.error(
-                    "Approval email error:",
-                    emailError
-                );
+                console.error("Approval email error:", emailError);
             }
+
+
+            const studentName =
+                getStudentDisplayName(student);
 
 
             if (emailSent) {
 
                 alert(
                     `Application approved successfully!\n\n` +
+                    `Student: ${studentName}\n` +
                     `Student ID: ${student.student_id}\n` +
                     `Class: ${student.class || freshApp.class || "--"}\n\n` +
                     `A congratulatory email has been sent to ${freshApp.email}.`
@@ -954,6 +796,7 @@ window.approveApplication =
 
                 alert(
                     `Application approved successfully.\n\n` +
+                    `Student: ${studentName}\n` +
                     `Student ID: ${student.student_id}\n` +
                     `Class: ${student.class || freshApp.class || "--"}\n\n` +
                     `The student record was created, but the email could not be sent.`
@@ -963,15 +806,11 @@ window.approveApplication =
 
         } catch (error) {
 
-            console.error(
-                "Approve application error:",
-                error
-            );
-
+            console.error("Approve application error:", error);
 
             alert(
                 "Could not approve application: " +
-                error.message
+                (error?.message || "Unknown error")
             );
         }
     };
@@ -997,12 +836,7 @@ window.rejectApplication =
         }
 
 
-        if (
-            !confirm(
-                `Reject ${app.full_name}'s application?`
-            )
-        ) {
-
+        if (!confirm(`Reject ${app.full_name}'s application?`)) {
             return;
         }
 
@@ -1016,17 +850,10 @@ window.rejectApplication =
                 await supabaseClient
                     .from("applications")
                     .update({
-                        status:
-                            "rejected"
+                        status: "rejected"
                     })
-                    .eq(
-                        "id",
-                        id
-                    )
-                    .eq(
-                        "status",
-                        app.status || "pending"
-                    )
+                    .eq("id", id)
+                    .eq("status", app.status || "pending")
                     .select();
 
 
@@ -1035,41 +862,25 @@ window.rejectApplication =
             }
 
 
-            if (
-                !data ||
-                data.length !== 1
-            ) {
+            if (!data || data.length !== 1) {
 
-                alert(
-                    "This application has already been changed."
-                );
-
-
+                alert("This application has already been changed.");
                 await loadApplications();
-
                 return;
             }
 
 
             await loadApplications();
-
-
-            alert(
-                "Application rejected successfully."
-            );
+            alert("Application rejected successfully.");
 
 
         } catch (error) {
 
-            console.error(
-                "Reject application error:",
-                error
-            );
-
+            console.error("Reject application error:", error);
 
             alert(
                 "Could not reject application: " +
-                error.message
+                (error?.message || "Unknown error")
             );
         }
     };
@@ -1096,41 +907,26 @@ window.deleteApplication =
 
 
         const status =
-            normalize(
-                app.status || "pending"
-            );
+            normalize(app.status || "pending");
 
 
         let message =
             `Delete ${app.full_name}'s application?`;
 
 
-        if (
-            status === "approved"
-        ) {
-
+        if (status === "approved") {
             message +=
                 `\n\nThis application was already approved.` +
                 `\nThe student's PACSA student record will NOT be deleted.`;
         }
 
 
-        const firstConfirm =
-            confirm(message);
-
-
-        if (!firstConfirm) {
+        if (!confirm(message)) {
             return;
         }
 
 
-        const secondConfirm =
-            confirm(
-                "This application record will be permanently deleted.\n\nContinue?"
-            );
-
-
-        if (!secondConfirm) {
+        if (!confirm("This application record will be permanently deleted.\n\nContinue?")) {
             return;
         }
 
@@ -1143,10 +939,7 @@ window.deleteApplication =
                 await supabaseClient
                     .from("applications")
                     .delete()
-                    .eq(
-                        "id",
-                        id
-                    );
+                    .eq("id", id);
 
 
             if (error) {
@@ -1155,24 +948,16 @@ window.deleteApplication =
 
 
             await loadApplications();
-
-
-            alert(
-                "Application deleted successfully."
-            );
+            alert("Application deleted successfully.");
 
 
         } catch (error) {
 
-            console.error(
-                "Delete application error:",
-                error
-            );
-
+            console.error("Delete application error:", error);
 
             alert(
                 "Could not delete application: " +
-                error.message
+                (error?.message || "Unknown error")
             );
         }
     };
@@ -1184,30 +969,18 @@ window.deleteApplication =
 
 function clearFilters() {
 
-    if (
-        $("applicationSearch")
-    ) {
-
-        $("applicationSearch").value =
-            "";
+    if ($("applicationSearch")) {
+        $("applicationSearch").value = "";
     }
 
 
-    if (
-        $("classFilter")
-    ) {
-
-        $("classFilter").value =
-            "";
+    if ($("classFilter")) {
+        $("classFilter").value = "";
     }
 
 
-    if (
-        $("statusFilter")
-    ) {
-
-        $("statusFilter").value =
-            "";
+    if ($("statusFilter")) {
+        $("statusFilter").value = "";
     }
 
 
@@ -1233,50 +1006,28 @@ document.addEventListener(
 
 
         $("applicationSearch")
-            ?.addEventListener(
-                "input",
-                renderApplications
-            );
+            ?.addEventListener("input", renderApplications);
 
 
         $("classFilter")
-            ?.addEventListener(
-                "change",
-                renderApplications
-            );
+            ?.addEventListener("change", renderApplications);
 
 
         $("statusFilter")
-            ?.addEventListener(
-                "change",
-                renderApplications
-            );
+            ?.addEventListener("change", renderApplications);
 
 
         $("clearFiltersBtn")
-            ?.addEventListener(
-                "click",
-                clearFilters
-            );
+            ?.addEventListener("click", clearFilters);
 
 
         $("menuBtn")
             ?.addEventListener(
                 "click",
                 () => {
-
-                    $("sidebar")
-                        ?.classList
-                        .toggle(
-                            "active"
-                        );
+                    $("sidebar")?.classList.toggle("active");
                 }
             );
-
-
-        /*
-            Logout handled by admin-auth.js
-        */
 
 
         await loadApplications();
