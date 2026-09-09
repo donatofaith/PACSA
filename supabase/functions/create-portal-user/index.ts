@@ -15,6 +15,9 @@ const json = (body: Record<string, unknown>, status = 200) =>
     },
   });
 
+const fail = (message: string, status = 200) =>
+  json({ ok: false, error: message, status }, 200);
+
 const norm = (value: unknown) =>
   String(value ?? "").trim().toLowerCase();
 
@@ -24,7 +27,7 @@ Deno.serve(async (req) => {
   }
 
   if (req.method !== "POST") {
-    return json({ error: "Method not allowed." }, 405);
+    return fail("Method not allowed.", 405);
   }
 
   try {
@@ -32,14 +35,14 @@ Deno.serve(async (req) => {
     const serviceRoleKey = Deno.env.get("SUPABASE_SERVICE_ROLE_KEY");
 
     if (!supabaseUrl || !serviceRoleKey) {
-      return json({ error: "Server configuration is incomplete." }, 500);
+      return fail("Server configuration is incomplete.", 500);
     }
 
     const authorization = req.headers.get("Authorization") || "";
     const token = authorization.replace(/^Bearer\s+/i, "").trim();
 
     if (!token) {
-      return json({ error: "Authentication is required." }, 401);
+      return fail("Authentication is required.", 401);
     }
 
     const adminClient = createClient(
@@ -59,7 +62,7 @@ Deno.serve(async (req) => {
     } = await adminClient.auth.getUser(token);
 
     if (callerError || !callerData?.user) {
-      return json({ error: "Invalid or expired Admin session." }, 401);
+      return fail("Invalid or expired Admin session.", 401);
     }
 
     const caller = callerData.user;
@@ -75,11 +78,11 @@ Deno.serve(async (req) => {
 
     if (adminError) {
       console.error("Admin lookup failed:", adminError);
-      return json({ error: "Could not verify Admin access." }, 500);
+      return fail("Could not verify Admin access.", 500);
     }
 
     if (!admin || norm(admin.status || "active") !== "active") {
-      return json({ error: "Admin access is required." }, 403);
+      return fail("Admin access is required.", 403);
     }
 
     const body = await req.json();
@@ -88,12 +91,12 @@ Deno.serve(async (req) => {
     const recordId = String(body?.record_id ?? "").trim();
     const email = norm(body?.email);
 
-    if (!['student', 'teacher'].includes(role)) {
-      return json({ error: "Role must be student or teacher." }, 400);
+    if (!["student", "teacher"].includes(role)) {
+      return fail("Role must be student or teacher.", 400);
     }
 
     if (!recordId || !email) {
-      return json({ error: "Record ID and email are required." }, 400);
+      return fail("Record ID and email are required.", 400);
     }
 
     const config = role === "student"
@@ -121,21 +124,19 @@ Deno.serve(async (req) => {
 
     if (recordError) {
       console.error("Profile lookup failed:", recordError);
-      return json({ error: `Could not load the ${role} record.` }, 500);
+      return fail(`Could not load the ${role} record.`, 500);
     }
 
     if (!record) {
-      return json({ error: `No ${role} record matches that ID.` }, 404);
+      return fail(`No ${role} record matches that ID.`, 404);
     }
 
     if (norm(record.email) !== email) {
-      return json({
-        error: `The email does not match the ${role} record. Update the profile first.`,
-      }, 400);
+      return fail(`The email does not match the ${role} record. Update the profile first.`, 400);
     }
 
     if (norm(record.status || "active") !== "active") {
-      return json({ error: `This ${role} record is inactive.` }, 400);
+      return fail(`This ${role} record is inactive.`, 400);
     }
 
     if (record.auth_user_id) {
@@ -176,17 +177,16 @@ Deno.serve(async (req) => {
         message.includes("registered") ||
         message.includes("exists")
       ) {
-        return json({
-          error:
-            "An Auth account already exists for this email. Use the existing activation/reset flow or review the account link in Supabase Auth.",
-        }, 409);
+        return fail(
+          "An Auth account already exists for this email. Use the existing activation/reset flow or review the account link in Supabase Auth.",
+          409,
+        );
       }
 
       console.error("Invite failed:", inviteError);
-      return json({ error: inviteError.message || "Could not send Portal invitation." }, 400);
+      return fail(inviteError.message || "Could not send Portal invitation.", 400);
     }
 
-    // Re-read the profile. Existing database triggers may have linked the new Auth user.
     const {
       data: refreshed,
     } = await adminClient
@@ -207,11 +207,11 @@ Deno.serve(async (req) => {
   } catch (error) {
     console.error("create-portal-user error:", error);
 
-    return json({
-      error:
-        error instanceof Error
-          ? error.message
-          : "Unexpected server error.",
-    }, 500);
+    return fail(
+      error instanceof Error
+        ? error.message
+        : "Unexpected server error.",
+      500,
+    );
   }
 });
