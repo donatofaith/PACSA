@@ -156,8 +156,6 @@ function getStudentName(studentId) {
         `${student.first_name || ""} ${student.last_name || ""}`
             .trim()
         ||
-        student.fullname
-        ||
         student.student_id
     );
 }
@@ -208,7 +206,6 @@ async function loadReports() {
                         student_id,
                         first_name,
                         last_name,
-                        fullname,
                         class
                     `),
 
