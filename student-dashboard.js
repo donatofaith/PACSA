@@ -82,6 +82,145 @@ function getResultTotal(result) {
     return (Number(result.ca) || 0) + (Number(result.exam) || 0);
 }
 
+function getOrdinalPosition(rank) {
+    const value = Number(rank);
+
+    if (!Number.isFinite(value) || value <= 0) {
+        return "N/A";
+    }
+
+    const lastTwo = value % 100;
+
+    if (lastTwo >= 11 && lastTwo <= 13) {
+        return `${value}th`;
+    }
+
+    switch (value % 10) {
+        case 1:
+            return `${value}st`;
+        case 2:
+            return `${value}nd`;
+        case 3:
+            return `${value}rd`;
+        default:
+            return `${value}th`;
+    }
+}
+
+function averageFromRows(rows) {
+    const validRows = Array.isArray(rows) ? rows : [];
+
+    if (!validRows.length) {
+        return null;
+    }
+
+    const total = validRows.reduce(
+        (sum, result) => sum + getResultTotal(result),
+        0
+    );
+
+    return total / validRows.length;
+}
+
+async function calculatePositionForReport(report) {
+    if (!report?.class || !report?.term || !report?.session) {
+        return "N/A";
+    }
+
+    try {
+        const { data: classReports, error: reportError } = await supabaseClient
+            .from("student_reports")
+            .select("student_id")
+            .eq("class", report.class)
+            .eq("term", report.term)
+            .eq("session", report.session)
+            .eq("status", "published");
+
+        if (reportError) throw reportError;
+
+        const studentIds = uniqueValues(
+            (classReports || []).map(row => row.student_id)
+        );
+
+        if (!studentIds.length) {
+            return "N/A";
+        }
+
+        const { data: classResults, error: resultError } = await supabaseClient
+            .from("results")
+            .select("student_id, ca, exam, total")
+            .eq("class", report.class)
+            .eq("term", report.term)
+            .eq("session", report.session)
+            .in("student_id", studentIds);
+
+        if (resultError) throw resultError;
+
+        const resultsByStudent = new Map();
+
+        (classResults || []).forEach(result => {
+            const id = String(result.student_id || "");
+
+            if (!id) return;
+
+            if (!resultsByStudent.has(id)) {
+                resultsByStudent.set(id, []);
+            }
+
+            resultsByStudent.get(id).push(result);
+        });
+
+        const ranking = studentIds
+            .map(id => ({
+                student_id: id,
+                average: averageFromRows(resultsByStudent.get(id) || [])
+            }))
+            .filter(item => Number.isFinite(item.average))
+            .sort((a, b) => b.average - a.average);
+
+        if (!ranking.length) {
+            return "N/A";
+        }
+
+        if (
+            studentIds.length > 1 &&
+            ranking.length < studentIds.length &&
+            ranking.some(item => String(item.student_id) === String(student.student_id))
+        ) {
+            console.warn(
+                "Position may be unavailable because not all class results are readable by this account."
+            );
+
+            return "N/A";
+        }
+
+        let previousAverage = null;
+        let previousRank = 0;
+
+        for (let index = 0; index < ranking.length; index++) {
+            const item = ranking[index];
+            const rank =
+                previousAverage !== null &&
+                Number(item.average.toFixed(4)) === Number(previousAverage.toFixed(4))
+                    ? previousRank
+                    : index + 1;
+
+            if (String(item.student_id) === String(student.student_id)) {
+                return getOrdinalPosition(rank);
+            }
+
+            previousAverage = item.average;
+            previousRank = rank;
+        }
+
+        return "N/A";
+
+    } catch (error) {
+        console.error("Position calculation error:", error);
+        return "N/A";
+    }
+}
+
 function showMessage(message, type = "info") {
     const element = $("resultMessage");
     if (!element) return;
@@ -483,6 +622,7 @@ async function loadResultsForReport(report) {
 
     renderResults();
     renderSummary();
+    await renderPosition(report);
 }
 
 function resultRowsHtml() {
@@ -544,12 +684,19 @@ function renderSummary() {
     setText("subjects", count);
     setText("average", `${average}%`);
     setText("passedSubjects", passed);
-    setText("position", "N/A");
+    setText("position", "Calculating...");
 
     setText("reportSubjects", count);
     setText("reportAverage", `${average}%`);
     setText("reportPassed", passed);
-    setText("reportPosition", "N/A");
+    setText("reportPosition", "Calculating...");
+}
+
+async function renderPosition(report) {
+    const position = await calculatePositionForReport(report);
+
+    setText("position", position);
+    setText("reportPosition", position);
 }
 
 function printCurrentResult() {
