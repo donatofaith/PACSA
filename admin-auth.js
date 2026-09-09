@@ -105,6 +105,27 @@ function hasFreshAdminLogin(
 }
 
 
+function escapeAdminHtml(value) {
+
+    return String(value ?? "")
+        .replace(/&/g, "&amp;")
+        .replace(/</g, "&lt;")
+        .replace(/>/g, "&gt;")
+        .replace(/\"/g, "&quot;")
+        .replace(/'/g, "&#039;");
+}
+
+
+function titleCase(value) {
+
+    const text =
+        String(value || "");
+
+    return text.charAt(0).toUpperCase() +
+        text.slice(1);
+}
+
+
 async function getFunctionErrorMessage(error) {
 
     let message =
@@ -212,10 +233,6 @@ window.adminAuthReady =
 
         try {
 
-            /* =====================================
-               1. REQUIRE AUTH SESSION
-            ===================================== */
-
             const {
                 data: sessionData,
                 error: sessionError
@@ -239,19 +256,13 @@ window.adminAuthReady =
 
                 clearAdminStorage();
 
-
                 window.location.replace(
                     PACSA_ADMIN_LOGIN
                 );
 
-
                 return null;
             }
 
-
-            /* =====================================
-               2. REQUIRE EXPLICIT ADMIN LOGIN
-            ===================================== */
 
             if (
                 !hasFreshAdminLogin(
@@ -261,28 +272,17 @@ window.adminAuthReady =
 
                 clearAdminStorage();
 
-
                 try {
-
-                    await supabaseClient
-                        .auth
-                        .signOut();
-
+                    await supabaseClient.auth.signOut();
                 } catch {}
-
 
                 window.location.replace(
                     PACSA_ADMIN_LOGIN
                 );
 
-
                 return null;
             }
 
-
-            /* =====================================
-               3. REQUIRE PACSA ADMIN RECORD
-            ===================================== */
 
             const admin =
                 await getCurrentAdmin();
@@ -294,22 +294,15 @@ window.adminAuthReady =
                     .auth
                     .signOut();
 
-
                 clearAdminStorage();
-
 
                 window.location.replace(
                     PACSA_ADMIN_LOGIN
                 );
 
-
                 return null;
             }
 
-
-            /* =====================================
-               4. REQUIRE ACTIVE ADMIN
-            ===================================== */
 
             if (
                 adminNorm(
@@ -323,27 +316,19 @@ window.adminAuthReady =
                     .auth
                     .signOut();
 
-
                 clearAdminStorage();
-
 
                 alert(
                     "This Admin account is inactive."
                 );
 
-
                 window.location.replace(
                     PACSA_ADMIN_LOGIN
                 );
 
-
                 return null;
             }
 
-
-            /* =====================================
-               5. ADMIN VALID
-            ===================================== */
 
             window.currentAdmin =
                 admin;
@@ -356,10 +341,6 @@ window.adminAuthReady =
                 )
             );
 
-
-            /* =====================================
-               ADMIN DISPLAY NAME
-            ===================================== */
 
             document
                 .querySelectorAll(
@@ -375,10 +356,6 @@ window.adminAuthReady =
                 );
 
 
-            /* =====================================
-               LOGOUT BUTTONS
-            ===================================== */
-
             document
                 .querySelectorAll(
                     "#logoutBtn, #sidebarLogoutBtn, .logout-link"
@@ -391,32 +368,21 @@ window.adminAuthReady =
 
                                 event.preventDefault();
 
-
                                 const confirmed =
                                     confirm(
                                         "Are you sure you want to logout?"
                                     );
 
-
                                 if (!confirmed)
                                     return;
 
-
-                                await window
-                                    .adminLogout();
+                                await window.adminLogout();
                             };
                     }
                 );
 
 
-            /* =====================================
-               SHOW PAGE
-            ===================================== */
-
-            document
-                .documentElement
-                .style
-                .visibility =
+            document.documentElement.style.visibility =
                 "visible";
 
 
@@ -430,23 +396,15 @@ window.adminAuthReady =
                 error
             );
 
-
             clearAdminStorage();
 
-
             try {
-
-                await supabaseClient
-                    .auth
-                    .signOut();
-
+                await supabaseClient.auth.signOut();
             } catch {}
-
 
             window.location.replace(
                 PACSA_ADMIN_LOGIN
             );
-
 
             return null;
         }
@@ -466,16 +424,11 @@ supabaseClient
         ) => {
 
             if (
-                event ===
-                "SIGNED_OUT"
-
-                ||
-
+                event === "SIGNED_OUT" ||
                 !session
             ) {
 
                 clearAdminStorage();
-
 
                 if (
                     !window.location
@@ -495,6 +448,388 @@ supabaseClient
 
 
 /* =========================================
+   PORTAL ACCESS CARD
+========================================= */
+
+function ensurePortalAccessCard() {
+
+    if (
+        document.getElementById(
+            "portalAccessModal"
+        )
+    ) {
+        return;
+    }
+
+
+    const style =
+        document.createElement(
+            "style"
+        );
+
+    style.textContent = `
+        .portal-access-modal {
+            position: fixed;
+            inset: 0;
+            background: rgba(15, 23, 42, .62);
+            display: none;
+            align-items: center;
+            justify-content: center;
+            padding: 20px;
+            z-index: 99999;
+        }
+
+        .portal-access-modal.show {
+            display: flex;
+        }
+
+        .portal-access-card {
+            width: min(560px, 100%);
+            background: #fff;
+            border-radius: 22px;
+            overflow: hidden;
+            box-shadow: 0 24px 80px rgba(15, 23, 42, .28);
+            font-family: inherit;
+        }
+
+        .portal-access-head {
+            background: linear-gradient(135deg, #4C1D95, #7C3AED);
+            color: #fff;
+            padding: 24px;
+        }
+
+        .portal-access-head span {
+            display: inline-flex;
+            background: rgba(255, 255, 255, .16);
+            border: 1px solid rgba(255, 255, 255, .24);
+            padding: 6px 10px;
+            border-radius: 999px;
+            font-size: 12px;
+            font-weight: 700;
+            letter-spacing: .04em;
+            text-transform: uppercase;
+            margin-bottom: 12px;
+        }
+
+        .portal-access-head h2 {
+            margin: 0;
+            font-size: 25px;
+            line-height: 1.2;
+        }
+
+        .portal-access-body {
+            padding: 24px;
+        }
+
+        .portal-access-note {
+            margin: 0 0 18px;
+            color: #4B5563;
+            line-height: 1.55;
+            font-size: 14px;
+        }
+
+        .portal-access-details {
+            border: 1px solid #E5E7EB;
+            border-radius: 16px;
+            overflow: hidden;
+            background: #F9FAFB;
+        }
+
+        .portal-access-row {
+            display: grid;
+            grid-template-columns: 145px 1fr;
+            gap: 12px;
+            padding: 14px 16px;
+            border-bottom: 1px solid #E5E7EB;
+        }
+
+        .portal-access-row:last-child {
+            border-bottom: none;
+        }
+
+        .portal-access-row span {
+            color: #6B7280;
+            font-size: 13px;
+            font-weight: 700;
+        }
+
+        .portal-access-row strong,
+        .portal-access-row a {
+            color: #111827;
+            font-size: 14px;
+            word-break: break-word;
+        }
+
+        .portal-access-row a {
+            color: #5B21B6;
+            text-decoration: none;
+            font-weight: 700;
+        }
+
+        .portal-access-password {
+            font-family: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, monospace;
+            background: #FEF3C7;
+            padding: 4px 7px;
+            border-radius: 7px;
+            color: #92400E !important;
+        }
+
+        .portal-access-actions {
+            display: flex;
+            justify-content: flex-end;
+            gap: 12px;
+            margin-top: 20px;
+            flex-wrap: wrap;
+        }
+
+        .portal-access-actions button {
+            border: none;
+            border-radius: 11px;
+            padding: 11px 16px;
+            font-family: inherit;
+            font-weight: 800;
+            cursor: pointer;
+        }
+
+        .portal-copy-btn {
+            background: #EDE9FE;
+            color: #5B21B6;
+        }
+
+        .portal-close-btn {
+            background: #5B21B6;
+            color: #fff;
+        }
+
+        @media(max-width: 560px) {
+            .portal-access-row {
+                grid-template-columns: 1fr;
+                gap: 5px;
+            }
+        }
+    `;
+
+
+    document.head.appendChild(
+        style
+    );
+
+
+    const modal =
+        document.createElement(
+            "div"
+        );
+
+    modal.id =
+        "portalAccessModal";
+
+    modal.className =
+        "portal-access-modal";
+
+    modal.innerHTML = `
+        <div class="portal-access-card" role="dialog" aria-modal="true">
+            <div class="portal-access-head">
+                <span id="portalAccessType">Portal Access</span>
+                <h2 id="portalAccessTitle">PACSA Portal Access</h2>
+            </div>
+            <div class="portal-access-body">
+                <p class="portal-access-note" id="portalAccessNote"></p>
+                <div class="portal-access-details">
+                    <div class="portal-access-row">
+                        <span>Name</span>
+                        <strong id="portalAccessName">--</strong>
+                    </div>
+                    <div class="portal-access-row">
+                        <span>ID</span>
+                        <strong id="portalAccessId">--</strong>
+                    </div>
+                    <div class="portal-access-row">
+                        <span>Email</span>
+                        <strong id="portalAccessEmail">--</strong>
+                    </div>
+                    <div class="portal-access-row" id="portalPasswordRow">
+                        <span>Temporary Password</span>
+                        <strong class="portal-access-password" id="portalAccessPassword">--</strong>
+                    </div>
+                    <div class="portal-access-row">
+                        <span>Login</span>
+                        <a id="portalAccessLogin" href="#" target="_blank" rel="noopener">Open login page</a>
+                    </div>
+                </div>
+                <div class="portal-access-actions">
+                    <button type="button" class="portal-copy-btn" id="copyPortalAccessBtn">Copy Details</button>
+                    <button type="button" class="portal-close-btn" id="closePortalAccessBtn">OK</button>
+                </div>
+            </div>
+        </div>
+    `;
+
+
+    document.body.appendChild(
+        modal
+    );
+
+
+    document
+        .getElementById(
+            "closePortalAccessBtn"
+        )
+        ?.addEventListener(
+            "click",
+            () => modal.classList.remove("show")
+        );
+
+
+    modal.addEventListener(
+        "click",
+        event => {
+
+            if (event.target === modal) {
+                modal.classList.remove("show");
+            }
+        }
+    );
+}
+
+
+function getTemporaryPasswordFromMessage(message) {
+
+    const text =
+        String(message || "");
+
+    const match =
+        text.match(
+            /TEMPORARY PASSWORD:\s*([^\n]+)/i
+        );
+
+    return match?.[1]?.trim() || "";
+}
+
+
+function showPortalAccessCard(data, context) {
+
+    ensurePortalAccessCard();
+
+
+    const role =
+        context.role;
+
+    const roleTitle =
+        titleCase(role);
+
+    const loginUrl =
+        new URL(
+            role === "student"
+                ? "student-login.html"
+                : "teacher-login.html",
+            window.location.origin
+        ).href;
+
+    const password =
+        data?.temporary_password ||
+        getTemporaryPasswordFromMessage(
+            data?.message
+        );
+
+    const invited =
+        Boolean(data?.invited) &&
+        !password;
+
+    const title =
+        `PACSA ${roleTitle} Portal`;
+
+    const copyText =
+        [
+            title,
+            "",
+            `${roleTitle} Name: ${context.name || "--"}`,
+            `${roleTitle} ID: ${context.recordId || "--"}`,
+            `Email: ${context.email || "--"}`,
+            password
+                ? `Temporary Password: ${password}`
+                : "Password: Set through email invitation link",
+            `Login: ${loginUrl}`
+        ].join("\n");
+
+
+    document.getElementById("portalAccessType").textContent =
+        password
+            ? "Temporary Login Created"
+            : "Portal Invitation Sent";
+
+    document.getElementById("portalAccessTitle").textContent =
+        title;
+
+    document.getElementById("portalAccessNote").textContent =
+        password
+            ? `Email invitation could not be sent, so Portal access was created with a temporary password. Copy these details and give them securely to the ${role}.`
+            : data?.message ||
+                `Portal invitation sent to ${context.email}.`;
+
+    document.getElementById("portalAccessName").textContent =
+        context.name || "--";
+
+    document.getElementById("portalAccessId").textContent =
+        context.recordId || "--";
+
+    document.getElementById("portalAccessEmail").textContent =
+        context.email || "--";
+
+    document.getElementById("portalAccessPassword").textContent =
+        password || "Set through email link";
+
+    document.getElementById("portalPasswordRow").style.display =
+        invited
+            ? "none"
+            : "grid";
+
+
+    const login =
+        document.getElementById("portalAccessLogin");
+
+    login.href =
+        loginUrl;
+
+    login.textContent =
+        loginUrl;
+
+
+    const copyButton =
+        document.getElementById("copyPortalAccessBtn");
+
+    copyButton.textContent =
+        "Copy Details";
+
+    copyButton.onclick =
+        async () => {
+
+            try {
+
+                await navigator.clipboard.writeText(
+                    copyText
+                );
+
+                copyButton.textContent =
+                    "Copied";
+
+            } catch {
+
+                prompt(
+                    "Copy these Portal access details:",
+                    copyText
+                );
+            }
+        };
+
+
+    document
+        .getElementById("portalAccessModal")
+        .classList
+        .add("show");
+}
+
+
+/* =========================================
    PORTAL ACCESS PROVISIONING
 ========================================= */
 
@@ -502,6 +837,7 @@ async function sendPortalInvitation(
     role,
     recordId,
     email,
+    name,
     button
 ) {
 
@@ -517,7 +853,7 @@ async function sendPortalInvitation(
 
     const confirmed =
         confirm(
-            `Send a ${role} Portal invitation to ${email}?`
+            `Create ${role} Portal access for ${name || email}?`
         );
 
 
@@ -578,9 +914,14 @@ async function sendPortalInvitation(
         }
 
 
-        alert(
-            data?.message ||
-            "Portal invitation sent successfully."
+        showPortalAccessCard(
+            data || {},
+            {
+                role,
+                recordId,
+                email,
+                name
+            }
         );
 
 
@@ -676,6 +1017,16 @@ function addPortalButtonsToRows() {
                 return;
 
 
+            const name =
+                cells[0]
+                    ?.querySelector(
+                        "strong"
+                    )
+                    ?.textContent
+                    ?.trim() ||
+                "";
+
+
             const email =
                 cells[0]
                     ?.querySelector(
@@ -725,7 +1076,6 @@ function addPortalButtonsToRows() {
             button.textContent =
                 "🔐";
 
-
             button.style.background =
                 "#EDE9FE";
 
@@ -742,6 +1092,7 @@ function addPortalButtonsToRows() {
                             : "teacher",
                         recordId,
                         email,
+                        name,
                         button
                     )
             );
