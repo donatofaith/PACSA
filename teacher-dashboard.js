@@ -677,9 +677,11 @@ function setupClassTeacherArea() {
             $("myClassNavLink").style.display =
                 "none";
 
-        if ($("myClassSection"))
+        if ($("myClassSection")) {
             $("myClassSection").style.display =
                 "none";
+            $("myClassSection").classList.remove("show");
+        }
 
         return;
     }
@@ -688,6 +690,16 @@ function setupClassTeacherArea() {
     if ($("myClassNavLink"))
         $("myClassNavLink").style.display =
             "flex";
+
+    if ($("myClassSection")) {
+        $("myClassSection").style.display =
+            "block";
+        $("myClassSection").classList.add("show");
+    }
+
+    if ($("classSelectorWrapper"))
+        $("classSelectorWrapper").style.display =
+            "block";
 
 
     const select =
@@ -2568,6 +2580,68 @@ function clearFilters() {
 }
 
 
+function closeMobileSidebar() {
+
+    $("sidebar")
+        ?.classList
+        .remove("open");
+
+    $("sidebarOverlay")
+        ?.classList
+        .remove("show");
+}
+
+
+function setupPageNavigation() {
+
+    document
+        .querySelectorAll(".sidebar-nav .nav-link")
+        .forEach(link => {
+
+            link.addEventListener(
+                "click",
+                event => {
+
+                    const targetId =
+                        link.getAttribute("href")
+                            ?.replace("#", "");
+
+                    const target =
+                        targetId
+                            ? $(targetId)
+                            : null;
+
+                    if (!target) {
+                        return;
+                    }
+
+                    event.preventDefault();
+
+                    if (targetId === "myClassSection") {
+                        target.style.display = "block";
+                        target.classList.add("show");
+                    }
+
+                    document
+                        .querySelectorAll(".sidebar-nav .nav-link")
+                        .forEach(item =>
+                            item.classList.remove("active")
+                        );
+
+                    link.classList.add("active");
+
+                    target.scrollIntoView({
+                        behavior: "smooth",
+                        block: "start"
+                    });
+
+                    closeMobileSidebar();
+                }
+            );
+        });
+}
+
+
 /* =====================================================
    AUTH WATCHER
 ===================================================== */
@@ -2604,6 +2678,8 @@ document.addEventListener(
     "DOMContentLoaded",
     async () => {
 
+        setupPageNavigation();
+
         $("logoutBtn")
             ?.addEventListener(
                 "click",
@@ -2637,16 +2713,7 @@ document.addEventListener(
         $("sidebarOverlay")
             ?.addEventListener(
                 "click",
-                () => {
-
-                    $("sidebar")
-                        ?.classList
-                        .remove("open");
-
-                    $("sidebarOverlay")
-                        ?.classList
-                        .remove("show");
-                }
+                closeMobileSidebar
             );
 
 
