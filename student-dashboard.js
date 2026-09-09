@@ -5,52 +5,28 @@
 
 let student = null;
 let authUser = null;
-
 let publishedReports = [];
 let allResults = [];
 let filteredResults = [];
 let currentReport = null;
 
-
-const PROFILE_BUCKET =
-    "profile-photos";
-
-const DEFAULT_AVATAR =
-    "images/PACSA LOGO.png";
-
-const MAX_PHOTO_SIZE =
-    2 * 1024 * 1024;
-
+const PROFILE_BUCKET = "profile-photos";
+const DEFAULT_AVATAR = "images/PACSA LOGO.png";
+const MAX_PHOTO_SIZE = 2 * 1024 * 1024;
 const ALLOWED_PHOTO_TYPES = [
     "image/jpeg",
     "image/png",
     "image/webp"
 ];
 
-
-const $ = id =>
-    document.getElementById(id);
-
-
-/* =========================================
-   HELPERS
-========================================= */
+const $ = id => document.getElementById(id);
 
 function normalize(value) {
-
-    return String(
-        value ?? ""
-    )
-        .trim()
-        .toLowerCase();
+    return String(value ?? "").trim().toLowerCase();
 }
 
-
 function escapeHtml(value) {
-
-    return String(
-        value ?? ""
-    )
+    return String(value ?? "")
         .replace(/&/g, "&amp;")
         .replace(/</g, "&lt;")
         .replace(/>/g, "&gt;")
@@ -58,1726 +34,573 @@ function escapeHtml(value) {
         .replace(/'/g, "&#039;");
 }
 
+function setText(id, value) {
+    const element = $(id);
+    if (element) element.textContent = value;
+}
 
 function uniqueValues(values) {
-
     return [
         ...new Set(
             values
-                .map(
-                    value =>
-                        String(
-                            value ?? ""
-                        ).trim()
-                )
+                .map(value => String(value ?? "").trim())
                 .filter(Boolean)
         )
     ];
 }
 
-
 function getStudentLoginUrl() {
-
-    return new URL(
-        "student-login.html",
-        window.location.href
-    ).href;
+    return new URL("student-login.html", window.location.href).href;
 }
 
-
 function getStudentName() {
-
-    if (!student) {
-        return "Student";
-    }
-
+    if (!student) return "Student";
 
     return (
-        `${student.first_name || ""} ${student.last_name || ""}`
-            .trim()
-        ||
+        `${student.first_name || ""} ${student.last_name || ""}`.trim() ||
         "Student"
     );
 }
 
-
 function getGradeClass(grade) {
+    const value = normalize(grade);
 
-    const value =
-        normalize(
-            grade
-        );
-
-
-    if (
-        value === "a"
-    ) return "grade-a";
-
-
-    if (
-        value === "b"
-    ) return "grade-b";
-
-
-    if (
-        value === "c"
-    ) return "grade-c";
-
-
-    if (
-        value === "d"
-    ) return "grade-d";
-
-
-    if (
-        value === "e"
-    ) return "grade-e";
-
+    if (value === "a") return "grade-a";
+    if (value === "b") return "grade-b";
+    if (value === "c") return "grade-c";
+    if (value === "d") return "grade-d";
+    if (value === "e") return "grade-e";
 
     return "grade-f";
 }
 
-
 function getResultTotal(result) {
+    const stored = Number(result.total);
 
-    const stored =
-        Number(
-            result.total
-        );
+    if (Number.isFinite(stored)) return stored;
 
-
-    if (
-        Number.isFinite(
-            stored
-        )
-    ) {
-        return stored;
-    }
-
-
-    return (
-        (Number(result.ca) || 0)
-        +
-        (Number(result.exam) || 0)
-    );
+    return (Number(result.ca) || 0) + (Number(result.exam) || 0);
 }
 
+function showMessage(message, type = "info") {
+    const element = $("resultMessage");
+    if (!element) return;
 
-/* =========================================
-   RESULT MESSAGE
-========================================= */
-
-function showMessage(
-    message,
-    type = "info"
-) {
-
-    const element =
-        $("resultMessage");
-
-
-    if (!element) {
-        return;
-    }
-
-
-    element.textContent =
-        message;
-
-
-    element.className =
-        `result-message show ${type}`;
+    element.textContent = message;
+    element.className = `result-message show ${type}`;
 }
-
 
 function hideMessage() {
+    const element = $("resultMessage");
+    if (!element) return;
 
-    const element =
-        $("resultMessage");
-
-
-    if (!element) {
-        return;
-    }
-
-
-    element.textContent =
-        "";
-
-
-    element.className =
-        "result-message";
+    element.textContent = "";
+    element.className = "result-message";
 }
 
+function showPhotoMessage(message, type) {
+    const element = $("photoMessage");
+    if (!element) return;
 
-/* =========================================
-   PHOTO MESSAGE
-========================================= */
-
-function showPhotoMessage(
-    message,
-    type
-) {
-
-    const element =
-        $("photoMessage");
-
-
-    if (!element) {
-        return;
-    }
-
-
-    element.textContent =
-        message;
-
-
-    element.className =
-        `photo-message show ${type}`;
+    element.textContent = message;
+    element.className = `photo-message show ${type}`;
 }
-
 
 function hidePhotoMessage() {
+    const element = $("photoMessage");
+    if (!element) return;
 
-    const element =
-        $("photoMessage");
-
-
-    if (!element) {
-        return;
-    }
-
-
-    element.textContent =
-        "";
-
-
-    element.className =
-        "photo-message";
+    element.textContent = "";
+    element.className = "photo-message";
 }
 
-
-/* =========================================
-   AUTH GUARD
-========================================= */
-
 async function verifyStudentSession() {
-
     try {
+        const { data: sessionData, error: sessionError } =
+            await supabaseClient.auth.getSession();
 
-        const {
-            data:
-            sessionData,
+        if (sessionError) throw sessionError;
 
-            error:
-            sessionError
-        } =
-            await supabaseClient
-                .auth
-                .getSession();
-
-
-        if (
-            sessionError
-        ) {
-            throw sessionError;
-        }
-
-
-        const user =
-            sessionData
-                ?.session
-                ?.user;
-
+        const user = sessionData?.session?.user;
 
         if (!user) {
-
-            localStorage.removeItem(
-                "student"
-            );
-
-
-            window.location.replace(
-                getStudentLoginUrl()
-            );
-
-
+            localStorage.removeItem("student");
+            window.location.replace(getStudentLoginUrl());
             return false;
         }
 
+        authUser = user;
 
-        authUser =
-            user;
+        const { data: studentRows, error: studentError } =
+            await supabaseClient.rpc("pacsa_get_my_student");
 
+        if (studentError) throw studentError;
 
-        /*
-            Secure RPC:
-            Student gets only their own record.
-        */
-
-        const {
-            data:
-            studentRows,
-
-            error:
-            studentError
-        } =
-            await supabaseClient
-                .rpc(
-                    "pacsa_get_my_student"
-                );
-
-
-        if (
-            studentError
-        ) {
-            throw studentError;
-        }
-
-
-        const studentData =
-            Array.isArray(
-                studentRows
-            )
-                ? studentRows[0]
-                : studentRows;
-
+        const studentData = Array.isArray(studentRows)
+            ? studentRows[0]
+            : studentRows;
 
         if (!studentData) {
-
-            await supabaseClient
-                .auth
-                .signOut();
-
-
-            localStorage.removeItem(
-                "student"
-            );
-
-
-            alert(
-                "This account is not linked to a PACSA student record."
-            );
-
-
-            window.location.replace(
-                getStudentLoginUrl()
-            );
-
-
+            await supabaseClient.auth.signOut();
+            localStorage.removeItem("student");
+            alert("This account is not linked to a PACSA student record.");
+            window.location.replace(getStudentLoginUrl());
             return false;
         }
 
-
-        if (
-            normalize(
-                studentData.status ||
-                "active"
-            )
-            !==
-            "active"
-        ) {
-
-            await supabaseClient
-                .auth
-                .signOut();
-
-
-            localStorage.removeItem(
-                "student"
-            );
-
-
-            alert(
-                "Your student account is inactive. Contact the school administrator."
-            );
-
-
-            window.location.replace(
-                getStudentLoginUrl()
-            );
-
-
+        if (normalize(studentData.status || "active") !== "active") {
+            await supabaseClient.auth.signOut();
+            localStorage.removeItem("student");
+            alert("Your student account is inactive. Contact the school administrator.");
+            window.location.replace(getStudentLoginUrl());
             return false;
         }
 
-
-        if (
-            normalize(
-                studentData.portal_status
-            )
-            !==
-            "active"
-        ) {
-
-            await supabaseClient
-                .auth
-                .signOut();
-
-
-            localStorage.removeItem(
-                "student"
-            );
-
-
-            alert(
-                "Your Student Portal account is not active."
-            );
-
-
-            window.location.replace(
-                getStudentLoginUrl()
-            );
-
-
+        if (normalize(studentData.portal_status) !== "active") {
+            await supabaseClient.auth.signOut();
+            localStorage.removeItem("student");
+            alert("Your Student Portal account is not active.");
+            window.location.replace(getStudentLoginUrl());
             return false;
         }
 
-
-        student =
-            studentData;
-
-
-        localStorage.setItem(
-            "student",
-            JSON.stringify(
-                studentData
-            )
-        );
-
+        student = studentData;
+        localStorage.setItem("student", JSON.stringify(studentData));
 
         return true;
 
-
     } catch (error) {
-
-        console.error(
-            "Student authentication error:",
-            error
-        );
-
-
-        localStorage.removeItem(
-            "student"
-        );
-
+        console.error("Student authentication error:", error);
+        localStorage.removeItem("student");
 
         try {
-
-            await supabaseClient
-                .auth
-                .signOut();
-
+            await supabaseClient.auth.signOut();
         } catch (_) {}
 
-
-        window.location.replace(
-            getStudentLoginUrl()
-        );
-
-
+        window.location.replace(getStudentLoginUrl());
         return false;
     }
 }
 
-
-/* =========================================
-   PROFILE DISPLAY
-========================================= */
-
 async function displayStudentProfile() {
+    if (!student) return;
 
-    if (!student) {
-        return;
-    }
+    const name = getStudentName();
 
+    setText("studentName", name);
+    setText("studentId", student.student_id || "--");
+    setText("studentClass", student.class || "--");
+    setText("studentStatus", student.status || "Active");
+    setText("studentMiniName", name);
+    setText("studentMiniId", student.student_id || "--");
+    setText("welcomeName", `Welcome, ${name}`);
+    setText("reportStudentName", name);
+    setText("reportStudentId", student.student_id || "--");
+    setText("reportStudentClass", student.class || "--");
 
-    const name =
-        getStudentName();
-
-
-    if (
-        $("studentName")
-    ) {
-
-        $("studentName").textContent =
-            name;
-    }
-
-
-    if (
-        $("studentId")
-    ) {
-
-        $("studentId").textContent =
-            student.student_id ||
-            "--";
-    }
-
-
-    if (
-        $("studentClass")
-    ) {
-
-        $("studentClass").textContent =
-            student.class ||
-            "--";
-    }
-
-
-    if (
-        $("studentStatus")
-    ) {
-
-        $("studentStatus").textContent =
-            student.status ||
-            "Active";
-    }
-
-
-    if (
-        $("studentMiniName")
-    ) {
-
-        $("studentMiniName").textContent =
-            name;
-    }
-
-
-    if (
-        $("studentMiniId")
-    ) {
-
-        $("studentMiniId").textContent =
-            student.student_id ||
-            "--";
-    }
-
-
-    if (
-        $("welcomeName")
-    ) {
-
-        $("welcomeName").textContent =
-            `Welcome, ${name}`;
-    }
-
-
-    if (
-        $("reportStudentName")
-    ) {
-
-        $("reportStudentName").textContent =
-            name;
-    }
-
-
-    if (
-        $("reportStudentId")
-    ) {
-
-        $("reportStudentId").textContent =
-            student.student_id ||
-            "--";
-    }
-
-
-    setProfileImage(
-        DEFAULT_AVATAR
-    );
-
-
+    setProfileImage(DEFAULT_AVATAR);
     await loadStudentProfilePhoto();
 }
 
-
-/* =========================================
-   PROFILE IMAGE
-========================================= */
-
 function setProfileImage(url) {
+    ["studentAvatar", "studentMiniAvatar"].forEach(id => {
+        const image = $(id);
+        if (!image) return;
 
-    const mainAvatar =
-        $("studentAvatar");
-
-
-    const miniAvatar =
-        $("studentMiniAvatar");
-
-
-    if (
-        mainAvatar
-    ) {
-
-        mainAvatar.src =
-            url ||
-            DEFAULT_AVATAR;
-
-
-        mainAvatar.onerror =
-            () => {
-
-                mainAvatar.onerror =
-                    null;
-
-                mainAvatar.src =
-                    DEFAULT_AVATAR;
-            };
-    }
-
-
-    if (
-        miniAvatar
-    ) {
-
-        miniAvatar.src =
-            url ||
-            DEFAULT_AVATAR;
-
-
-        miniAvatar.onerror =
-            () => {
-
-                miniAvatar.onerror =
-                    null;
-
-                miniAvatar.src =
-                    DEFAULT_AVATAR;
-            };
-    }
+        image.src = url || DEFAULT_AVATAR;
+        image.onerror = () => {
+            image.onerror = null;
+            image.src = DEFAULT_AVATAR;
+        };
+    });
 }
 
-
-/* =========================================
-   LOAD PROFILE PHOTO
-========================================= */
-
 async function loadStudentProfilePhoto() {
-
-    if (
-        !student
-            ?.profile_photo_path
-    ) {
-
-        setProfileImage(
-            DEFAULT_AVATAR
-        );
-
+    if (!student?.profile_photo_path) {
+        setProfileImage(DEFAULT_AVATAR);
         return;
     }
 
-
     try {
+        const { data, error } = await supabaseClient.storage
+            .from(PROFILE_BUCKET)
+            .createSignedUrl(student.profile_photo_path, 3600);
 
-        const {
-            data,
-            error
-        } =
-            await supabaseClient
-                .storage
-                .from(
-                    PROFILE_BUCKET
-                )
-                .createSignedUrl(
-                    student
-                        .profile_photo_path,
-                    3600
-                );
+        if (error) throw error;
 
-
-        if (
-            error
-        ) {
-            throw error;
-        }
-
-
-        setProfileImage(
-            data?.signedUrl ||
-            DEFAULT_AVATAR
-        );
-
+        setProfileImage(data?.signedUrl || DEFAULT_AVATAR);
 
     } catch (error) {
-
-        console.error(
-            "Profile photo load error:",
-            error
-        );
-
-
-        setProfileImage(
-            DEFAULT_AVATAR
-        );
+        console.error("Profile photo load error:", error);
+        setProfileImage(DEFAULT_AVATAR);
     }
 }
 
-
-/* =========================================
-   PHOTO HELPERS
-========================================= */
-
 function getPhotoExtension(file) {
-
-    if (
-        file.type ===
-        "image/png"
-    ) {
-
-        return "png";
-    }
-
-
-    if (
-        file.type ===
-        "image/webp"
-    ) {
-
-        return "webp";
-    }
-
-
+    if (file.type === "image/png") return "png";
+    if (file.type === "image/webp") return "webp";
     return "jpg";
 }
 
-
-function buildStudentPhotoPath(
-    file
-) {
-
-    const extension =
-        getPhotoExtension(
-            file
-        );
-
-
-    return (
-        `students/${authUser.id}/profile.${extension}`
-    );
+function buildStudentPhotoPath(file) {
+    return `students/${authUser.id}/profile.${getPhotoExtension(file)}`;
 }
 
+async function removeOldProfilePhoto(oldPath, newPath) {
+    if (!oldPath || oldPath === newPath) return;
 
-async function removeOldProfilePhoto(
-    oldPath,
-    newPath
-) {
+    const { error } = await supabaseClient.storage
+        .from(PROFILE_BUCKET)
+        .remove([oldPath]);
 
-    if (
-        !oldPath ||
-        oldPath ===
-        newPath
-    ) {
-
-        return;
-    }
-
-
-    const {
-        error
-    } =
-        await supabaseClient
-            .storage
-            .from(
-                PROFILE_BUCKET
-            )
-            .remove([
-                oldPath
-            ]);
-
-
-    if (
-        error
-    ) {
-
-        console.warn(
-            "Old profile photo cleanup failed:",
-            error
-        );
-    }
+    if (error) console.warn("Old profile photo cleanup failed:", error);
 }
 
-
-/* =========================================
-   UPLOAD PROFILE PHOTO
-========================================= */
-
-async function uploadStudentProfilePhoto(
-    file
-) {
-
-    if (
-        !student ||
-        !authUser
-    ) {
-
-        showPhotoMessage(
-            "Your account session is unavailable.",
-            "error"
-        );
-
+async function uploadStudentProfilePhoto(file) {
+    if (!student || !authUser) {
+        showPhotoMessage("Your account session is unavailable.", "error");
         return;
     }
 
-
-    if (
-        !ALLOWED_PHOTO_TYPES
-            .includes(
-                file.type
-            )
-    ) {
-
-        showPhotoMessage(
-            "Please choose a JPG, PNG or WebP image.",
-            "error"
-        );
-
+    if (!ALLOWED_PHOTO_TYPES.includes(file.type)) {
+        showPhotoMessage("Please choose a JPG, PNG or WebP image.", "error");
         return;
     }
 
-
-    if (
-        file.size >
-        MAX_PHOTO_SIZE
-    ) {
-
-        showPhotoMessage(
-            "Profile photo must be 2 MB or smaller.",
-            "error"
-        );
-
+    if (file.size > MAX_PHOTO_SIZE) {
+        showPhotoMessage("Profile photo must be 2 MB or smaller.", "error");
         return;
     }
 
+    const button = $("changePhotoBtn");
+    const loading = $("photoLoading");
+    const input = $("profilePhotoInput");
+    const oldPath = student.profile_photo_path || null;
+    const newPath = buildStudentPhotoPath(file);
 
-    const button =
-        $("changePhotoBtn");
-
-
-    const loading =
-        $("photoLoading");
-
-
-    const input =
-        $("profilePhotoInput");
-
-
-    const oldPath =
-        student
-            .profile_photo_path ||
-        null;
-
-
-    const newPath =
-        buildStudentPhotoPath(
-            file
-        );
-
-
-    if (
-        button
-    ) {
-
-        button.disabled =
-            true;
-    }
-
-
-    loading
-        ?.classList
-        .add(
-            "show"
-        );
-
-
+    if (button) button.disabled = true;
+    loading?.classList.add("show");
     hidePhotoMessage();
 
-
     try {
+        const { error: uploadError } = await supabaseClient.storage
+            .from(PROFILE_BUCKET)
+            .upload(newPath, file, {
+                cacheControl: "3600",
+                upsert: true,
+                contentType: file.type
+            });
 
-        const {
-            error:
-            uploadError
-        } =
-            await supabaseClient
-                .storage
-                .from(
-                    PROFILE_BUCKET
-                )
-                .upload(
-                    newPath,
-                    file,
-                    {
-                        cacheControl:
-                            "3600",
+        if (uploadError) throw uploadError;
 
-                        upsert:
-                            true,
+        const { data: updated, error: updateError } = await supabaseClient
+            .rpc("pacsa_update_student_photo", { p_path: newPath });
 
-                        contentType:
-                            file.type
-                    }
-                );
+        if (updateError) throw updateError;
+        if (!updated) throw new Error("Could not update the student profile record.");
 
+        student.profile_photo_path = newPath;
+        localStorage.setItem("student", JSON.stringify(student));
 
-        if (
-            uploadError
-        ) {
-            throw uploadError;
-        }
-
-
-        /*
-            Secure RPC:
-            only updates the logged-in
-            student's profile photo path.
-        */
-
-        const {
-            data:
-            updated,
-
-            error:
-            updateError
-        } =
-            await supabaseClient
-                .rpc(
-                    "pacsa_update_student_photo",
-                    {
-                        p_path:
-                            newPath
-                    }
-                );
-
-
-        if (
-            updateError
-        ) {
-            throw updateError;
-        }
-
-
-        if (
-            !updated
-        ) {
-
-            throw new Error(
-                "Could not update the student profile record."
-            );
-        }
-
-
-        student
-            .profile_photo_path =
-            newPath;
-
-
-        localStorage.setItem(
-            "student",
-            JSON.stringify(
-                student
-            )
-        );
-
-
-        await removeOldProfilePhoto(
-            oldPath,
-            newPath
-        );
-
-
+        await removeOldProfilePhoto(oldPath, newPath);
         await loadStudentProfilePhoto();
 
-
-        showPhotoMessage(
-            "Profile photo updated.",
-            "success"
-        );
-
+        showPhotoMessage("Profile photo updated.", "success");
 
     } catch (error) {
-
-        console.error(
-            "Profile photo upload error:",
-            error
-        );
-
-
-        showPhotoMessage(
-            "Could not upload profile photo: " +
-            error.message,
-            "error"
-        );
-
+        console.error("Profile photo upload error:", error);
+        showPhotoMessage("Could not upload profile photo: " + error.message, "error");
 
     } finally {
-
-        if (
-            button
-        ) {
-
-            button.disabled =
-                false;
-        }
-
-
-        loading
-            ?.classList
-            .remove(
-                "show"
-            );
-
-
-        if (
-            input
-        ) {
-
-            input.value =
-                "";
-        }
+        if (button) button.disabled = false;
+        loading?.classList.remove("show");
+        if (input) input.value = "";
     }
 }
-
-
-/* =========================================
-   LOAD PUBLISHED REPORTS
-========================================= */
 
 async function loadPublishedReports() {
-
     hideMessage();
 
+    const { data, error } = await supabaseClient
+        .from("student_reports")
+        .select(`
+            id,
+            student_id,
+            class,
+            term,
+            session,
+            remark,
+            status,
+            published_at
+        `)
+        .eq("student_id", student.student_id)
+        .eq("status", "published")
+        .order("published_at", { ascending: false });
 
-    const {
-        data,
-        error
-    } =
-        await supabaseClient
-            .from(
-                "student_reports"
-            )
-            .select(`
-                id,
-                student_id,
-                class,
-                term,
-                session,
-                remark,
-                status,
-                published_at
-            `)
-            .eq(
-                "student_id",
-                student.student_id
-            )
-            .eq(
-                "status",
-                "published"
-            )
-            .order(
-                "published_at",
-                {
-                    ascending: false
-                }
-            );
-
-
-    if (
-        error
-    ) {
-
-        console.error(
-            "Published reports error:",
-            error
-        );
-
-
-        showMessage(
-            "Could not load published reports.",
-            "error"
-        );
-
-
+    if (error) {
+        console.error("Published reports error:", error);
+        showMessage("Could not load published reports.", "error");
         return;
     }
 
-
-    publishedReports =
-        data || [];
-
-
+    publishedReports = data || [];
     populateReportFilters();
 
-
-    if (
-        publishedReports.length
-    ) {
-
-        currentReport =
-            publishedReports[0];
-
-
-        selectReport(
-            currentReport
-        );
-
-
+    if (publishedReports.length) {
+        currentReport = publishedReports[0];
+        syncFiltersToReport(currentReport);
+        await selectReport(currentReport);
     } else {
-
-        currentReport =
-            null;
-
-
-        allResults =
-            [];
-
-
-        filteredResults =
-            [];
-
-
+        currentReport = null;
+        allResults = [];
+        filteredResults = [];
         renderResults();
-
-
-        showMessage(
-            "No published result is available yet.",
-            "info"
-        );
+        renderSummary();
+        showMessage("No published result is available yet.", "info");
     }
 }
 
-
-/* =========================================
-   REPORT FILTERS
-========================================= */
+function buildOptions(values, placeholder) {
+    return `
+        <option value="">${placeholder}</option>
+        ${values
+            .map(value => `
+                <option value="${escapeHtml(value)}">
+                    ${escapeHtml(value)}
+                </option>
+            `)
+            .join("")}
+    `;
+}
 
 function populateReportFilters() {
+    const sessionSelect = $("sessionFilter");
+    const classSelect = $("classFilter");
+    const termSelect = $("termFilter");
 
-    const sessionSelect =
-        $("sessionFilter");
+    if (!sessionSelect || !classSelect || !termSelect) return;
 
+    const sessions = uniqueValues(publishedReports.map(report => report.session));
+    const classes = uniqueValues(publishedReports.map(report => report.class));
+    const terms = uniqueValues(publishedReports.map(report => report.term));
 
-    const termSelect =
-        $("termFilter");
+    sessionSelect.innerHTML = buildOptions(sessions, "Select Session");
+    classSelect.innerHTML = buildOptions(classes, "Select Class");
+    termSelect.innerHTML = buildOptions(terms, "Select Term");
 
-
-    if (
-        !sessionSelect ||
-        !termSelect
-    ) {
-        return;
-    }
-
-
-    const sessions =
-        uniqueValues(
-            publishedReports
-                .map(
-                    report =>
-                        report.session
-                )
-        );
-
-
-    const terms =
-        uniqueValues(
-            publishedReports
-                .map(
-                    report =>
-                        report.term
-                )
-        );
-
-
-    sessionSelect.innerHTML = `
-
-        <option value="">
-            All Sessions
-        </option>
-
-        ${sessions
-            .map(
-                value => `
-                    <option value="${escapeHtml(value)}">
-                        ${escapeHtml(value)}
-                    </option>
-                `
-            )
-            .join("")}
-    `;
-
-
-    termSelect.innerHTML = `
-
-        <option value="">
-            All Terms
-        </option>
-
-        ${terms
-            .map(
-                value => `
-                    <option value="${escapeHtml(value)}">
-                        ${escapeHtml(value)}
-                    </option>
-                `
-            )
-            .join("")}
-    `;
-
-
-    sessionSelect
-        .addEventListener(
-            "change",
-            applyReportFilter
-        );
-
-
-    termSelect
-        .addEventListener(
-            "change",
-            applyReportFilter
-        );
+    sessionSelect.onchange = applyReportFilter;
+    classSelect.onchange = applyReportFilter;
+    termSelect.onchange = applyReportFilter;
 }
 
+function syncFiltersToReport(report) {
+    if (!report) return;
 
-/* =========================================
-   APPLY REPORT FILTER
-========================================= */
+    if ($("sessionFilter")) $("sessionFilter").value = report.session || "";
+    if ($("classFilter")) $("classFilter").value = report.class || "";
+    if ($("termFilter")) $("termFilter").value = report.term || "";
+}
 
 function applyReportFilter() {
+    const selectedSession = $("sessionFilter")?.value || "";
+    const selectedClass = $("classFilter")?.value || "";
+    const selectedTerm = $("termFilter")?.value || "";
 
-    const selectedSession =
-        $("sessionFilter")
-            ?.value ||
-        "";
+    const match = publishedReports.find(report => {
+        const sessionOk =
+            !selectedSession || normalize(report.session) === normalize(selectedSession);
 
+        const classOk =
+            !selectedClass || normalize(report.class) === normalize(selectedClass);
 
-    const selectedTerm =
-        $("termFilter")
-            ?.value ||
-        "";
+        const termOk =
+            !selectedTerm || normalize(report.term) === normalize(selectedTerm);
 
+        return sessionOk && classOk && termOk;
+    });
 
-    const match =
-        publishedReports.find(
-            report => {
-
-                const sessionOk =
-                    !selectedSession
-                    ||
-                    normalize(
-                        report.session
-                    )
-                    ===
-                    normalize(
-                        selectedSession
-                    );
-
-
-                const termOk =
-                    !selectedTerm
-                    ||
-                    normalize(
-                        report.term
-                    )
-                    ===
-                    normalize(
-                        selectedTerm
-                    );
-
-
-                return (
-                    sessionOk &&
-                    termOk
-                );
-            }
-        );
-
-
-    if (
-        match
-    ) {
-
-        currentReport =
-            match;
-
-
-        selectReport(
-            match
-        );
-
-
+    if (match) {
+        currentReport = match;
+        syncFiltersToReport(match);
+        selectReport(match);
     } else {
-
-        currentReport =
-            null;
-
-
-        allResults =
-            [];
-
-
-        filteredResults =
-            [];
-
-
+        currentReport = null;
+        allResults = [];
+        filteredResults = [];
         renderResults();
-
-
-        showMessage(
-            "No published report matches the selected filters.",
-            "info"
-        );
+        renderSummary();
+        showMessage("No published report matches the selected filters.", "info");
     }
 }
 
-
-/* =========================================
-   SELECT REPORT
-========================================= */
-
-async function selectReport(
-    report
-) {
-
+async function selectReport(report) {
     hideMessage();
 
+    setText("reportSession", report.session || "--");
+    setText("reportTerm", report.term || "--");
+    setText("reportStudentClass", report.class || "--");
+    setText("reportRemark", report.remark || "No remark provided.");
 
-    if (
-        $("reportSession")
-    ) {
-
-        $("reportSession").textContent =
-            report.session ||
-            "--";
+    const selectionText = $("resultSelectionText");
+    if (selectionText) {
+        selectionText.textContent =
+            `${report.class || "Class"} • ${report.term || "Term"} • ${report.session || "Session"}`;
     }
 
-
-    if (
-        $("reportTerm")
-    ) {
-
-        $("reportTerm").textContent =
-            report.term ||
-            "--";
-    }
-
-
-    if (
-        $("reportClass")
-    ) {
-
-        $("reportClass").textContent =
-            report.class ||
-            "--";
-    }
-
-
-    if (
-        $("reportRemark")
-    ) {
-
-        $("reportRemark").textContent =
-            report.remark ||
-            "No remark provided.";
-    }
-
-
-    await loadResultsForReport(
-        report
-    );
+    await loadResultsForReport(report);
 }
 
+async function loadResultsForReport(report) {
+    const { data, error } = await supabaseClient
+        .from("results")
+        .select(`
+            id,
+            student_id,
+            subject,
+            ca,
+            exam,
+            total,
+            grade,
+            term,
+            session,
+            class,
+            status
+        `)
+        .eq("student_id", student.student_id)
+        .eq("class", report.class)
+        .eq("term", report.term)
+        .eq("session", report.session)
+        .order("subject", { ascending: true });
 
-/* =========================================
-   LOAD REPORT RESULTS
-========================================= */
-
-async function loadResultsForReport(
-    report
-) {
-
-    const {
-        data,
-        error
-    } =
-        await supabaseClient
-            .from("results")
-            .select(`
-                id,
-                student_id,
-                subject,
-                ca,
-                exam,
-                total,
-                grade,
-                term,
-                session,
-                class,
-                status
-            `)
-            .eq(
-                "student_id",
-                student.student_id
-            )
-            .eq(
-                "class",
-                report.class
-            )
-            .eq(
-                "term",
-                report.term
-            )
-            .eq(
-                "session",
-                report.session
-            )
-            .order(
-                "subject",
-                {
-                    ascending: true
-                }
-            );
-
-
-    if (
-        error
-    ) {
-
-        console.error(
-            "Student result error:",
-            error
-        );
-
-
-        showMessage(
-            "Could not load this report.",
-            "error"
-        );
-
-
+    if (error) {
+        console.error("Student result error:", error);
+        showMessage("Could not load this report.", "error");
         return;
     }
 
-
-    allResults =
-        data || [];
-
-
-    filteredResults =
-        [...allResults];
-
+    allResults = data || [];
+    filteredResults = [...allResults];
 
     renderResults();
-
     renderSummary();
 }
 
-
-/* =========================================
-   RENDER RESULTS
-========================================= */
-
-function renderResults() {
-
-    const body =
-        $("resultsTableBody");
-
-
-    if (!body) {
-        return;
-    }
-
-
-    if (
-        !filteredResults.length
-    ) {
-
-        body.innerHTML = `
-
+function resultRowsHtml() {
+    if (!filteredResults.length) {
+        return `
             <tr>
-
-                <td
-                    colspan="6"
-                    class="empty-state"
-                >
+                <td colspan="5" class="empty-row">
                     No published result found.
                 </td>
-
             </tr>
         `;
+    }
 
+    return filteredResults
+        .map(result => {
+            const total = getResultTotal(result);
+            const grade = result.grade || "-";
+
+            return `
+                <tr>
+                    <td>${escapeHtml(result.subject || "-")}</td>
+                    <td>${escapeHtml(result.ca ?? "-")}</td>
+                    <td>${escapeHtml(result.exam ?? "-")}</td>
+                    <td><strong>${escapeHtml(total)}</strong></td>
+                    <td>
+                        <span class="grade-badge ${getGradeClass(grade)}">
+                            ${escapeHtml(grade)}
+                        </span>
+                    </td>
+                </tr>
+            `;
+        })
+        .join("");
+}
+
+function renderResults() {
+    const mainBody = $("resultsTable");
+    const reportBody = $("reportResultsTable");
+    const rows = resultRowsHtml();
+
+    if (mainBody) mainBody.innerHTML = rows;
+    if (reportBody) reportBody.innerHTML = rows;
+}
+
+function renderSummary() {
+    const count = allResults.length;
+
+    const totalScore = allResults.reduce(
+        (sum, result) => sum + getResultTotal(result),
+        0
+    );
+
+    const average = count ? (totalScore / count).toFixed(1) : "0.0";
+
+    const passed = allResults.filter(
+        result => getResultTotal(result) >= 40
+    ).length;
+
+    setText("subjects", count);
+    setText("average", `${average}%`);
+    setText("passedSubjects", passed);
+    setText("position", "N/A");
+
+    setText("reportSubjects", count);
+    setText("reportAverage", `${average}%`);
+    setText("reportPassed", passed);
+    setText("reportPosition", "N/A");
+}
+
+function printCurrentResult() {
+    if (!currentReport || !filteredResults.length) {
+        showMessage("Select a published result before printing.", "warning");
         return;
     }
 
-
-    body.innerHTML =
-        filteredResults
-            .map(
-                result => {
-
-                    const total =
-                        getResultTotal(
-                            result
-                        );
-
-
-                    const grade =
-                        result.grade ||
-                        "-";
-
-
-                    return `
-
-                        <tr>
-
-                            <td>
-                                ${escapeHtml(
-                                    result.subject ||
-                                    "-"
-                                )}
-                            </td>
-
-                            <td>
-                                ${escapeHtml(
-                                    result.ca ??
-                                    "-"
-                                )}
-                            </td>
-
-                            <td>
-                                ${escapeHtml(
-                                    result.exam ??
-                                    "-"
-                                )}
-                            </td>
-
-                            <td>
-                                <strong>
-                                    ${escapeHtml(
-                                        total
-                                    )}
-                                </strong>
-                            </td>
-
-                            <td>
-                                <span class="grade-badge ${getGradeClass(
-                                    grade
-                                )}">
-                                    ${escapeHtml(
-                                        grade
-                                    )}
-                                </span>
-                            </td>
-
-                            <td>
-                                ${
-                                    total >= 40
-                                        ? "Pass"
-                                        : "Needs Improvement"
-                                }
-                            </td>
-
-                        </tr>
-                    `;
-                }
-            )
-            .join("");
+    window.print();
 }
-
-
-/* =========================================
-   SUMMARY
-========================================= */
-
-function renderSummary() {
-
-    const count =
-        allResults.length;
-
-
-    const totalScore =
-        allResults.reduce(
-            (
-                sum,
-                result
-            ) =>
-                sum +
-                getResultTotal(
-                    result
-                ),
-            0
-        );
-
-
-    const average =
-        count
-            ? (
-                totalScore /
-                count
-            ).toFixed(1)
-            : "0.0";
-
-
-    const passed =
-        allResults.filter(
-            result =>
-                getResultTotal(
-                    result
-                ) >= 40
-        ).length;
-
-
-    if (
-        $("subjectCount")
-    ) {
-
-        $("subjectCount").textContent =
-            count;
-    }
-
-
-    if (
-        $("averageScore")
-    ) {
-
-        $("averageScore").textContent =
-            average;
-    }
-
-
-    if (
-        $("passedSubjects")
-    ) {
-
-        $("passedSubjects").textContent =
-            passed;
-    }
-}
-
-
-/* =========================================
-   LOGOUT
-========================================= */
 
 async function logoutStudent() {
-
     try {
-
-        await supabaseClient
-            .auth
-            .signOut();
-
-
+        await supabaseClient.auth.signOut();
     } catch (error) {
-
-        console.error(
-            "Student logout:",
-            error
-        );
-
-
+        console.error("Student logout:", error);
     } finally {
-
-        localStorage.removeItem(
-            "student"
-        );
-
-
-        window.location.replace(
-            getStudentLoginUrl()
-        );
+        localStorage.removeItem("student");
+        window.location.replace(getStudentLoginUrl());
     }
 }
-
-
-/* =========================================
-   EVENTS
-========================================= */
 
 function setupEvents() {
+    $("logoutBtn")?.addEventListener("click", async event => {
+        event.preventDefault();
+        await logoutStudent();
+    });
 
-    $("logoutBtn")
-        ?.addEventListener(
-            "click",
-            async event => {
+    $("sidebarLogoutBtn")?.addEventListener("click", async event => {
+        event.preventDefault();
+        await logoutStudent();
+    });
 
-                event.preventDefault();
+    $("printResultBtn")?.addEventListener("click", printCurrentResult);
 
-                await logoutStudent();
-            }
-        );
+    $("changePhotoBtn")?.addEventListener("click", () => {
+        $("profilePhotoInput")?.click();
+    });
 
-
-    $("sidebarLogoutBtn")
-        ?.addEventListener(
-            "click",
-            async event => {
-
-                event.preventDefault();
-
-                await logoutStudent();
-            }
-        );
-
-
-    $("changePhotoBtn")
-        ?.addEventListener(
-            "click",
-            () => {
-
-                $("profilePhotoInput")
-                    ?.click();
-            }
-        );
-
-
-    $("profilePhotoInput")
-        ?.addEventListener(
-            "change",
-            async event => {
-
-                const file =
-                    event
-                        .target
-                        .files
-                        ?.[0];
-
-
-                if (
-                    file
-                ) {
-
-                    await uploadStudentProfilePhoto(
-                        file
-                    );
-                }
-            }
-        );
+    $("profilePhotoInput")?.addEventListener("change", async event => {
+        const file = event.target.files?.[0];
+        if (file) await uploadStudentProfilePhoto(file);
+    });
 }
 
+document.addEventListener("DOMContentLoaded", async () => {
+    setupEvents();
 
-/* =========================================
-   START
-========================================= */
+    const valid = await verifyStudentSession();
+    if (!valid) return;
 
-document.addEventListener(
-    "DOMContentLoaded",
-    async () => {
-
-        setupEvents();
-
-
-        const valid =
-            await verifyStudentSession();
-
-
-        if (!valid) {
-            return;
-        }
-
-
-        await displayStudentProfile();
-
-        await loadPublishedReports();
-    }
-);
+    await displayStudentProfile();
+    await loadPublishedReports();
+});
