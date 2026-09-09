@@ -454,3 +454,295 @@ supabaseClient
             }
         }
     );
+
+
+/* =========================================
+   PORTAL ACCESS PROVISIONING
+========================================= */
+
+async function sendPortalInvitation(
+    role,
+    recordId,
+    email,
+    button
+) {
+
+    if (!email || email === "-") {
+
+        alert(
+            `Add a valid email to this ${role} record before creating Portal access.`
+        );
+
+        return;
+    }
+
+
+    const confirmed =
+        confirm(
+            `Send a ${role} Portal invitation to ${email}?`
+        );
+
+
+    if (!confirmed)
+        return;
+
+
+    const oldText =
+        button?.textContent ||
+        "🔐";
+
+
+    if (button) {
+
+        button.disabled =
+            true;
+
+        button.textContent =
+            "…";
+    }
+
+
+    try {
+
+        const {
+            data,
+            error
+        } =
+            await supabaseClient
+                .functions
+                .invoke(
+                    "create-portal-user",
+                    {
+                        body: {
+                            role,
+                            record_id:
+                                recordId,
+                            email
+                        }
+                    }
+                );
+
+
+        if (error) {
+            throw error;
+        }
+
+
+        if (data?.error) {
+            throw new Error(
+                data.error
+            );
+        }
+
+
+        alert(
+            data?.message ||
+            "Portal invitation sent successfully."
+        );
+
+
+    } catch (error) {
+
+        console.error(
+            "Portal invitation error:",
+            error
+        );
+
+
+        alert(
+            "Could not create Portal access: " +
+            (
+                error?.message ||
+                "Unknown error"
+            )
+        );
+
+
+    } finally {
+
+        if (button) {
+
+            button.disabled =
+                false;
+
+            button.textContent =
+                oldText;
+        }
+    }
+}
+
+
+function addPortalButtonsToRows() {
+
+    const path =
+        window.location.pathname;
+
+
+    const studentPage =
+        path.endsWith(
+            "students.html"
+        );
+
+
+    const teacherPage =
+        path.endsWith(
+            "teachers.html"
+        );
+
+
+    if (
+        !studentPage &&
+        !teacherPage
+    ) {
+        return;
+    }
+
+
+    const body =
+        document.getElementById(
+            studentPage
+                ? "studentsTableBody"
+                : "teachersTableBody"
+        );
+
+
+    if (!body)
+        return;
+
+
+    body
+        .querySelectorAll("tr")
+        .forEach(row => {
+
+            if (
+                row.querySelector(
+                    ".portal-access-btn"
+                )
+            ) {
+                return;
+            }
+
+
+            const cells =
+                row.querySelectorAll(
+                    "td"
+                );
+
+
+            if (cells.length < 2)
+                return;
+
+
+            const email =
+                cells[0]
+                    ?.querySelector(
+                        ".teacher-name-info span"
+                    )
+                    ?.textContent
+                    ?.trim() ||
+                "";
+
+
+            const recordId =
+                cells[1]
+                    ?.textContent
+                    ?.trim() ||
+                "";
+
+
+            const actions =
+                row.querySelector(
+                    ".table-action-buttons"
+                );
+
+
+            if (
+                !actions ||
+                !recordId
+            ) {
+                return;
+            }
+
+
+            const button =
+                document.createElement(
+                    "button"
+                );
+
+
+            button.type =
+                "button";
+
+            button.className =
+                "table-btn portal-access-btn";
+
+            button.title =
+                "Create / Send Portal Access";
+
+            button.textContent =
+                "🔐";
+
+
+            button.style.background =
+                "#EDE9FE";
+
+            button.style.color =
+                "#5B21B6";
+
+
+            button.addEventListener(
+                "click",
+                () =>
+                    sendPortalInvitation(
+                        studentPage
+                            ? "student"
+                            : "teacher",
+                        recordId,
+                        email,
+                        button
+                    )
+            );
+
+
+            actions.appendChild(
+                button
+            );
+        });
+}
+
+
+document.addEventListener(
+    "DOMContentLoaded",
+    () => {
+
+        addPortalButtonsToRows();
+
+
+        const target =
+            document.getElementById(
+                window.location.pathname
+                    .endsWith("students.html")
+                    ? "studentsTableBody"
+                    : "teachersTableBody"
+            );
+
+
+        if (!target)
+            return;
+
+
+        const observer =
+            new MutationObserver(
+                addPortalButtonsToRows
+            );
+
+
+        observer.observe(
+            target,
+            {
+                childList: true,
+                subtree: true
+            }
+        );
+    }
+);
