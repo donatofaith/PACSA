@@ -158,20 +158,53 @@ Deno.serve(async (req) => {
       return fail(`This ${role} portal account is inactive.`, 400);
     }
 
-    if (record.auth_user_id) {
-      return json({
-        ok: true,
-        already_linked: true,
-        message: `This ${role} already has Portal access.`,
-      });
-    }
-
     const siteUrl = (
       Deno.env.get("PACSA_SITE_URL") ||
       "https://pacsa.vercel.app"
     ).replace(/\/$/, "");
 
+    const loginPage = role === "student"
+      ? "student-login.html"
+      : "teacher-login.html";
+
     const redirectTo = `${siteUrl}/${config.redirectPage}`;
+    const loginUrl = `${siteUrl}/${loginPage}`;
+
+    if (record.auth_user_id) {
+      const temporaryPassword = makeTemporaryPassword();
+
+      const { error: resetError } = await adminClient.auth.admin.updateUserById(
+        record.auth_user_id,
+        {
+          password: temporaryPassword,
+          email_confirm: true,
+          user_metadata: {
+            role,
+            [config.metadataKey]: recordId,
+            provisioned_by_admin: true,
+            temporary_password_reset: true,
+          },
+        },
+      );
+
+      if (resetError) {
+        console.error("Temporary password reset failed:", resetError);
+        return fail(resetError.message || "Could not reset Portal password.", 400);
+      }
+
+      return json({
+        ok: true,
+        already_linked: true,
+        temporary_password_created: true,
+        password_reset: true,
+        temporary_password: temporaryPassword,
+        login_url: loginUrl,
+        auth_user_id: record.auth_user_id,
+        portal_status: record.portal_status || null,
+        message:
+          `A new temporary password was created for this ${role}.\n\n${role.toUpperCase()} EMAIL: ${email}\nTEMPORARY PASSWORD: ${temporaryPassword}\nLOGIN: ${loginUrl}\n\nGive this password to the ${role} securely, then have them log in and change it.`,
+      });
+    }
 
     const {
       data: inviteData,
@@ -203,6 +236,7 @@ Deno.serve(async (req) => {
         auth_user_id: inviteData?.user?.id || null,
         linked: Boolean(refreshed?.auth_user_id),
         portal_status: refreshed?.portal_status || null,
+        login_url: loginUrl,
         message:
           `Portal invitation sent to ${email}. The ${role} should use the email link to set a password.`,
       });
@@ -216,7 +250,7 @@ Deno.serve(async (req) => {
       inviteMessage.includes("exists")
     ) {
       return fail(
-        "An Auth account already exists for this email. Use password reset or review the account link in Supabase Auth.",
+        "An Auth account already exists for this email but the PACSA profile is not linked. Review this account in Supabase Auth, or use the student's/teacher's activation flow to link it.",
         409,
       );
     }
@@ -249,7 +283,7 @@ Deno.serve(async (req) => {
         createMessage.includes("exists")
       ) {
         return fail(
-          "An Auth account already exists for this email. Use password reset or review the account link in Supabase Auth.",
+          "An Auth account already exists for this email but the PACSA profile is not linked. Review this account in Supabase Auth, or use the student's/teacher's activation flow to link it.",
           409,
         );
       }
@@ -273,8 +307,10 @@ Deno.serve(async (req) => {
       auth_user_id: createdData?.user?.id || null,
       linked: Boolean(refreshed?.auth_user_id),
       portal_status: refreshed?.portal_status || null,
+      temporary_password: temporaryPassword,
+      login_url: loginUrl,
       message:
-        `Email invitation could not be sent, so Portal access was created with a temporary password.\n\n${role.toUpperCase()} EMAIL: ${email}\nTEMPORARY PASSWORD: ${temporaryPassword}\n\nGive this password to the ${role} securely, then have them log in and change it.`,
+        `Email invitation could not be sent, so Portal access was created with a temporary password.\n\n${role.toUpperCase()} EMAIL: ${email}\nTEMPORARY PASSWORD: ${temporaryPassword}\nLOGIN: ${loginUrl}\n\nGive this password to the ${role} securely, then have them log in and change it.`,
     });
   } catch (error) {
     console.error("create-portal-user error:", error);
