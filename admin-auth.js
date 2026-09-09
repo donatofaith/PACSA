@@ -105,6 +105,44 @@ function hasFreshAdminLogin(
 }
 
 
+async function getFunctionErrorMessage(error) {
+
+    let message =
+        error?.message ||
+        "Unknown error";
+
+
+    try {
+
+        const response =
+            error?.context;
+
+
+        if (
+            response &&
+            typeof response.clone ===
+                "function"
+        ) {
+
+            const payload =
+                await response
+                    .clone()
+                    .json();
+
+
+            message =
+                payload?.error ||
+                payload?.message ||
+                message;
+        }
+
+    } catch {}
+
+
+    return message;
+}
+
+
 /* =========================================
    LOGOUT
 ========================================= */
@@ -524,7 +562,12 @@ async function sendPortalInvitation(
 
 
         if (error) {
-            throw error;
+
+            throw new Error(
+                await getFunctionErrorMessage(
+                    error
+                )
+            );
         }
 
 
