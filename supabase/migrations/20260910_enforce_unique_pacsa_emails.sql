@@ -32,6 +32,7 @@ declare
   current_student_id text;
   current_teacher_id text;
   current_admin_id uuid;
+  current_auth_user_id uuid;
 begin
   email_value := public.pacsa_normalize_email(new.email);
 
@@ -41,18 +42,15 @@ begin
 
   if tg_table_name = 'applications' then
     current_application_id := new.id;
-  end if;
-
-  if tg_table_name = 'students' then
+  elsif tg_table_name = 'students' then
     current_student_id := new.student_id;
-  end if;
-
-  if tg_table_name = 'Teachers' then
+    current_auth_user_id := new.auth_user_id;
+  elsif tg_table_name = 'Teachers' then
     current_teacher_id := new.teacher_id;
-  end if;
-
-  if tg_table_name = 'admins' then
+    current_auth_user_id := new.auth_user_id;
+  elsif tg_table_name = 'admins' then
     current_admin_id := new.id;
+    current_auth_user_id := new.auth_user_id;
   end if;
 
   if exists (
@@ -116,8 +114,8 @@ begin
     from auth.users u
     where public.pacsa_normalize_email(u.email) = email_value
       and (
-        new.auth_user_id is null
-        or u.id is distinct from new.auth_user_id
+        current_auth_user_id is null
+        or u.id is distinct from current_auth_user_id
       )
   ) then
     raise exception '%', public.pacsa_email_conflict_message()
