@@ -28,10 +28,10 @@ set search_path = public, auth
 as $$
 declare
   email_value text;
-  current_application_id uuid;
+  current_application_id text;
   current_student_id text;
   current_teacher_id text;
-  current_admin_id uuid;
+  current_admin_id text;
   current_auth_user_id uuid;
 begin
   email_value := public.pacsa_normalize_email(new.email);
@@ -41,15 +41,15 @@ begin
   end if;
 
   if tg_table_name = 'applications' then
-    current_application_id := new.id;
+    current_application_id := new.id::text;
   elsif tg_table_name = 'students' then
-    current_student_id := new.student_id;
+    current_student_id := new.student_id::text;
     current_auth_user_id := new.auth_user_id;
   elsif tg_table_name = 'Teachers' then
-    current_teacher_id := new.teacher_id;
+    current_teacher_id := new.teacher_id::text;
     current_auth_user_id := new.auth_user_id;
   elsif tg_table_name = 'admins' then
-    current_admin_id := new.id;
+    current_admin_id := new.id::text;
     current_auth_user_id := new.auth_user_id;
   end if;
 
@@ -61,7 +61,7 @@ begin
     where public.pacsa_normalize_email(a.email) = email_value
       and (
         current_application_id is null
-        or a.id is distinct from current_application_id
+        or a.id::text is distinct from current_application_id
       )
   ) then
     raise exception '%', public.pacsa_email_conflict_message()
@@ -75,7 +75,7 @@ begin
       and (
         tg_table_name <> 'students'
         or current_student_id is null
-        or s.student_id is distinct from current_student_id
+        or s.student_id::text is distinct from current_student_id
       )
   ) then
     raise exception '%', public.pacsa_email_conflict_message()
@@ -89,7 +89,7 @@ begin
       and (
         tg_table_name <> 'Teachers'
         or current_teacher_id is null
-        or t.teacher_id is distinct from current_teacher_id
+        or t.teacher_id::text is distinct from current_teacher_id
       )
   ) then
     raise exception '%', public.pacsa_email_conflict_message()
@@ -103,7 +103,7 @@ begin
       and (
         tg_table_name <> 'admins'
         or current_admin_id is null
-        or ad.id is distinct from current_admin_id
+        or ad.id::text is distinct from current_admin_id
       )
   ) then
     raise exception '%', public.pacsa_email_conflict_message()
