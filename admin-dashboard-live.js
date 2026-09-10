@@ -4,7 +4,7 @@
 ========================================= */
 
 const PACSA_LIVE = (() => {
-    const seenStorageKey = "pacsa_last_seen_application_at";
+    const seenStorageKey = "pacsa_last_seen_admin_notice_at";
 
     const norm = value =>
         String(value ?? "")
@@ -88,7 +88,9 @@ const PACSA_LIVE = (() => {
                 position: fixed;
                 top: 82px;
                 right: 28px;
-                width: min(360px, calc(100vw - 32px));
+                width: min(390px, calc(100vw - 32px));
+                max-height: min(560px, calc(100vh - 105px));
+                overflow-y: auto;
                 background: #fff;
                 border: 1px solid #e5e7eb;
                 box-shadow: 0 18px 45px rgba(15, 23, 42, 0.16);
@@ -120,12 +122,14 @@ const PACSA_LIVE = (() => {
                 gap: 10px;
                 padding: 12px 0;
                 border-top: 1px solid #f1f5f9;
+                text-decoration: none;
             }
             .pacsa-notification-icon {
                 width: 34px;
                 height: 34px;
                 border-radius: 12px;
                 display: flex;
+                flex: 0 0 auto;
                 align-items: center;
                 justify-content: center;
                 background: #f3e8ff;
@@ -174,17 +178,78 @@ const PACSA_LIVE = (() => {
     }
 
     async function loadLiveData() {
-        const [applications, results, students] = await Promise.all([
+        const [applications, results, studentReports, students] = await Promise.all([
             loadTable("applications"),
             loadTable("results"),
+            loadTable("student_reports"),
             loadTable("students"),
         ]);
 
-        updateNotificationBell(applications);
+        updateNotificationBell({ applications, results, studentReports });
         updateDashboardAnalytics(results, students);
     }
 
-    function updateNotificationBell(applications) {
+    function makeNotifications({ applications, results, studentReports }) {
+        const notices = [];
+
+        applications
+            .filter(app => norm(app.status || "pending") === "pending")
+            .forEach(app => {
+                notices.push({
+                    icon: "📝",
+                    title: app.full_name || "New applicant",
+                    detail: `Admission application for ${app.class || "a class"}`,
+                    date: app.created_at || app.updated_at,
+                    href: "applications.html",
+                });
+            });
+
+        results
+            .filter(result => norm(result.status || "pending") === "pending")
+            .forEach(result => {
+                notices.push({
+                    icon: "📑",
+                    title: "Result uploaded",
+                    detail: `${result.subject || "Subject result"} for ${result.class || "a class"} is waiting for review`,
+                    date: result.created_at || result.updated_at,
+                    href: "results.html",
+                });
+            });
+
+        studentReports
+            .filter(report => norm(report.status || "pending") === "pending")
+            .forEach(report => {
+                notices.push({
+                    icon: "📊",
+                    title: "Report submitted",
+                    detail: `${report.student_id || "A student"} report is waiting for admin approval`,
+                    date: report.submitted_at || report.created_at || report.updated_at,
+                    href: "reports.html",
+                });
+            });
+
+        const recentlyPublished = results
+            .filter(result => norm(result.status) === "published")
+            .sort((a, b) => new Date(b.updated_at || b.created_at || 0) - new Date(a.updated_at || a.created_at || 0))
+            .slice(0, 3);
+
+        recentlyPublished.forEach(result => {
+            notices.push({
+                icon: "✅",
+                title: "Result published",
+                detail: `${result.subject || "A result"} for ${result.class || "a class"} is now published`,
+                date: result.updated_at || result.created_at,
+                href: "results.html",
+                passive: true,
+            });
+        });
+
+        return notices
+            .filter(notice => notice.date)
+            .sort((a, b) => new Date(b.date || 0) - new Date(a.date || 0));
+    }
+
+    function updateNotificationBell(data) {
         const button = document.querySelector(".notification-btn");
         if (!button) return;
 
@@ -196,31 +261,29 @@ const PACSA_LIVE = (() => {
             button.appendChild(count);
         }
 
-        const pending = [...applications]
-            .filter(app => norm(app.status || "pending") === "pending")
-            .sort((a, b) => new Date(b.created_at || 0) - new Date(a.created_at || 0));
-
-        const latest = pending[0]?.created_at || "";
+        const notices = makeNotifications(data);
+        const actionable = notices.filter(notice => !notice.passive);
+        const latest = notices[0]?.date || "";
         const lastSeen = localStorage.getItem(seenStorageKey) || "";
-        const unread = pending.filter(app =>
-            !lastSeen || new Date(app.created_at || 0) > new Date(lastSeen)
+        const unread = notices.filter(notice =>
+            !lastSeen || new Date(notice.date || 0) > new Date(lastSeen)
         );
 
         const dot = button.querySelector(".notification-dot");
 
-        if (pending.length > 0) {
+        if (actionable.length > 0 || unread.length > 0) {
             count.style.display = "flex";
-            count.textContent = String(Math.min(unread.length || pending.length, 99));
+            count.textContent = String(Math.min(unread.length || actionable.length, 99));
             dot?.classList.remove("hidden");
         } else {
             count.style.display = "none";
             dot?.classList.add("hidden");
         }
 
-        buildNotificationPanel(pending, latest);
+        buildNotificationPanel(notices, latest);
     }
 
-    function buildNotificationPanel(pending, latestCreatedAt) {
+    function buildNotificationPanel(notices, latestCreatedAt) {
         let panel = document.getElementById("pacsaNotificationPanel");
 
         if (!panel) {
@@ -230,59 +293,62 @@ const PACSA_LIVE = (() => {
             document.body.appendChild(panel);
         }
 
-        const items = pending.slice(0, 6);
+        const items = notices.slice(0, 10);
 
         panel.innerHTML = `
             <div class="pacsa-notification-header">
                 <h3>Notifications</h3>
-                <a href="applications.html">Open Applications</a>
+                <a href="reports.html">Open Reports</a>
             </div>
             ${items.length
-                ? items.map(app => `
-                    <div class="pacsa-notification-item">
-                        <div class="pacsa-notification-icon">📝</div>
+                ? items.map(notice => `
+                    <a class="pacsa-notification-item" href="${escapeHtml(notice.href || "#")}">
+                        <div class="pacsa-notification-icon">${notice.icon}</div>
                         <div class="pacsa-notification-body">
-                            <strong>${escapeHtml(app.full_name || "New applicant")}</strong>
+                            <strong>${escapeHtml(notice.title)}</strong>
                             <span>
-                                Applied for ${escapeHtml(app.class || "a class")} •
-                                ${escapeHtml(timeAgo(app.created_at))}
+                                ${escapeHtml(notice.detail)} • ${escapeHtml(timeAgo(notice.date))}
                             </span>
                         </div>
-                    </div>
+                    </a>
                 `).join("")
-                : `<div class="pacsa-notification-empty">No pending applications right now.</div>`
+                : `<div class="pacsa-notification-empty">No important admin notifications right now.</div>`
             }
         `;
 
         const button = document.querySelector(".notification-btn");
 
-        button?.addEventListener(
-            "click",
-            event => {
-                event.preventDefault();
-                event.stopImmediatePropagation();
+        if (!button.dataset.pacsaNoticeBound) {
+            button.dataset.pacsaNoticeBound = "true";
 
-                panel.classList.toggle("active");
+            button.addEventListener(
+                "click",
+                event => {
+                    event.preventDefault();
+                    event.stopImmediatePropagation();
 
-                if (panel.classList.contains("active") && latestCreatedAt) {
-                    localStorage.setItem(seenStorageKey, latestCreatedAt);
+                    panel.classList.toggle("active");
 
-                    const count = button.querySelector(".pacsa-notification-count");
-                    if (count) count.style.display = "none";
+                    if (panel.classList.contains("active") && latestCreatedAt) {
+                        localStorage.setItem(seenStorageKey, latestCreatedAt);
+
+                        const count = button.querySelector(".pacsa-notification-count");
+                        if (count) count.style.display = "none";
+                    }
+                },
+                true
+            );
+
+            document.addEventListener("click", event => {
+                if (
+                    panel.classList.contains("active") &&
+                    !panel.contains(event.target) &&
+                    !button.contains(event.target)
+                ) {
+                    panel.classList.remove("active");
                 }
-            },
-            true
-        );
-
-        document.addEventListener("click", event => {
-            if (
-                panel.classList.contains("active") &&
-                !panel.contains(event.target) &&
-                !button?.contains(event.target)
-            ) {
-                panel.classList.remove("active");
-            }
-        });
+            });
+        }
     }
 
     function updateDashboardAnalytics(results, students) {
