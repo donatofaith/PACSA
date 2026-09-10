@@ -83,7 +83,6 @@ async function verifyAdmin(req: Request) {
 
 function buildAdmissionEmail(params: {
   fullName: string;
-  email: string;
   className: string;
   studentId: string;
   loginUrl: string;
@@ -114,36 +113,79 @@ function buildAdmissionEmail(params: {
               <h1 style="margin:0;font-size:24px;">PACSA Admission Notice</h1>
               <p style="margin:8px 0 0;font-size:14px;">Becoming Leaders Through Righteousness</p>
             </div>
-
             <div style="padding:26px;line-height:1.6;">
               <p>Dear <strong>${safeName}</strong>,</p>
-
-              <p>
-                Congratulations. Your application to <strong>PACSA</strong> has been approved.
-              </p>
-
+              <p>Congratulations. Your application to <strong>PACSA</strong> has been approved.</p>
               <div style="background:#f9fafb;border:1px solid #e5e7eb;border-radius:12px;padding:16px;margin:20px 0;">
                 <p style="margin:0 0 8px;"><strong>Admitted Class:</strong> ${safeClass}</p>
                 <p style="margin:0;"><strong>Student ID:</strong> ${safeStudentId}</p>
               </div>
-
-              <p>
-                You can visit the Student Portal here:
-              </p>
-
+              <p>You can visit the Student Portal here:</p>
               <p style="margin:22px 0;">
                 <a href="${safeLoginUrl}" style="display:inline-block;background:#5B21B6;color:#ffffff;text-decoration:none;padding:12px 18px;border-radius:10px;font-weight:bold;">
                   Open Student Portal
                 </a>
               </p>
+              <p style="font-size:14px;color:#6b7280;">The school administrator will provide your portal access details if they have not already been sent.</p>
+              <p style="margin-top:24px;">PACSA<br><strong>Becoming Leaders Through Righteousness</strong></p>
+            </div>
+          </div>
+        </div>
+      </body>
+    </html>
+  `;
 
-              <p style="font-size:14px;color:#6b7280;">
-                The school administrator will provide your portal access details if they have not already been sent.
-              </p>
+  return { subject, textContent, htmlContent };
+}
 
-              <p style="margin-top:24px;">
-                PACSA<br>
-                <strong>Becoming Leaders Through Righteousness</strong>
+function buildNewApplicationEmail(params: {
+  fullName: string;
+  applicantEmail: string;
+  parentName: string;
+  phone: string;
+  className: string;
+  applicationsUrl: string;
+}) {
+  const subject = "New PACSA Admission Application";
+  const safeName = escapeHtml(params.fullName || "Applicant");
+  const safeApplicantEmail = escapeHtml(params.applicantEmail || "--");
+  const safeParent = escapeHtml(params.parentName || "--");
+  const safePhone = escapeHtml(params.phone || "--");
+  const safeClass = escapeHtml(params.className || "--");
+  const safeUrl = escapeHtml(params.applicationsUrl);
+
+  const textContent =
+    `A new PACSA admission application has been submitted.\n\n` +
+    `Applicant: ${params.fullName || "--"}\n` +
+    `Class: ${params.className || "--"}\n` +
+    `Parent/Guardian: ${params.parentName || "--"}\n` +
+    `Phone: ${params.phone || "--"}\n` +
+    `Email: ${params.applicantEmail || "--"}\n\n` +
+    `Open Applications: ${params.applicationsUrl}`;
+
+  const htmlContent = `
+    <!doctype html>
+    <html>
+      <body style="margin:0;padding:0;background:#f7f7fb;font-family:Arial,sans-serif;color:#1f2937;">
+        <div style="max-width:640px;margin:0 auto;padding:24px;">
+          <div style="background:#ffffff;border-radius:16px;border:1px solid #e5e7eb;overflow:hidden;">
+            <div style="background:#5B21B6;color:#ffffff;padding:22px;text-align:center;">
+              <h1 style="margin:0;font-size:22px;">New Admission Application</h1>
+              <p style="margin:8px 0 0;font-size:14px;">PACSA School Management System</p>
+            </div>
+            <div style="padding:24px;line-height:1.6;">
+              <p>A new admission application has been submitted.</p>
+              <div style="background:#f9fafb;border:1px solid #e5e7eb;border-radius:12px;padding:16px;margin:18px 0;">
+                <p style="margin:0 0 8px;"><strong>Applicant:</strong> ${safeName}</p>
+                <p style="margin:0 0 8px;"><strong>Class:</strong> ${safeClass}</p>
+                <p style="margin:0 0 8px;"><strong>Parent/Guardian:</strong> ${safeParent}</p>
+                <p style="margin:0 0 8px;"><strong>Phone:</strong> ${safePhone}</p>
+                <p style="margin:0;"><strong>Email:</strong> ${safeApplicantEmail}</p>
+              </div>
+              <p style="margin:22px 0;">
+                <a href="${safeUrl}" style="display:inline-block;background:#5B21B6;color:#ffffff;text-decoration:none;padding:12px 18px;border-radius:10px;font-weight:bold;">
+                  Review Application
+                </a>
               </p>
             </div>
           </div>
@@ -153,6 +195,55 @@ function buildAdmissionEmail(params: {
   `;
 
   return { subject, textContent, htmlContent };
+}
+
+async function sendBrevoEmail(args: {
+  brevoApiKey: string;
+  senderEmail: string;
+  senderName: string;
+  to: { name: string; email: string }[];
+  subject: string;
+  htmlContent: string;
+  textContent: string;
+  tags: string[];
+  headers?: Record<string, string>;
+}) {
+  const brevoResponse = await fetch("https://api.brevo.com/v3/smtp/email", {
+    method: "POST",
+    headers: {
+      "accept": "application/json",
+      "api-key": args.brevoApiKey,
+      "content-type": "application/json",
+    },
+    body: JSON.stringify({
+      sender: {
+        name: args.senderName,
+        email: args.senderEmail,
+      },
+      to: args.to,
+      subject: args.subject,
+      htmlContent: args.htmlContent,
+      textContent: args.textContent,
+      tags: args.tags,
+      headers: args.headers || {},
+    }),
+  });
+
+  const responseText = await brevoResponse.text();
+  let responseBody: Record<string, unknown> = {};
+
+  try {
+    responseBody = responseText ? JSON.parse(responseText) : {};
+  } catch (_) {
+    responseBody = { raw: responseText };
+  }
+
+  if (!brevoResponse.ok) {
+    console.error("Brevo email failed:", responseBody);
+    throw new Error(String(responseBody?.message || "Could not send email."));
+  }
+
+  return responseBody;
 }
 
 Deno.serve(async (req) => {
@@ -165,12 +256,6 @@ Deno.serve(async (req) => {
   }
 
   try {
-    const verification = await verifyAdmin(req);
-
-    if (!verification.ok) {
-      return verification.response;
-    }
-
     const brevoApiKey = Deno.env.get("BREVO_API_KEY");
     const senderEmail = Deno.env.get("PACSA_EMAIL_FROM");
     const senderName = Deno.env.get("PACSA_EMAIL_FROM_NAME") || "PACSA Admissions";
@@ -185,6 +270,65 @@ Deno.serve(async (req) => {
     }
 
     const body = await req.json();
+    const type = norm(body?.type || body?.event || "admission_approved");
+
+    if (type === "new_application") {
+      const adminEmail = clean(Deno.env.get("PACSA_ADMIN_EMAIL")) || senderEmail;
+
+      if (!isValidEmail(adminEmail)) {
+        return fail("PACSA admin notification email is not configured correctly.", 500);
+      }
+
+      const applicantEmail = clean(body?.email);
+      const fullName = clean(body?.full_name) || "Applicant";
+      const className = clean(body?.class);
+      const parentName = clean(body?.parent_name);
+      const phone = clean(body?.phone);
+      const applicationId = clean(body?.application_id);
+      const applicationsUrl = `${siteUrl}/applications.html`;
+
+      if (!applicationId) {
+        return fail("Application ID is required.", 400);
+      }
+
+      const { subject, textContent, htmlContent } = buildNewApplicationEmail({
+        fullName,
+        applicantEmail,
+        className,
+        parentName,
+        phone,
+        applicationsUrl,
+      });
+
+      const responseBody = await sendBrevoEmail({
+        brevoApiKey,
+        senderEmail,
+        senderName,
+        to: [{ name: "PACSA Admin", email: adminEmail }],
+        subject,
+        htmlContent,
+        textContent,
+        tags: ["application", "new-application", "admin-notice"],
+        headers: {
+          "X-PACSA-Application-ID": applicationId,
+        },
+      });
+
+      return json({
+        ok: true,
+        sent: true,
+        type,
+        provider: "brevo",
+        message_id: responseBody?.messageId || null,
+        recipient: adminEmail,
+      });
+    }
+
+    const verification = await verifyAdmin(req);
+
+    if (!verification.ok) {
+      return verification.response;
+    }
 
     const email = clean(body?.email);
     const fullName = clean(body?.full_name) || "Applicant";
@@ -203,60 +347,34 @@ Deno.serve(async (req) => {
 
     const { subject, textContent, htmlContent } = buildAdmissionEmail({
       fullName,
-      email,
       className,
       studentId,
       loginUrl,
     });
 
-    const brevoResponse = await fetch("https://api.brevo.com/v3/smtp/email", {
-      method: "POST",
+    const responseBody = await sendBrevoEmail({
+      brevoApiKey,
+      senderEmail,
+      senderName,
+      to: [
+        {
+          name: fullName,
+          email,
+        },
+      ],
+      subject,
+      htmlContent,
+      textContent,
+      tags: ["admission", "application-approved"],
       headers: {
-        "accept": "application/json",
-        "api-key": brevoApiKey,
-        "content-type": "application/json",
+        "X-PACSA-Application-ID": applicationId,
       },
-      body: JSON.stringify({
-        sender: {
-          name: senderName,
-          email: senderEmail,
-        },
-        to: [
-          {
-            name: fullName,
-            email,
-          },
-        ],
-        subject,
-        htmlContent,
-        textContent,
-        tags: ["admission", "application-approved"],
-        headers: {
-          "X-PACSA-Application-ID": applicationId,
-        },
-      }),
     });
-
-    const responseText = await brevoResponse.text();
-    let responseBody: Record<string, unknown> = {};
-
-    try {
-      responseBody = responseText ? JSON.parse(responseText) : {};
-    } catch (_) {
-      responseBody = { raw: responseText };
-    }
-
-    if (!brevoResponse.ok) {
-      console.error("Brevo email failed:", responseBody);
-      return fail(
-        String(responseBody?.message || "Could not send admission email."),
-        brevoResponse.status,
-      );
-    }
 
     return json({
       ok: true,
       sent: true,
+      type,
       provider: "brevo",
       message_id: responseBody?.messageId || null,
       recipient: email,
