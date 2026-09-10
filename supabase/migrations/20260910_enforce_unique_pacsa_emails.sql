@@ -53,13 +53,14 @@ begin
     current_auth_user_id := new.auth_user_id;
   end if;
 
-  if exists (
+  -- Block duplicate application emails, but do not let historical applications
+  -- stop the approved application from becoming a student record.
+  if tg_table_name = 'applications' and exists (
     select 1
     from public.applications a
     where public.pacsa_normalize_email(a.email) = email_value
       and (
-        tg_table_name <> 'applications'
-        or current_application_id is null
+        current_application_id is null
         or a.id is distinct from current_application_id
       )
   ) then
@@ -157,7 +158,9 @@ execute function public.pacsa_prevent_duplicate_email();
 
 -- Keep student activation strictly student-only.
 -- This does not create accounts. It only confirms that the Student ID and email belong to the same active student record.
-create or replace function public.pacsa_student_activation_check(
+drop function if exists public.pacsa_student_activation_check(text, text);
+
+create function public.pacsa_student_activation_check(
   p_student_id text,
   p_email text
 )
