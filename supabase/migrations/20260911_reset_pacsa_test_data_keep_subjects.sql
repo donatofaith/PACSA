@@ -13,7 +13,7 @@ update public.subjects
 set code = null
 where code is not null;
 
--- Drop unique constraints/indexes that only exist for subject code.
+-- Drop unique/check constraints and indexes that only exist for subject code.
 do $$
 declare
   r record;
@@ -64,14 +64,19 @@ alter table if exists public.students
   check (nin is null or nin ~ '^\d{11}$');
 
 -- 3) Collect auth users linked to students/teachers before deleting records.
-create temp table pacsa_auth_users_to_delete as
-select distinct auth_user_id as id
+create temp table pacsa_auth_users_to_delete(id uuid primary key) on commit drop;
+
+insert into pacsa_auth_users_to_delete(id)
+select distinct auth_user_id
 from public.students
 where auth_user_id is not null
-union
-select distinct auth_user_id as id
+on conflict do nothing;
+
+insert into pacsa_auth_users_to_delete(id)
+select distinct auth_user_id
 from public."Teachers"
-where auth_user_id is not null;
+where auth_user_id is not null
+on conflict do nothing;
 
 insert into pacsa_auth_users_to_delete(id)
 select distinct u.id
