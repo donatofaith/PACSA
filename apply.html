@@ -3,23 +3,10 @@
 
 <head>
     <meta charset="UTF-8">
-
-    <meta
-        name="viewport"
-        content="width=device-width, initial-scale=1.0"
-    >
-
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>PACSA Admission Form</title>
-
-    <link
-        href="https://fonts.googleapis.com/css2?family=Outfit:wght@300;400;500;600;700;800&display=swap"
-        rel="stylesheet"
-    >
-
-    <link
-        rel="stylesheet"
-        href="apply.css"
-    >
+    <link href="https://fonts.googleapis.com/css2?family=Outfit:wght@300;400;500;600;700;800&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="apply.css">
 </head>
 
 <body>
@@ -28,16 +15,12 @@
 
 <div class="form-container">
     <div class="form-card">
-        <img
-            src="images/PACSA LOGO.png"
-            alt="PACSA Logo"
-            class="logo"
-        >
+        <img src="images/PACSA LOGO.png" alt="PACSA Logo" class="logo">
 
         <h1>PACSA Admission Form</h1>
 
         <p class="subtitle">
-            Complete the form below and our admissions team will contact you.
+            Complete the form below. The school will review your details and contact you through the email provided.
         </p>
 
         <form id="applicationForm">
@@ -49,9 +32,7 @@
             <div class="form-group">
                 <label for="dateOfBirth">Date of Birth</label>
                 <input type="date" id="dateOfBirth" required>
-                <small id="ageHelp">
-                    Applicant must be at least 9 years old.
-                </small>
+                <small id="ageHelp">Applicant must be at least 9 years old.</small>
             </div>
 
             <div class="form-group">
@@ -74,6 +55,21 @@
                     <option value="SS2">SS2</option>
                     <option value="SS3">SS3</option>
                 </select>
+            </div>
+
+            <div class="form-group">
+                <label for="nin">NIN</label>
+                <input
+                    type="text"
+                    id="nin"
+                    inputmode="numeric"
+                    pattern="^[0-9]{11}$"
+                    maxlength="11"
+                    placeholder="Enter 11-digit NIN"
+                    title="NIN must be exactly 11 digits."
+                    required
+                >
+                <small>Enter digits only. Do not upload documents here.</small>
             </div>
 
             <div class="form-group">
@@ -108,11 +104,7 @@
 
             <p id="formMessage"></p>
 
-            <button
-                type="submit"
-                class="submit-btn"
-                id="submitBtn"
-            >
+            <button type="submit" class="submit-btn" id="submitBtn">
                 Submit Application
             </button>
 
@@ -127,47 +119,28 @@
 <script src="supabase.js"></script>
 
 <script>
-/* =========================================
-   PACSA ADMISSION FORM
-   MINIMUM AGE: 9 YEARS
-========================================= */
-
 const form = document.getElementById("applicationForm");
 const submitBtn = document.getElementById("submitBtn");
 const message = document.getElementById("formMessage");
 const dateOfBirthInput = document.getElementById("dateOfBirth");
+const ninInput = document.getElementById("nin");
 
 function getMinimumAgeDate() {
     const today = new Date();
-    const maximumBirthDate = new Date(
-        today.getFullYear() - 9,
-        today.getMonth(),
-        today.getDate()
-    );
-
+    const maximumBirthDate = new Date(today.getFullYear() - 9, today.getMonth(), today.getDate());
     const year = maximumBirthDate.getFullYear();
     const month = String(maximumBirthDate.getMonth() + 1).padStart(2, "0");
     const day = String(maximumBirthDate.getDate()).padStart(2, "0");
-
     return `${year}-${month}-${day}`;
 }
 
 function isAtLeastNineYearsOld(dateString) {
     if (!dateString) return false;
-
     const birthDate = new Date(`${dateString}T00:00:00`);
     const today = new Date();
-
     let age = today.getFullYear() - birthDate.getFullYear();
     const monthDifference = today.getMonth() - birthDate.getMonth();
-
-    if (
-        monthDifference < 0 ||
-        (monthDifference === 0 && today.getDate() < birthDate.getDate())
-    ) {
-        age--;
-    }
-
+    if (monthDifference < 0 || (monthDifference === 0 && today.getDate() < birthDate.getDate())) age--;
     return age >= 9;
 }
 
@@ -178,42 +151,28 @@ function showMessage(text, color) {
 
 function getFriendlyError(error) {
     const text = String(error?.message || error || "").toLowerCase();
-
-    if (text.includes("9 years")) {
-        return "Applicant must be at least 9 years old.";
-    }
-
-    if (
-        text.includes("already registered") ||
-        text.includes("duplicate") ||
-        text.includes("23505")
-    ) {
+    if (text.includes("9 years")) return "Applicant must be at least 9 years old.";
+    if (text.includes("already registered") || text.includes("duplicate") || text.includes("23505")) {
         return "This email is already registered in PACSA. Please use another email or contact the school.";
     }
-
+    if (text.includes("nin")) return "NIN must be exactly 11 digits.";
     return "Could not submit application: " + (error?.message || "Unknown error");
 }
 
 async function notifyAdminAboutApplication(application) {
     try {
-        const { error } = await supabaseClient.functions.invoke(
-            "smooth-api",
-            {
-                body: {
-                    type: "new_application",
-                    application_id: application.id,
-                    full_name: application.full_name,
-                    email: application.email,
-                    class: application.class,
-                    parent_name: application.parent_name,
-                    phone: application.phone
-                }
+        const { error } = await supabaseClient.functions.invoke("smooth-api", {
+            body: {
+                type: "new_application",
+                application_id: application.id,
+                full_name: application.full_name,
+                email: application.email,
+                class: application.class,
+                parent_name: application.parent_name,
+                phone: application.phone
             }
-        );
-
-        if (error) {
-            console.warn("Admin application email notification failed:", error);
-        }
+        });
+        if (error) console.warn("Admin application email notification failed:", error);
     } catch (error) {
         console.warn("Admin application email notification failed:", error);
     }
@@ -224,11 +183,14 @@ dateOfBirthInput.max = getMinimumAgeDate();
 dateOfBirthInput.addEventListener("change", () => {
     const value = dateOfBirthInput.value;
     dateOfBirthInput.setCustomValidity("");
-
     if (value && !isAtLeastNineYearsOld(value)) {
         dateOfBirthInput.setCustomValidity("Applicant must be at least 9 years old.");
         dateOfBirthInput.reportValidity();
     }
+});
+
+ninInput.addEventListener("input", () => {
+    ninInput.value = ninInput.value.replace(/\D/g, "").slice(0, 11);
 });
 
 form.addEventListener("submit", async event => {
@@ -238,11 +200,18 @@ form.addEventListener("submit", async event => {
     message.style.color = "";
 
     const dateOfBirth = dateOfBirthInput.value;
+    const nin = ninInput.value.trim();
 
     if (!isAtLeastNineYearsOld(dateOfBirth)) {
         showMessage("Applicant must be at least 9 years old.", "#dc2626");
         dateOfBirthInput.setCustomValidity("Applicant must be at least 9 years old.");
         dateOfBirthInput.reportValidity();
+        return;
+    }
+
+    if (!/^\d{11}$/.test(nin)) {
+        showMessage("NIN must be exactly 11 digits.", "#dc2626");
+        ninInput.reportValidity();
         return;
     }
 
@@ -261,6 +230,7 @@ form.addEventListener("submit", async event => {
         date_of_birth: dateOfBirth,
         gender: document.getElementById("gender").value,
         class: document.getElementById("classApplying").value,
+        nin,
         parent_name: document.getElementById("parentName").value.trim(),
         phone: document.getElementById("phone").value.trim(),
         email: document.getElementById("email").value.trim().toLowerCase(),
@@ -282,7 +252,7 @@ form.addEventListener("submit", async event => {
         await notifyAdminAboutApplication(data || application);
 
         showMessage(
-            "Application submitted successfully! Our admissions team will contact you.",
+            "Application submitted successfully. PACSA will review your details and contact you by email.",
             "#15803d"
         );
 
@@ -292,7 +262,6 @@ form.addEventListener("submit", async event => {
     } catch (error) {
         console.error("Application submission error:", error);
         showMessage(getFriendlyError(error), "#dc2626");
-
     } finally {
         submitBtn.disabled = false;
         submitBtn.textContent = "Submit Application";
