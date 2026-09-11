@@ -4,276 +4,55 @@
 <head>
 
     <meta charset="UTF-8">
-
-    <meta
-        name="viewport"
-        content="width=device-width, initial-scale=1.0"
-    >
-
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>PACSA | Activate Student Account</title>
-
-    <link
-        href="https://fonts.googleapis.com/css2?family=Outfit:wght@300;400;500;600;700;800&display=swap"
-        rel="stylesheet"
-    >
-
-    <link
-        rel="stylesheet"
-        href="student-login.css"
-    >
+    <link href="https://fonts.googleapis.com/css2?family=Outfit:wght@300;400;500;600;700;800&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="student-login.css">
 
     <style>
-
-        .register-note {
-            margin: 15px 0;
-            padding: 12px;
-            background: #F3E8FF;
-            border-radius: 10px;
-            color: #5B21B6;
-            font-size: 13px;
-            line-height: 1.5;
-        }
-
-        .login-link {
-            margin-top: 18px;
-            text-align: center;
-            font-size: 13px;
-        }
-
-        .login-link a {
-            color: #5B21B6;
-            font-weight: 700;
-            text-decoration: none;
-        }
-
-        .message {
-            display: none;
-            margin-top: 15px;
-            padding: 12px;
-            border-radius: 9px;
-            font-size: 13px;
-            line-height: 1.5;
-        }
-
-        .message.success {
-            display: block;
-            background: #DCFCE7;
-            color: #166534;
-        }
-
-        .message.error {
-            display: block;
-            background: #FEE2E2;
-            color: #B91C1C;
-        }
-
-        .password-box {
-            position: relative;
-        }
-
-        .password-box input {
-            padding-right: 50px;
-        }
-
-        .password-toggle {
-            position: absolute;
-            right: 15px;
-            top: 50%;
-            transform: translateY(-50%);
-            cursor: pointer;
-            user-select: none;
-            font-size: 17px;
-        }
-
-        .resend-btn {
-            width: 100%;
-            margin-top: 12px;
-            min-height: 50px;
-            border: 2px solid #6D28D9;
-            border-radius: 10px;
-            background: white;
-            color: #6D28D9;
-            font-weight: 700;
-            cursor: pointer;
-            display: none;
-        }
-
+        .register-note { margin: 15px 0; padding: 12px; background: #F3E8FF; border-radius: 10px; color: #5B21B6; font-size: 13px; line-height: 1.5; }
+        .login-link { margin-top: 18px; text-align: center; font-size: 13px; }
+        .login-link a { color: #5B21B6; font-weight: 700; text-decoration: none; }
+        .message { display: none; margin-top: 15px; padding: 12px; border-radius: 9px; font-size: 13px; line-height: 1.5; }
+        .message.success { display: block; background: #DCFCE7; color: #166534; }
+        .message.error { display: block; background: #FEE2E2; color: #B91C1C; }
+        .password-box { position: relative; }
+        .password-box input { padding-right: 50px; }
+        .password-toggle { position: absolute; right: 15px; top: 50%; transform: translateY(-50%); cursor: pointer; user-select: none; font-size: 17px; }
+        .password-help { display:block; margin-top:7px; color:#6B7280; font-size:11px; line-height:1.45; }
+        .resend-btn { width: 100%; margin-top: 12px; min-height: 50px; border: 2px solid #6D28D9; border-radius: 10px; background: white; color: #6D28D9; font-weight: 700; cursor: pointer; display: none; }
     </style>
 
 </head>
 
-
 <body>
-
 <div class="overlay"></div>
-
 <div class="login-container">
-
     <div class="login-card">
-
-        <img
-            src="images/PACSA LOGO.png"
-            alt="PACSA Logo"
-            class="logo"
-        >
-
+        <img src="images/PACSA LOGO.png" alt="PACSA Logo" class="logo">
         <h1>PACSA</h1>
-
-        <p class="motto">
-            Activate Student Portal
-        </p>
-
-
-        <div class="register-note">
-
-            Only students already registered by PACSA
-            can activate a portal account.
-
-        </div>
-
+        <p class="motto">Activate Student Portal</p>
+        <div class="register-note">Only students already registered by PACSA can activate a portal account.</div>
 
         <form id="studentRegisterForm">
-
-
+            <div class="input-group"><label for="studentId">Student ID</label><input type="text" id="studentId" placeholder="e.g. PACSA001" required></div>
+            <div class="input-group"><label for="email">Registered Email</label><input type="email" id="email" placeholder="Enter your registered email" required></div>
             <div class="input-group">
-
-                <label for="studentId">
-                    Student ID
-                </label>
-
-                <input
-                    type="text"
-                    id="studentId"
-                    placeholder="e.g. PACSA001"
-                    required
-                >
-
+                <label for="password">Create Password</label>
+                <div class="password-box"><input type="password" id="password" placeholder="Create strong password" minlength="8" pattern="(?=.*[a-z])(?=.*[A-Z])(?=.*[^A-Za-z0-9]).{8,}" title="Use at least 8 characters with uppercase, lowercase and a special character." required><span id="togglePassword" class="password-toggle" role="button" tabindex="0">👁</span></div>
+                <small class="password-help">Must include uppercase, lowercase and a special character.</small>
             </div>
-
-
             <div class="input-group">
-
-                <label for="email">
-                    Registered Email
-                </label>
-
-                <input
-                    type="email"
-                    id="email"
-                    placeholder="Enter your registered email"
-                    required
-                >
-
+                <label for="confirmPassword">Confirm Password</label>
+                <div class="password-box"><input type="password" id="confirmPassword" placeholder="Repeat password" minlength="8" pattern="(?=.*[a-z])(?=.*[A-Z])(?=.*[^A-Za-z0-9]).{8,}" title="Use at least 8 characters with uppercase, lowercase and a special character." required><span id="toggleConfirmPassword" class="password-toggle" role="button" tabindex="0">👁</span></div>
             </div>
-
-
-            <div class="input-group">
-
-                <label for="password">
-                    Create Password
-                </label>
-
-                <div class="password-box">
-
-                    <input
-                        type="password"
-                        id="password"
-                        placeholder="Minimum 8 characters"
-                        minlength="8"
-                        required
-                    >
-
-                    <span
-                        id="togglePassword"
-                        class="password-toggle"
-                        role="button"
-                        tabindex="0"
-                    >
-                        👁
-                    </span>
-
-                </div>
-
-            </div>
-
-
-            <div class="input-group">
-
-                <label for="confirmPassword">
-                    Confirm Password
-                </label>
-
-                <div class="password-box">
-
-                    <input
-                        type="password"
-                        id="confirmPassword"
-                        placeholder="Repeat password"
-                        minlength="8"
-                        required
-                    >
-
-                    <span
-                        id="toggleConfirmPassword"
-                        class="password-toggle"
-                        role="button"
-                        tabindex="0"
-                    >
-                        👁
-                    </span>
-
-                </div>
-
-            </div>
-
-
-            <button
-                type="submit"
-                class="login-btn"
-                id="registerBtn"
-            >
-                Activate Account
-            </button>
-
-
-            <button
-                type="button"
-                id="resendVerificationBtn"
-                class="resend-btn"
-            >
-                Resend Verification Email
-            </button>
-
+            <button type="submit" class="login-btn" id="registerBtn">Activate Account</button>
+            <button type="button" id="resendVerificationBtn" class="resend-btn">Resend Verification Email</button>
         </form>
-
-
-        <div
-            id="registerMessage"
-            class="message"
-        ></div>
-
-
-        <div class="login-link">
-
-            Already activated?
-
-            <a href="student-login.html">
-                Login
-            </a>
-
-        </div>
-
+        <div id="registerMessage" class="message"></div>
+        <div class="login-link">Already activated? <a href="student-login.html">Login</a></div>
     </div>
-
 </div>
-
-
-<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
-
-<script src="supabase.js"></script>
-
-<script src="student-register.js"></script>
-
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script><script src="supabase.js"></script><script src="student-register.js"></script>
 </body>
-
 </html>
