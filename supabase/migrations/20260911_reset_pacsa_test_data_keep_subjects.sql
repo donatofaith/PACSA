@@ -2,6 +2,7 @@
 -- Keeps subjects, admins, sessions/classes/settings.
 -- Removes current students, teachers, applications, assignments, results, reports,
 -- and deletes student/teacher Supabase Auth logins linked to those records.
+-- Storage files are not deleted here because Supabase blocks direct storage table deletion.
 
 begin;
 
@@ -129,15 +130,6 @@ begin
     truncate table public."Teachers" restart identity cascade;
   end if;
 end $$;
-
--- Optional cleanup for document/profile storage rows owned by removed students/teachers.
-delete from storage.objects
-where bucket_id in ('pacsa-documents','profile-photos')
-  and (
-    name like 'students/%'
-    or name like 'teachers/%'
-    or name like 'applications/%'
-  );
 
 -- 5) Delete linked student/teacher Supabase Auth login accounts.
 -- This does NOT delete admin auth users.
