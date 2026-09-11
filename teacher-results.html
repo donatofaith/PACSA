@@ -1,1 +1,95 @@
-<!DOCTYPE html><html lang="en"><head><meta charset="UTF-8"><meta name="viewport" content="width=device-width, initial-scale=1.0"><title>PACSA | Teacher Results</title><link href="https://fonts.googleapis.com/css2?family=Outfit:wght@300;400;500;600;700;800&display=swap" rel="stylesheet"><link rel="stylesheet" href="teacher-portal-pages.css"></head><body data-page="results"><aside class="sidebar" id="sidebar"><div class="brand"><img src="images/PACSA LOGO.png" alt="PACSA"><div><h2>PACSA</h2><p>Teacher Portal</p></div></div><nav class="nav"><a href="teacher-dashboard.html">🏠 Dashboard</a><a href="teacher-assignments.html">📚 My Assignments</a><a href="teacher-class.html" id="myClassLink" class="hidden">🏫 My Class</a><a href="teacher-results.html" class="active">📝 Student Results</a><a href="teacher-profile.html">👤 My Profile</a></nav><button class="logout" id="sidebarLogoutBtn">🚪 Logout</button></aside><div class="main"><header class="topbar"><div class="top-left"><button class="menu" id="menuBtn">☰</button><div><h1>Student Results</h1><p>Enter and manage results for your assigned subjects</p></div></div><div class="top-teacher"><img id="miniAvatar" src="images/PACSA LOGO.png" alt="Teacher"><div><strong id="topTeacherName">Loading...</strong><span id="topTeacherId">--</span></div></div><button class="logout" id="logoutBtn">Logout</button></header><main class="content"><section class="page-card"><div class="page-head"><div><span class="label">RESULT MANAGEMENT</span><h2>Student Results</h2><p>Only your assigned classes and subjects appear here.</p></div><button class="btn primary" id="addResultBtn">+ Enter Result</button></div><div id="resultEntryPanel" class="card hidden"><h3>Enter Student Result</h3><div class="form-grid"><div class="field"><label for="resultAssignment">Class & Subject</label><select id="resultAssignment"></select></div><div class="field"><label for="resultStudent">Student</label><select id="resultStudent"><option value="">Select Student</option></select></div><div class="field"><label for="resultTerm">Term</label><select id="resultTerm"><option value="">Select Term</option><option>First Term</option><option>Second Term</option><option>Third Term</option></select></div><div class="field"><label for="resultCA">CA Mark (0 - 40)</label><input type="number" id="resultCA" min="0" max="40"></div><div class="field"><label for="resultExam">Exam Mark (0 - 60)</label><input type="number" id="resultExam" min="0" max="60"></div><div class="field"><label for="resultTotal">Total</label><input type="number" id="resultTotal" readonly></div><div class="field"><label for="resultGrade">Grade</label><input type="text" id="resultGrade" readonly></div></div><div class="actions"><button class="btn primary" id="submitResultBtn">Submit Result</button></div><p id="resultMessage" class="msg"></p></div><div class="table-wrap" style="margin-top:18px"><table><thead><tr><th>Student ID</th><th>Student Name</th><th>Class</th><th>Subject</th><th>CA</th><th>Exam</th><th>Total</th><th>Grade</th><th>Term</th><th>Status</th><th>Action</th></tr></thead><tbody id="resultsTable"><tr><td colspan="11">Loading results...</td></tr></tbody></table></div></section></main></div><script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script><script src="supabase.js"></script><script src="teacher-portal-page.js"></script></body></html>
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>PACSA | Teacher Results</title>
+  <link href="https://fonts.googleapis.com/css2?family=Outfit:wght@300;400;500;600;700;800&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="teacher-portal-pages.css">
+</head>
+<body data-page="results">
+  <aside class="sidebar" id="sidebar">
+    <div class="brand">
+      <img src="images/PACSA LOGO.png" alt="PACSA">
+      <div><h2>PACSA</h2><p>Teacher Portal</p></div>
+    </div>
+    <nav class="nav">
+      <a href="teacher-dashboard.html">🏠 Dashboard</a>
+      <a href="teacher-assignments.html">📚 My Assignments</a>
+      <a href="teacher-class.html" id="myClassLink" class="hidden">🏫 My Class</a>
+      <a href="teacher-results.html" class="active">📝 Student Results</a>
+      <a href="teacher-profile.html">👤 My Profile</a>
+    </nav>
+    <button class="logout" id="sidebarLogoutBtn">🚪 Logout</button>
+  </aside>
+
+  <div class="main">
+    <header class="topbar">
+      <div class="top-left">
+        <button class="menu" id="menuBtn">☰</button>
+        <div>
+          <h1>Student Results</h1>
+          <p>Enter and manage results for your assigned subjects</p>
+        </div>
+      </div>
+      <div class="top-teacher">
+        <img id="miniAvatar" src="images/PACSA LOGO.png" alt="Teacher">
+        <div><strong id="topTeacherName">Loading...</strong><span id="topTeacherId">--</span></div>
+      </div>
+      <button class="logout" id="logoutBtn">Logout</button>
+    </header>
+
+    <main class="content">
+      <section class="page-card">
+        <div class="page-head">
+          <div>
+            <span class="label">RESULT MANAGEMENT</span>
+            <h2>Student Results</h2>
+            <p>Only your assigned classes and subjects appear here.</p>
+          </div>
+          <button class="btn primary" id="addResultBtn">+ Enter Result</button>
+        </div>
+
+        <div id="resultEntryPanel" class="card hidden">
+          <h3>Enter Student Result</h3>
+          <div class="form-grid">
+            <div class="field"><label for="resultAssignment">Class & Subject</label><select id="resultAssignment"></select></div>
+            <div class="field"><label for="resultStudent">Student</label><select id="resultStudent"><option value="">Select Student</option></select></div>
+            <div class="field"><label for="resultTerm">Term</label><select id="resultTerm"><option value="">Select Term</option><option>First Term</option><option>Second Term</option><option>Third Term</option></select></div>
+            <div class="field"><label for="resultCA">CA Mark (0 - 40)</label><input type="number" id="resultCA" min="0" max="40"></div>
+            <div class="field"><label for="resultExam">Exam Mark (0 - 60)</label><input type="number" id="resultExam" min="0" max="60"></div>
+            <div class="field"><label for="resultTotal">Total</label><input type="number" id="resultTotal" readonly></div>
+            <div class="field"><label for="resultGrade">Grade</label><input type="text" id="resultGrade" readonly></div>
+          </div>
+          <div class="actions">
+            <button class="btn primary" id="submitResultBtn">Submit Result</button>
+          </div>
+          <p id="resultMessage" class="msg"></p>
+        </div>
+
+        <div class="result-filter-bar">
+          <div class="field"><label for="resultSearch">Search</label><input type="text" id="resultSearch" placeholder="Search student, ID, class or subject"></div>
+          <div class="field"><label for="resultClassFilter">Class</label><select id="resultClassFilter"><option value="">All Classes</option></select></div>
+          <div class="field"><label for="resultSubjectFilter">Subject</label><select id="resultSubjectFilter"><option value="">All Subjects</option></select></div>
+          <div class="field"><label for="resultTermFilter">Term</label><select id="resultTermFilter"><option value="">All Terms</option><option>First Term</option><option>Second Term</option><option>Third Term</option></select></div>
+          <div class="field"><label for="resultStatusFilter">Status</label><select id="resultStatusFilter"><option value="">All Status</option><option value="pending">Pending</option><option value="published">Published</option><option value="rejected">Rejected</option></select></div>
+          <button class="btn light" id="clearResultFilters" type="button">Clear</button>
+        </div>
+
+        <div class="table-wrap" style="margin-top:18px">
+          <table>
+            <thead>
+              <tr><th>Student ID</th><th>Student Name</th><th>Class</th><th>Subject</th><th>CA</th><th>Exam</th><th>Total</th><th>Grade</th><th>Term</th><th>Status</th><th>Action</th></tr>
+            </thead>
+            <tbody id="resultsTable"><tr><td colspan="11">Loading results...</td></tr></tbody>
+          </table>
+        </div>
+      </section>
+    </main>
+  </div>
+
+  <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+  <script src="supabase.js"></script>
+  <script src="teacher-portal-page.js"></script>
+</body>
+</html>
