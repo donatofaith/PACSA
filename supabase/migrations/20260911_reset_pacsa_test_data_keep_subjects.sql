@@ -94,14 +94,41 @@ using public.admins a
 where a.auth_user_id = d.id;
 
 -- 4) Clear academic/student/teacher/application data.
-truncate table if exists public.student_reports restart identity cascade;
-truncate table if exists public.results restart identity cascade;
-truncate table if exists public.student_subjects restart identity cascade;
-truncate table if exists public.teacher_assignments restart identity cascade;
-truncate table if exists public.class_teacher_assignments restart identity cascade;
-truncate table if exists public.applications restart identity cascade;
-truncate table if exists public.students restart identity cascade;
-truncate table if exists public."Teachers" restart identity cascade;
+-- Supabase/Postgres does not accept TRUNCATE TABLE IF EXISTS, so we check each table first.
+do $$
+begin
+  if to_regclass('public.student_reports') is not null then
+    truncate table public.student_reports restart identity cascade;
+  end if;
+
+  if to_regclass('public.results') is not null then
+    truncate table public.results restart identity cascade;
+  end if;
+
+  if to_regclass('public.student_subjects') is not null then
+    truncate table public.student_subjects restart identity cascade;
+  end if;
+
+  if to_regclass('public.teacher_assignments') is not null then
+    truncate table public.teacher_assignments restart identity cascade;
+  end if;
+
+  if to_regclass('public.class_teacher_assignments') is not null then
+    truncate table public.class_teacher_assignments restart identity cascade;
+  end if;
+
+  if to_regclass('public.applications') is not null then
+    truncate table public.applications restart identity cascade;
+  end if;
+
+  if to_regclass('public.students') is not null then
+    truncate table public.students restart identity cascade;
+  end if;
+
+  if to_regclass('public."Teachers"') is not null then
+    truncate table public."Teachers" restart identity cascade;
+  end if;
+end $$;
 
 -- Optional cleanup for document/profile storage rows owned by removed students/teachers.
 delete from storage.objects
