@@ -21,7 +21,8 @@ const clean = (value: unknown) => String(value ?? "").trim();
 const makeTemporaryPassword = () => {
   const chars = "ABCDEFGHJKLMNPQRSTUVWXYZabcdefghijkmnopqrstuvwxyz23456789!@$%*?";
   const bytes = crypto.getRandomValues(new Uint8Array(18));
-  return Array.from(bytes, (byte) => chars[byte % chars.length]).join("") + "9a!";
+  const randomPart = Array.from(bytes, (byte) => chars[byte % chars.length]).join("");
+  return `Aa1!${randomPart}`;
 };
 
 function escapeHtml(value: unknown) {
