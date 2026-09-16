@@ -17,23 +17,17 @@ where id = (
   limit 1
 );
 
+alter table if exists public.admins drop constraint if exists admins_role_check;
 alter table if exists public.admins
-  drop constraint if exists admins_role_check;
-
-alter table if exists public.admins
-  add constraint admins_role_check
-  check (role in ('super_admin','admin'));
+  add constraint admins_role_check check (role in ('super_admin','admin'));
 
 -- TEACHER / PRINCIPAL ROLES
 alter table if exists public."Teachers"
   add column if not exists role text not null default 'teacher';
 
+alter table if exists public."Teachers" drop constraint if exists teachers_role_check;
 alter table if exists public."Teachers"
-  drop constraint if exists teachers_role_check;
-
-alter table if exists public."Teachers"
-  add constraint teachers_role_check
-  check (role in ('teacher','principal'));
+  add constraint teachers_role_check check (role in ('teacher','principal'));
 
 -- A principal may teach subjects, but must not be a class teacher.
 create or replace function public.pacsa_block_principal_class_teacher()
@@ -44,8 +38,7 @@ set search_path = public
 as $$
 begin
   if exists (
-    select 1
-    from public."Teachers" t
+    select 1 from public."Teachers" t
     where t.teacher_id = new.teacher_id
       and lower(coalesce(t.role,'teacher')) = 'principal'
   ) then
@@ -75,7 +68,13 @@ create table if not exists public.assessment_periods (
 
 alter table public.assessment_periods enable row level security;
 
--- Result structure: First CA /10 + Second CA /20 = CA /30; Exam /70; Total /100.
+drop policy if exists "Authenticated can view assessment periods" on public.assessment_periods;
+create policy "Authenticated can view assessment periods"
+on public.assessment_periods for select
+to authenticated
+using (true);
+
+-- RESULT STRUCTURE
 alter table if exists public.results
   add column if not exists first_ca numeric(5,2),
   add column if not exists second_ca numeric(5,2),
@@ -83,49 +82,21 @@ alter table if exists public.results
   add column if not exists ca_published_at timestamptz,
   add column if not exists assessment_stage text not null default 'ca';
 
-alter table if exists public.results
-  drop constraint if exists results_first_ca_check;
-alter table if exists public.results
-  add constraint results_first_ca_check
-  check (first_ca is null or (first_ca >= 0 and first_ca <= 10));
+alter table if exists public.results drop constraint if exists results_first_ca_check;
+alter table if exists public.results add constraint results_first_ca_check check (first_ca is null or (first_ca >= 0 and first_ca <= 10));
+alter table if exists public.results drop constraint if exists results_second_ca_check;
+alter table if exists public.results add constraint results_second_ca_check check (second_ca is null or (second_ca >= 0 and second_ca <= 20));
+alter table if exists public.results drop constraint if exists results_ca_30_check;
+alter table if exists public.results add constraint results_ca_30_check check (ca is null or (ca >= 0 and ca <= 30));
+alter table if exists public.results drop constraint if exists results_exam_70_check;
+alter table if exists public.results add constraint results_exam_70_check check (exam is null or (exam >= 0 and exam <= 70));
+alter table if exists public.results drop constraint if exists results_total_100_check;
+alter table if exists public.results add constraint results_total_100_check check (total is null or (total >= 0 and total <= 100));
+alter table if exists public.results drop constraint if exists results_ca_status_check;
+alter table if exists public.results add constraint results_ca_status_check check (ca_status in ('draft','published'));
+alter table if exists public.results drop constraint if exists results_assessment_stage_check;
+alter table if exists public.results add constraint results_assessment_stage_check check (assessment_stage in ('ca','exam'));
 
-alter table if exists public.results
-  drop constraint if exists results_second_ca_check;
-alter table if exists public.results
-  add constraint results_second_ca_check
-  check (second_ca is null or (second_ca >= 0 and second_ca <= 20));
-
-alter table if exists public.results
-  drop constraint if exists results_ca_30_check;
-alter table if exists public.results
-  add constraint results_ca_30_check
-  check (ca is null or (ca >= 0 and ca <= 30));
-
-alter table if exists public.results
-  drop constraint if exists results_exam_70_check;
-alter table if exists public.results
-  add constraint results_exam_70_check
-  check (exam is null or (exam >= 0 and exam <= 70));
-
-alter table if exists public.results
-  drop constraint if exists results_total_100_check;
-alter table if exists public.results
-  add constraint results_total_100_check
-  check (total is null or (total >= 0 and total <= 100));
-
-alter table if exists public.results
-  drop constraint if exists results_ca_status_check;
-alter table if exists public.results
-  add constraint results_ca_status_check
-  check (ca_status in ('draft','published'));
-
-alter table if exists public.results
-  drop constraint if exists results_assessment_stage_check;
-alter table if exists public.results
-  add constraint results_assessment_stage_check
-  check (assessment_stage in ('ca','exam'));
-
--- Keep CA and total consistent even if a client sends an incorrect total.
 create or replace function public.pacsa_normalize_result_scores()
 returns trigger
 language plpgsql
@@ -135,13 +106,11 @@ begin
   if new.first_ca is not null or new.second_ca is not null then
     new.ca := coalesce(new.first_ca,0) + coalesce(new.second_ca,0);
   end if;
-
   if new.assessment_stage = 'ca' then
     new.total := new.ca;
   else
     new.total := coalesce(new.ca,0) + coalesce(new.exam,0);
   end if;
-
   return new;
 end;
 $$;
@@ -158,13 +127,10 @@ alter table if exists public.student_reports
   add column if not exists principal_teacher_id text,
   add column if not exists principal_reviewed_at timestamptz;
 
--- Preserve existing class-teacher remarks.
 update public.student_reports
 set teacher_remark = remark
-where teacher_remark is null
-  and nullif(trim(coalesce(remark,'')),'') is not null;
+where teacher_remark is null and nullif(trim(coalesce(remark,'')),'') is not null;
 
--- Class teacher's legacy remark field remains supported and mirrors teacher_remark.
 create or replace function public.pacsa_sync_teacher_remark()
 returns trigger
 language plpgsql
@@ -185,15 +151,14 @@ create trigger trg_pacsa_sync_teacher_remark
 before insert or update on public.student_reports
 for each row execute function public.pacsa_sync_teacher_remark();
 
--- Useful role helpers for authenticated clients.
+-- ROLE HELPERS
 create or replace function public.pacsa_get_my_admin_role()
 returns text
 language sql
 security definer
 set search_path = public
 as $$
-  select a.role
-  from public.admins a
+  select a.role from public.admins a
   where a.auth_user_id = auth.uid()
     and lower(coalesce(a.status,'active')) = 'active'
   limit 1;
@@ -205,14 +170,198 @@ language sql
 security definer
 set search_path = public
 as $$
-  select t.role
-  from public."Teachers" t
+  select t.role from public."Teachers" t
   where t.auth_user_id = auth.uid()
     and lower(coalesce(t.portal_status,'active')) = 'active'
   limit 1;
 $$;
 
+-- SUPER ADMIN: safely assign/remove Principal role.
+create or replace function public.pacsa_superadmin_set_teacher_role(p_teacher_id text, p_role text)
+returns boolean
+language plpgsql
+security definer
+set search_path = public
+as $$
+begin
+  if not exists (
+    select 1 from public.admins a
+    where a.auth_user_id = auth.uid()
+      and a.role = 'super_admin'
+      and lower(coalesce(a.status,'active')) = 'active'
+  ) then raise exception 'Super Admin access is required.'; end if;
+
+  if p_role not in ('teacher','principal') then raise exception 'Invalid teacher role.'; end if;
+
+  if p_role = 'principal' and exists (
+    select 1 from public.class_teacher_assignments c where c.teacher_id = p_teacher_id
+  ) then raise exception 'Remove this teacher from Class Teacher assignments before assigning Principal.'; end if;
+
+  update public."Teachers" set role = p_role where teacher_id = p_teacher_id;
+  return found;
+end;
+$$;
+
+-- SUPER ADMIN: open C.A, Examination, or close result entry.
+create or replace function public.pacsa_superadmin_set_assessment_stage(p_session text, p_term text, p_stage text)
+returns boolean
+language plpgsql
+security definer
+set search_path = public
+as $$
+begin
+  if not exists (
+    select 1 from public.admins a
+    where a.auth_user_id = auth.uid()
+      and a.role = 'super_admin'
+      and lower(coalesce(a.status,'active')) = 'active'
+  ) then raise exception 'Super Admin access is required.'; end if;
+
+  if p_stage not in ('ca','exam','closed') then raise exception 'Invalid assessment stage.'; end if;
+
+  insert into public.assessment_periods(session,term,current_stage,ca_open,exam_open,updated_at)
+  values (p_session,p_term,p_stage,p_stage='ca',p_stage='exam',now())
+  on conflict(session,term) do update set
+    current_stage=excluded.current_stage,
+    ca_open=excluded.ca_open,
+    exam_open=excluded.exam_open,
+    updated_at=now();
+  return true;
+end;
+$$;
+
+-- PRINCIPAL REPORT LIST
+create or replace function public.pacsa_principal_get_reports()
+returns table(
+  student_id text,
+  class text,
+  term text,
+  session text,
+  teacher_remark text,
+  principal_remark text,
+  status text,
+  published_at timestamptz
+)
+language plpgsql
+security definer
+set search_path = public
+as $$
+begin
+  if not exists (
+    select 1 from public."Teachers" t
+    where t.auth_user_id = auth.uid()
+      and t.role = 'principal'
+      and lower(coalesce(t.portal_status,'active')) = 'active'
+  ) then raise exception 'Principal access is required.'; end if;
+
+  return query
+  select r.student_id::text, r.class::text, r.term::text, r.session::text,
+         coalesce(r.teacher_remark,r.remark)::text, r.principal_remark::text,
+         r.status::text, r.published_at
+  from public.student_reports r
+  where lower(coalesce(r.status,'')) in ('pending','published','rejected')
+  order by r.session desc, r.term, r.class, r.student_id;
+end;
+$$;
+
+create or replace function public.pacsa_principal_get_report_results(p_student_id text, p_class text, p_term text, p_session text)
+returns table(subject text, first_ca numeric, second_ca numeric, ca numeric, exam numeric, total numeric, grade text)
+language plpgsql
+security definer
+set search_path = public
+as $$
+begin
+  if not exists (
+    select 1 from public."Teachers" t
+    where t.auth_user_id = auth.uid() and t.role='principal'
+      and lower(coalesce(t.portal_status,'active'))='active'
+  ) then raise exception 'Principal access is required.'; end if;
+
+  return query
+  select r.subject::text,r.first_ca,r.second_ca,r.ca,r.exam,r.total,r.grade::text
+  from public.results r
+  where r.student_id=p_student_id and r.class=p_class and r.term=p_term and r.session=p_session
+  order by r.subject;
+end;
+$$;
+
+create or replace function public.pacsa_principal_publish_report(p_student_id text, p_class text, p_term text, p_session text, p_principal_remark text)
+returns boolean
+language plpgsql
+security definer
+set search_path = public
+as $$
+declare principal_id text;
+begin
+  select t.teacher_id into principal_id from public."Teachers" t
+  where t.auth_user_id=auth.uid() and t.role='principal'
+    and lower(coalesce(t.portal_status,'active'))='active' limit 1;
+  if principal_id is null then raise exception 'Principal access is required.'; end if;
+  if nullif(trim(coalesce(p_principal_remark,'')),'') is null then raise exception 'Principal remark is required.'; end if;
+
+  if not exists (
+    select 1 from public.student_reports r
+    where r.student_id=p_student_id and r.class=p_class and r.term=p_term and r.session=p_session
+      and lower(coalesce(r.status,''))='pending'
+      and nullif(trim(coalesce(r.teacher_remark,r.remark,'')),'') is not null
+  ) then raise exception 'This report is not ready for Principal approval or the Class Teacher remark is missing.'; end if;
+
+  if not exists (
+    select 1 from public.results r
+    where r.student_id=p_student_id and r.class=p_class and r.term=p_term and r.session=p_session
+      and r.assessment_stage='exam'
+  ) then raise exception 'The Examination result has not been completed.'; end if;
+
+  update public.student_reports set
+    principal_remark=trim(p_principal_remark), principal_teacher_id=principal_id,
+    principal_reviewed_at=now(), status='published', published_at=now()
+  where student_id=p_student_id and class=p_class and term=p_term and session=p_session;
+
+  update public.results set status='published'
+  where student_id=p_student_id and class=p_class and term=p_term and session=p_session;
+  return true;
+end;
+$$;
+
+create or replace function public.pacsa_principal_return_report(p_student_id text, p_class text, p_term text, p_session text, p_reason text)
+returns boolean
+language plpgsql
+security definer
+set search_path = public
+as $$
+begin
+  if not exists (
+    select 1 from public."Teachers" t where t.auth_user_id=auth.uid() and t.role='principal'
+  ) then raise exception 'Principal access is required.'; end if;
+
+  update public.student_reports set principal_remark=nullif(trim(coalesce(p_reason,'')),''), status='rejected', published_at=null
+  where student_id=p_student_id and class=p_class and term=p_term and session=p_session;
+  return found;
+end;
+$$;
+
+-- Student sees only their own published C.A results.
+create or replace function public.pacsa_get_my_ca_results()
+returns table(subject text, first_ca numeric, second_ca numeric, ca numeric, term text, session text, class text, ca_published_at timestamptz)
+language sql
+security definer
+set search_path = public
+as $$
+  select r.subject::text,r.first_ca,r.second_ca,r.ca,r.term::text,r.session::text,r.class::text,r.ca_published_at
+  from public.results r
+  join public.students s on s.student_id=r.student_id
+  where s.auth_user_id=auth.uid() and r.ca_status='published'
+  order by r.ca_published_at desc nulls last,r.subject;
+$$;
+
 grant execute on function public.pacsa_get_my_admin_role() to authenticated;
 grant execute on function public.pacsa_get_my_teacher_role() to authenticated;
+grant execute on function public.pacsa_superadmin_set_teacher_role(text,text) to authenticated;
+grant execute on function public.pacsa_superadmin_set_assessment_stage(text,text,text) to authenticated;
+grant execute on function public.pacsa_principal_get_reports() to authenticated;
+grant execute on function public.pacsa_principal_get_report_results(text,text,text,text) to authenticated;
+grant execute on function public.pacsa_principal_publish_report(text,text,text,text,text) to authenticated;
+grant execute on function public.pacsa_principal_return_report(text,text,text,text,text) to authenticated;
+grant execute on function public.pacsa_get_my_ca_results() to authenticated;
 
 commit;
