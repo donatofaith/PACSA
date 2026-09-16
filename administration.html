@@ -1,0 +1,57 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>PACSA | Administration Control</title>
+  <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Outfit:wght@300;400;500;600;700;800&display=swap">
+  <link rel="stylesheet" href="admin-dashboard.css">
+  <style>
+    .control-grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(320px,1fr));gap:20px}.control-card{background:#fff;border:1px solid #e5e7eb;border-radius:18px;padding:22px;box-shadow:0 8px 28px rgba(15,23,42,.05)}.control-card h2{margin:0 0 6px}.control-card p{color:#6b7280;line-height:1.5}.form-stack{display:grid;gap:13px;margin-top:18px}.form-stack label{font-weight:700;font-size:13px}.form-stack input,.form-stack select{width:100%;padding:12px;border:1px solid #d1d5db;border-radius:10px;font:inherit}.status-message{margin-top:12px;padding:11px 13px;border-radius:10px;display:none}.status-message.show{display:block}.status-message.success{background:#dcfce7;color:#166534}.status-message.error{background:#fee2e2;color:#b91c1c}.role-pill{display:inline-flex;padding:5px 9px;border-radius:999px;background:#ede9fe;color:#5b21b6;font-weight:800;font-size:12px}.danger-note{background:#fff7ed;border:1px solid #fed7aa;color:#9a3412;border-radius:12px;padding:12px;margin-top:12px;font-size:13px}.credentials-box{background:#f9fafb;border:1px solid #e5e7eb;padding:14px;border-radius:12px;margin-top:14px;display:none;white-space:pre-wrap;word-break:break-word}.credentials-box.show{display:block}.table-wrapper{overflow:auto}
+  </style>
+</head>
+<body>
+<button class="menu-btn" id="menuBtn">☰</button>
+<aside class="sidebar" id="sidebar">
+  <div class="brand"><img src="images/PACSA LOGO.png" alt="PACSA"><div class="brand-text"><h2>PACSA</h2><p>Admin Portal</p></div></div>
+  <nav class="sidebar-nav">
+    <p class="nav-label">MAIN MENU</p><a href="admin-dashboard.html" class="nav-link"><span class="nav-icon">⌂</span>Dashboard</a>
+    <p class="nav-label">STUDENT MANAGEMENT</p><a href="students.html" class="nav-link"><span class="nav-icon">🎓</span>Students</a>
+    <p class="nav-label">ACADEMIC MANAGEMENT</p><a href="teachers.html" class="nav-link"><span class="nav-icon">👨‍🏫</span>Teachers</a><a href="subjects.html" class="nav-link"><span class="nav-icon">📚</span>Subjects</a><a href="classes.html" class="nav-link"><span class="nav-icon">🏫</span>Classes</a><a href="sessions.html" class="nav-link"><span class="nav-icon">📅</span>Sessions & Terms</a>
+    <p class="nav-label">RESULT MANAGEMENT</p><a href="results.html" class="nav-link"><span class="nav-icon">📑</span>Results</a><a href="reports.html" class="nav-link"><span class="nav-icon">📊</span>Reports & Analytics</a>
+    <p class="nav-label">ADMINISTRATION</p><a href="applications.html" class="nav-link"><span class="nav-icon">📝</span>Applications</a><a href="administration.html" class="nav-link active"><span class="nav-icon">🛡️</span>Administration</a><a href="settings.html" class="nav-link"><span class="nav-icon">⚙</span>Settings</a>
+  </nav>
+  <div class="sidebar-footer"><a href="#" class="logout-link" id="logoutBtn"><span>🚪</span>Logout</a></div>
+</aside>
+<main class="main-content">
+  <header class="topbar"><div class="page-title"><p class="breadcrumb">Administration / Access Control</p><h1>Administration Control</h1></div><div class="topbar-right"><div class="admin-profile"><img src="images/PACSA LOGO.png" alt="Administrator"><div class="admin-info"><strong>Administrator</strong><span>System Administrator</span></div></div></div></header>
+  <section class="management-hero"><div><p class="section-subtitle">SUPER ADMIN CONTROL</p><h2>Manage Roles & Assessment Flow</h2><p>Add administrators, assign the Principal role, and control when teachers enter C.A or Examination scores.</p></div><span class="role-pill" id="myRoleBadge">Checking access...</span></section>
+
+  <section class="control-grid" style="margin-top:24px">
+    <div class="control-card">
+      <h2>Add Administrator</h2><p>Creates a normal Admin account. Only the Super Admin can add administrators.</p>
+      <div class="form-stack"><div><label for="adminFullname">Full Name</label><input id="adminFullname" type="text"></div><div><label for="adminEmail">Email</label><input id="adminEmail" type="email"></div><button class="btn btn-primary" id="createAdminBtn" type="button">Create Admin</button></div>
+      <div id="adminMessage" class="status-message"></div><div id="adminCredentials" class="credentials-box"></div>
+    </div>
+
+    <div class="control-card">
+      <h2>Principal Assignment</h2><p>A Principal remains a teacher and may teach subjects, but cannot be a class teacher.</p>
+      <div class="form-stack"><div><label for="principalTeacher">Teacher</label><select id="principalTeacher"><option value="">Select teacher</option></select></div><button class="btn btn-primary" id="assignPrincipalBtn" type="button">Assign as Principal</button><button class="btn btn-light" id="removePrincipalBtn" type="button">Return to Teacher Role</button></div>
+      <div class="danger-note">Assigning a teacher as Principal will fail if that teacher is currently assigned as a class teacher. Remove the class-teacher assignment first.</div><div id="principalMessage" class="status-message"></div>
+    </div>
+
+    <div class="control-card">
+      <h2>Assessment Stage</h2><p>Teachers only enter the stage currently opened for the active session and term.</p>
+      <div class="form-stack"><div><label>Current Academic Period</label><input id="academicPeriod" type="text" readonly></div><div><label for="assessmentStage">Stage</label><select id="assessmentStage"><option value="ca">Continuous Assessment (C.A)</option><option value="exam">Examination</option><option value="closed">Closed</option></select></div><button class="btn btn-primary" id="saveAssessmentBtn" type="button">Save Assessment Stage</button></div><div id="assessmentMessage" class="status-message"></div>
+    </div>
+  </section>
+
+  <section class="management-page-card">
+    <div class="management-card-header"><div><h2>Administrators</h2><p>Super Admin and normal Admin accounts currently registered in PACSA.</p></div></div>
+    <div class="table-wrapper"><table class="professional-table"><thead><tr><th>Name</th><th>Email</th><th>Role</th><th>Status</th></tr></thead><tbody id="adminsTableBody"><tr><td colspan="4">Loading...</td></tr></tbody></table></div>
+  </section>
+</main>
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+<script src="supabase.js"></script><script src="admin-auth.js"></script><script src="administration.js"></script>
+</body>
+</html>
