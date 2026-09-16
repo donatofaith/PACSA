@@ -15,12 +15,7 @@ for insert
 to authenticated
 with check (
   bucket_id = 'pacsa-documents'
-  and exists (
-    select 1
-    from public.admins a
-    where a.auth_user_id = auth.uid()
-      and lower(coalesce(a.status,'active')) = 'active'
-  )
+  and public.pacsa_get_my_admin_role() in ('admin','super_admin')
 );
 
 -- Admin identities are sensitive. Clients can only read their own Admin row;
@@ -46,13 +41,7 @@ for select
 to authenticated
 using (
   auth_user_id = auth.uid()
-  or exists (
-    select 1
-    from public.admins sa
-    where sa.auth_user_id = auth.uid()
-      and sa.role = 'super_admin'
-      and lower(coalesce(sa.status,'active')) = 'active'
-  )
+  or public.pacsa_get_my_admin_role() = 'super_admin'
 );
 
 -- No direct INSERT/UPDATE/DELETE policy is intentionally created for authenticated users.
