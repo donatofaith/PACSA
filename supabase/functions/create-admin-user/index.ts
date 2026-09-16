@@ -19,7 +19,8 @@ const norm = (v: unknown) => clean(v).toLowerCase();
 function makeTemporaryPassword() {
   const chars = "ABCDEFGHJKLMNPQRSTUVWXYZabcdefghijkmnopqrstuvwxyz23456789!@$%*?";
   const bytes = crypto.getRandomValues(new Uint8Array(16));
-  return Array.from(bytes, b => chars[b % chars.length]).join("") + "Aa!";
+  const randomPart = Array.from(bytes, b => chars[b % chars.length]).join("");
+  return `Aa1!${randomPart}`;
 }
 
 async function sendEmail(args: { name: string; email: string; password: string; expiresAt: string }) {
