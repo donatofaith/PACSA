@@ -119,6 +119,12 @@
 <script src="supabase.js"></script>
 
 <script>
+// The shared Supabase helper still supports optional Admin-side document storage,
+// but Admission is intentionally NIN-only for now.
+if (typeof pacsaInstallApplicationDocuments === "function") {
+    pacsaInstallApplicationDocuments = function () {};
+}
+
 const form = document.getElementById("applicationForm");
 const submitBtn = document.getElementById("submitBtn");
 const message = document.getElementById("formMessage");
