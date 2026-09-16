@@ -94,18 +94,9 @@ Deno.serve(async req => {
     const { data: studentMatch } = await adminClient.from("students").select("id").ilike("email", email).maybeSingle();
     if (teacherMatch || studentMatch) return fail("This email is already registered to another PACSA user.");
 
-    // Insert PACSA identity first. The global one-email rule checks auth.users,
-    // so creating Auth first would make the matching Admin row look like a duplicate.
-    const { data: adminRecord, error: insertError } = await adminClient
-      .from("admins")
-      .insert({ fullname, email, status: "active", role: "admin", auth_user_id: null })
-      .select("id")
-      .single();
-
-    if (insertError || !adminRecord) return fail(insertError?.message || "Could not create Admin record.");
-
     const password = makeTemporaryPassword();
     const expiresAt = new Date(Date.now() + 24 * 60 * 60 * 1000).toISOString();
+
     const { data: created, error: createError } = await adminClient.auth.admin.createUser({
       email,
       password,
@@ -118,19 +109,20 @@ Deno.serve(async req => {
     });
 
     if (createError || !created?.user) {
-      await adminClient.from("admins").delete().eq("id", adminRecord.id);
       return fail(createError?.message || "Could not create Admin login.");
     }
 
-    const { error: linkError } = await adminClient
-      .from("admins")
-      .update({ auth_user_id: created.user.id })
-      .eq("id", adminRecord.id);
+    const { error: insertError } = await adminClient.from("admins").insert({
+      fullname,
+      email,
+      status: "active",
+      role: "admin",
+      auth_user_id: created.user.id,
+    });
 
-    if (linkError) {
+    if (insertError) {
       await adminClient.auth.admin.deleteUser(created.user.id);
-      await adminClient.from("admins").delete().eq("id", adminRecord.id);
-      return fail(linkError.message || "Could not link Admin login.");
+      return fail(insertError.message || "Could not create Admin record.");
     }
 
     const emailSent = await sendEmail({ name: fullname, email, password, expiresAt });
