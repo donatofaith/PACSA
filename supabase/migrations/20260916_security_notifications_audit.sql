@@ -1,5 +1,5 @@
--- PACSA security additions: audit log + class-teacher notifications
--- Run once in Supabase SQL Editor.
+-- PACSA security additions: audit log + Class Teacher notifications
+-- Run once in Supabase SQL Editor after the role/C.A workflow migrations.
 
 begin;
 
@@ -65,11 +65,13 @@ as $$
   select coalesce(
     (select case when a.role='super_admin' then 'super_admin' else 'admin' end
        from public.admins a
-      where a.auth_user_id=auth.uid() and lower(coalesce(a.status,'active'))='active'
+      where a.auth_user_id=auth.uid()
+        and lower(coalesce(a.status,'active'))='active'
       limit 1),
     (select coalesce(t.role,'teacher')
        from public."Teachers" t
-      where t.auth_user_id=auth.uid() and lower(coalesce(t.portal_status,'active'))='active'
+      where t.auth_user_id=auth.uid()
+        and lower(coalesce(t.portal_status,'active'))='active'
       limit 1),
     (select 'student'
        from public.students s
@@ -86,12 +88,8 @@ security definer
 set search_path = public
 as $$
 declare
-  entity_value text;
-  action_value text;
-  details_value jsonb;
+  entity_value text := '';
 begin
-  action_value := lower(tg_op);
-
   if tg_table_name = 'results' then
     entity_value := coalesce((case when tg_op='DELETE' then old.id else new.id end)::text,'');
   elsif tg_table_name = 'student_reports' then
@@ -104,31 +102,68 @@ begin
     entity_value := coalesce((case when tg_op='DELETE' then old.id else new.id end)::text,'');
   elsif tg_table_name = 'assessment_periods' then
     entity_value := coalesce(case when tg_op='DELETE' then old.session||'/'||old.term else new.session||'/'||new.term end,'');
-  elsif tg_table_name = 'teacher_assignments' or tg_table_name = 'class_teacher_assignments' then
+  elsif tg_table_name in ('teacher_assignments','class_teacher_assignments') then
     entity_value := coalesce((case when tg_op='DELETE' then old.id else new.id end)::text,'');
-  else
-    entity_value := '';
   end if;
 
-  details_value := jsonb_build_object('operation', tg_op, 'table', tg_table_name);
-
   insert into public.audit_logs(actor_user_id,actor_role,action,entity_type,entity_id,details)
-  values(auth.uid(),public.pacsa_actor_role(),action_value,tg_table_name,entity_value,details_value);
+  values(
+    auth.uid(),
+    public.pacsa_actor_role(),
+    lower(tg_op),
+    tg_table_name,
+    entity_value,
+    jsonb_build_object('operation',tg_op,'table',tg_table_name)
+  );
 
-  return case when tg_op='DELETE' then old else new end;
+  if tg_op='DELETE' then
+    return old;
+  end if;
+  return new;
 end;
 $$;
 
 do $$
-declare table_name text;
 begin
-  foreach table_name in array array['results','student_reports','students','Teachers','applications','assessment_periods','teacher_assignments','class_teacher_assignments']
-  loop
-    if to_regclass(format('public.%I',table_name)) is not null then
-      execute format('drop trigger if exists pacsa_audit_%I on public.%I',table_name,table_name);
-      execute format('create trigger pacsa_audit_%I after insert or update or delete on public.%I for each row execute function public.pacsa_audit_row_change()',table_name,table_name);
-    end if;
-  end loop;
+  if to_regclass('public.results') is not null then
+    execute 'drop trigger if exists pacsa_audit_results on public.results';
+    execute 'create trigger pacsa_audit_results after insert or update or delete on public.results for each row execute function public.pacsa_audit_row_change()';
+  end if;
+
+  if to_regclass('public.student_reports') is not null then
+    execute 'drop trigger if exists pacsa_audit_student_reports on public.student_reports';
+    execute 'create trigger pacsa_audit_student_reports after insert or update or delete on public.student_reports for each row execute function public.pacsa_audit_row_change()';
+  end if;
+
+  if to_regclass('public.students') is not null then
+    execute 'drop trigger if exists pacsa_audit_students on public.students';
+    execute 'create trigger pacsa_audit_students after insert or update or delete on public.students for each row execute function public.pacsa_audit_row_change()';
+  end if;
+
+  if to_regclass('public."Teachers"') is not null then
+    execute 'drop trigger if exists pacsa_audit_teachers on public."Teachers"';
+    execute 'create trigger pacsa_audit_teachers after insert or update or delete on public."Teachers" for each row execute function public.pacsa_audit_row_change()';
+  end if;
+
+  if to_regclass('public.applications') is not null then
+    execute 'drop trigger if exists pacsa_audit_applications on public.applications';
+    execute 'create trigger pacsa_audit_applications after insert or update or delete on public.applications for each row execute function public.pacsa_audit_row_change()';
+  end if;
+
+  if to_regclass('public.assessment_periods') is not null then
+    execute 'drop trigger if exists pacsa_audit_assessment_periods on public.assessment_periods';
+    execute 'create trigger pacsa_audit_assessment_periods after insert or update or delete on public.assessment_periods for each row execute function public.pacsa_audit_row_change()';
+  end if;
+
+  if to_regclass('public.teacher_assignments') is not null then
+    execute 'drop trigger if exists pacsa_audit_teacher_assignments on public.teacher_assignments';
+    execute 'create trigger pacsa_audit_teacher_assignments after insert or update or delete on public.teacher_assignments for each row execute function public.pacsa_audit_row_change()';
+  end if;
+
+  if to_regclass('public.class_teacher_assignments') is not null then
+    execute 'drop trigger if exists pacsa_audit_class_teacher_assignments on public.class_teacher_assignments';
+    execute 'create trigger pacsa_audit_class_teacher_assignments after insert or update or delete on public.class_teacher_assignments for each row execute function public.pacsa_audit_row_change()';
+  end if;
 end $$;
 
 create or replace function public.pacsa_notify_class_teacher_result()
@@ -159,7 +194,9 @@ begin
       new.status is distinct from old.status;
   end if;
 
-  if not should_notify then return new; end if;
+  if not should_notify then
+    return new;
+  end if;
 
   select c.teacher_id into class_teacher_id
   from public.class_teacher_assignments c
@@ -214,7 +251,8 @@ as $$
   join public."Teachers" t on t.teacher_id=n.teacher_id
   where t.auth_user_id=auth.uid()
     and exists (
-      select 1 from public.class_teacher_assignments c
+      select 1
+      from public.class_teacher_assignments c
       where c.teacher_id=t.teacher_id
     )
   order by n.created_at desc
@@ -227,12 +265,18 @@ language plpgsql
 security definer
 set search_path = public
 as $$
-declare affected integer;
+declare
+  affected integer;
 begin
   update public.teacher_notifications n
   set is_read=true
   where is_read=false
-    and n.teacher_id=(select t.teacher_id from public."Teachers" t where t.auth_user_id=auth.uid() limit 1);
+    and n.teacher_id=(
+      select t.teacher_id
+      from public."Teachers" t
+      where t.auth_user_id=auth.uid()
+      limit 1
+    );
   get diagnostics affected = row_count;
   return affected;
 end;
@@ -243,7 +287,7 @@ revoke all on function public.pacsa_mark_my_teacher_notifications_read() from pu
 grant execute on function public.pacsa_get_my_teacher_notifications(integer) to authenticated;
 grant execute on function public.pacsa_mark_my_teacher_notifications_read() to authenticated;
 
--- Restrict privileged role-changing RPCs to authenticated users only.
+-- Restrict privileged RPCs to authenticated sessions only.
 revoke all on function public.pacsa_superadmin_set_teacher_role(text,text) from public;
 revoke all on function public.pacsa_superadmin_set_assessment_stage(text,text,text) from public;
 grant execute on function public.pacsa_superadmin_set_teacher_role(text,text) to authenticated;
