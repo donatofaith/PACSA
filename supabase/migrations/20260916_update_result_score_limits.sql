@@ -1,4 +1,5 @@
 -- Replace legacy CA /40 and Exam /60 checks with PACSA CA /30 + Exam /70.
+-- Run after 20260916_roles_ca_exam_principal_workflow.sql so the new CA columns exist.
 
 begin;
 
@@ -6,23 +7,18 @@ do $$
 declare r record;
 begin
   for r in
-    select c.conname
+    select distinct c.conname
     from pg_constraint c
-    join pg_class t on t.oid=c.conrelid
-    join pg_namespace n on n.oid=t.relnamespace
-    where n.nspname='public'
-      and t.relname='results'
-      and c.contype='c'
-      and (
-        pg_get_constraintdef(c.oid) ilike '% ca %'
-        or pg_get_constraintdef(c.oid) ilike '%ca)%'
-        or pg_get_constraintdef(c.oid) ilike '%exam%'
-        or pg_get_constraintdef(c.oid) ilike '%total%'
-        or pg_get_constraintdef(c.oid) ilike '%first_ca%'
-        or pg_get_constraintdef(c.oid) ilike '%second_ca%'
-      )
+    join pg_class t on t.oid = c.conrelid
+    join pg_namespace n on n.oid = t.relnamespace
+    join lateral unnest(c.conkey) as k(attnum) on true
+    join pg_attribute a on a.attrelid = t.oid and a.attnum = k.attnum
+    where n.nspname = 'public'
+      and t.relname = 'results'
+      and c.contype = 'c'
+      and a.attname in ('first_ca','second_ca','ca','exam','total')
   loop
-    execute format('alter table public.results drop constraint if exists %I',r.conname);
+    execute format('alter table public.results drop constraint if exists %I', r.conname);
   end loop;
 end $$;
 
