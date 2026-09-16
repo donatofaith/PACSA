@@ -17,14 +17,14 @@
     <form id="teacherRegisterForm">
         <div class="form-group"><label for="teacherId">Teacher ID</label><input type="text" id="teacherId" placeholder="Enter Teacher ID" autocomplete="username" required></div>
         <div class="form-group"><label for="email">Registered Email</label><input type="email" id="email" placeholder="Enter registered email" autocomplete="email" required></div>
-        <div class="form-group"><label for="password">Create Password</label><div class="password-wrapper"><input type="password" id="password" placeholder="Create strong password" minlength="8" pattern="(?=.*[a-z])(?=.*[A-Z])(?=.*[^A-Za-z0-9]).{8,}" title="Use at least 8 characters with uppercase, lowercase and a special character." autocomplete="new-password" required><button type="button" id="togglePassword" class="password-toggle" aria-label="Show password">👁</button></div><small class="password-help">Must include uppercase, lowercase and a special character.</small></div>
-        <div class="form-group"><label for="confirmPassword">Confirm Password</label><div class="password-wrapper"><input type="password" id="confirmPassword" placeholder="Confirm Password" minlength="8" pattern="(?=.*[a-z])(?=.*[A-Z])(?=.*[^A-Za-z0-9]).{8,}" title="Use at least 8 characters with uppercase, lowercase and a special character." autocomplete="new-password" required><button type="button" id="toggleConfirmPassword" class="password-toggle" aria-label="Show confirm password">👁</button></div></div>
+        <div class="form-group"><label for="password">Create Password</label><div class="password-wrapper"><input type="password" id="password" placeholder="Create strong password" minlength="8" autocomplete="new-password" required><button type="button" id="togglePassword" class="password-toggle" aria-label="Show password">👁</button></div><small class="password-help">At least 8 characters with uppercase, lowercase, a number and a special character.</small></div>
+        <div class="form-group"><label for="confirmPassword">Confirm Password</label><div class="password-wrapper"><input type="password" id="confirmPassword" placeholder="Confirm Password" minlength="8" autocomplete="new-password" required><button type="button" id="toggleConfirmPassword" class="password-toggle" aria-label="Show confirm password">👁</button></div></div>
         <button type="submit" id="registerBtn" class="primary-btn">Activate Account</button>
         <button type="button" id="resendVerificationBtn" class="resend-btn">Resend Verification Email</button>
         <div id="registerMessage" class="message"></div>
     </form>
     <div class="login-link"><a href="teacher-login.html">← Back to Teacher Login</a></div>
 </main>
-<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script><script src="supabase.js"></script><script src="teacher-register.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script><script src="supabase.js"></script><script src="password-policy.js"></script><script src="teacher-register.js"></script>
 </body>
 </html>
