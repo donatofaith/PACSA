@@ -28,7 +28,7 @@
         return { valid: true, message: "" };
     }
 
-    window.PACSA_PASSWORD_POLICY = Object.freeze({
+    const policy = Object.freeze({
         minLength: 8,
         pattern: "(?=.*[a-z])(?=.*[A-Z])(?=.*[0-9])(?=.*[^A-Za-z0-9]).{8,}",
         help: "At least 8 characters with uppercase, lowercase, a number and a special character.",
@@ -37,4 +37,68 @@
             return validate(password).valid;
         }
     });
+
+    window.PACSA_PASSWORD_POLICY = policy;
+
+    function applyToPage() {
+        const passwordInputs = [
+            document.getElementById("password"),
+            document.getElementById("newPassword"),
+            document.getElementById("confirmPassword")
+        ].filter(Boolean);
+
+        passwordInputs.forEach(input => {
+            input.minLength = policy.minLength;
+            input.pattern = policy.pattern;
+            input.title = policy.help;
+        });
+
+        document.querySelectorAll(".password-help").forEach(help => {
+            help.textContent = policy.help;
+        });
+
+        const forms = [
+            document.getElementById("studentRegisterForm"),
+            document.getElementById("teacherRegisterForm"),
+            document.getElementById("resetForm")
+        ].filter(Boolean);
+
+        forms.forEach(form => {
+            form.addEventListener("submit", event => {
+                const passwordInput = form.querySelector("#password, #newPassword");
+                const confirmInput = form.querySelector("#confirmPassword");
+                if (!passwordInput) return;
+
+                passwordInput.setCustomValidity("");
+                if (confirmInput) confirmInput.setCustomValidity("");
+
+                const result = validate(passwordInput.value);
+                if (!result.valid) {
+                    event.preventDefault();
+                    event.stopImmediatePropagation();
+                    passwordInput.setCustomValidity(result.message);
+                    passwordInput.reportValidity();
+                    return;
+                }
+
+                if (confirmInput && passwordInput.value !== confirmInput.value) {
+                    event.preventDefault();
+                    event.stopImmediatePropagation();
+                    confirmInput.setCustomValidity("Passwords do not match.");
+                    confirmInput.reportValidity();
+                }
+            }, true);
+
+            const passwordInput = form.querySelector("#password, #newPassword");
+            const confirmInput = form.querySelector("#confirmPassword");
+            passwordInput?.addEventListener("input", () => passwordInput.setCustomValidity(""));
+            confirmInput?.addEventListener("input", () => confirmInput.setCustomValidity(""));
+        });
+    }
+
+    if (document.readyState === "loading") {
+        document.addEventListener("DOMContentLoaded", applyToPage, { once: true });
+    } else {
+        applyToPage();
+    }
 })();
