@@ -39,12 +39,12 @@
             <div class="input-group"><label for="email">Registered Email</label><input type="email" id="email" placeholder="Enter your registered email" required></div>
             <div class="input-group">
                 <label for="password">Create Password</label>
-                <div class="password-box"><input type="password" id="password" placeholder="Create strong password" minlength="8" pattern="(?=.*[a-z])(?=.*[A-Z])(?=.*[^A-Za-z0-9]).{8,}" title="Use at least 8 characters with uppercase, lowercase and a special character." required><span id="togglePassword" class="password-toggle" role="button" tabindex="0">👁</span></div>
-                <small class="password-help">Must include uppercase, lowercase and a special character.</small>
+                <div class="password-box"><input type="password" id="password" placeholder="Create strong password" minlength="8" required><span id="togglePassword" class="password-toggle" role="button" tabindex="0">👁</span></div>
+                <small class="password-help">At least 8 characters with uppercase, lowercase, a number and a special character.</small>
             </div>
             <div class="input-group">
                 <label for="confirmPassword">Confirm Password</label>
-                <div class="password-box"><input type="password" id="confirmPassword" placeholder="Repeat password" minlength="8" pattern="(?=.*[a-z])(?=.*[A-Z])(?=.*[^A-Za-z0-9]).{8,}" title="Use at least 8 characters with uppercase, lowercase and a special character." required><span id="toggleConfirmPassword" class="password-toggle" role="button" tabindex="0">👁</span></div>
+                <div class="password-box"><input type="password" id="confirmPassword" placeholder="Repeat password" minlength="8" required><span id="toggleConfirmPassword" class="password-toggle" role="button" tabindex="0">👁</span></div>
             </div>
             <button type="submit" class="login-btn" id="registerBtn">Activate Account</button>
             <button type="button" id="resendVerificationBtn" class="resend-btn">Resend Verification Email</button>
@@ -53,6 +53,6 @@
         <div class="login-link">Already activated? <a href="student-login.html">Login</a></div>
     </div>
 </div>
-<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script><script src="supabase.js"></script><script src="student-register.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script><script src="supabase.js"></script><script src="password-policy.js"></script><script src="student-register.js"></script>
 </body>
 </html>
