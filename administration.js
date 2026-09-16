@@ -74,13 +74,12 @@ async function setPrincipal(makePrincipal) {
   const teacherId = A$('principalTeacher').value;
   if (!teacherId) return showBox('principalMessage','Select a teacher first.','error');
   try {
-    if (makePrincipal) {
-      const { data: classRoles, error: roleError } = await supabaseClient.from('class_teacher_assignments').select('id').eq('teacher_id',teacherId).limit(1);
-      if (roleError) throw roleError;
-      if ((classRoles || []).length) throw new Error('This teacher is currently a class teacher. Remove that assignment before making the teacher Principal.');
-    }
-    const { error } = await supabaseClient.from('Teachers').update({role: makePrincipal ? 'principal' : 'teacher'}).eq('teacher_id',teacherId);
+    const { data, error } = await supabaseClient.rpc('pacsa_superadmin_set_teacher_role', {
+      p_teacher_id: teacherId,
+      p_role: makePrincipal ? 'principal' : 'teacher'
+    });
     if (error) throw error;
+    if (!data) throw new Error('Teacher role was not changed.');
     showBox('principalMessage', makePrincipal ? 'Principal role assigned successfully.' : 'Principal role removed. The account is now a normal teacher.');
     await loadTeachers(); A$('principalTeacher').value = teacherId;
   } catch(e) { showBox('principalMessage', e?.message || 'Could not update the role.','error'); }
@@ -89,16 +88,12 @@ async function setPrincipal(makePrincipal) {
 async function saveAssessment() {
   if (!currentPeriod) return showBox('assessmentMessage','Set the current session and term first.','error');
   const stage = A$('assessmentStage').value;
-  const payload = {
-    session: currentPeriod.session,
-    term: currentPeriod.term,
-    current_stage: stage,
-    ca_open: stage === 'ca',
-    exam_open: stage === 'exam',
-    updated_at: new Date().toISOString()
-  };
-  const { error } = await supabaseClient.from('assessment_periods').upsert(payload,{onConflict:'session,term'});
-  if (error) return showBox('assessmentMessage',error.message,'error');
+  const { data, error } = await supabaseClient.rpc('pacsa_superadmin_set_assessment_stage', {
+    p_session: currentPeriod.session,
+    p_term: currentPeriod.term,
+    p_stage: stage
+  });
+  if (error || !data) return showBox('assessmentMessage', error?.message || 'Could not save assessment stage.','error');
   showBox('assessmentMessage', stage === 'ca' ? 'Continuous Assessment entry is now open.' : stage === 'exam' ? 'Examination entry is now open. Existing C.A totals will carry forward automatically.' : 'Result entry is now closed.');
 }
 
