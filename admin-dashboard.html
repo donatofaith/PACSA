@@ -680,8 +680,25 @@
 
     <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
 <script src="supabase.js"></script>
+<script src="temporary-password-guard.js"></script>
 <script src="admin-dashboard.js"></script>
 <script src="admin-dashboard-live.js"></script>
+<script>
+document.addEventListener('DOMContentLoaded', async () => {
+    try {
+        const { data, error } = await supabaseClient.auth.getSession();
+        if (error) throw error;
+        const user = data?.session?.user;
+        if (!user || !window.PACSA_TEMP_PASSWORD) return;
+        const allowed = await window.PACSA_TEMP_PASSWORD.ensure(user, { role: 'Admin' });
+        if (allowed === false) {
+            window.location.replace('admin-login.html');
+        }
+    } catch (error) {
+        console.error('Temporary password check failed:', error);
+    }
+});
+</script>
 
 </body>
 </html>
