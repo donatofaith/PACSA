@@ -25,14 +25,14 @@
 
   <div class="main">
     <header class="topbar">
-      <div class="top-left"><button class="menu" id="menuBtn">☰</button><div><h1>Student Results</h1><p>Enter C.A first, then continue with Examination scores</p></div></div>
+      <div class="top-left"><button class="menu" id="menuBtn">☰</button><div><h1>Student Results</h1><p>Enter Mid-Term Test first, then continue with Examination scores</p></div></div>
       <div class="top-teacher"><img id="miniAvatar" src="images/PACSA LOGO.png" alt="Teacher"><div><strong id="topTeacherName">Loading...</strong><span id="topTeacherId">--</span></div></div>
       <button class="logout" id="logoutBtn">Logout</button>
     </header>
 
     <main class="content">
       <section class="page-card">
-        <div class="page-head"><div><span class="label">RESULT MANAGEMENT</span><h2>C.A & Examination</h2><p>First C.A is /10, Second C.A is /20, Examination is /70.</p></div><button class="btn primary" id="addResultBtn">+ Enter Result</button></div>
+        <div class="page-head"><div><span class="label">RESULT MANAGEMENT</span><h2>Mid-Term Test & Examination</h2><p>1st Test is /10, 2nd Test is /20, and Examination is /70.</p></div><button class="btn primary" id="addResultBtn">+ Enter Result</button></div>
         <div id="assessmentStageBanner" class="stage-banner">Checking the current assessment stage...</div>
 
         <div id="resultEntryPanel" class="card hidden">
@@ -42,12 +42,12 @@
             <div class="field"><label for="resultAssignment">Class & Subject</label><select id="resultAssignment"></select></div>
             <div class="field"><label for="resultStudent">Student</label><select id="resultStudent"><option value="">Select Student</option></select></div>
             <div class="field"><label for="resultTerm">Term</label><select id="resultTerm"><option value="">Select Term</option><option>First Term</option><option>Second Term</option><option>Third Term</option></select></div>
-            <div class="field" id="firstCaField"><label for="resultFirstCA">First C.A (0 - 10)</label><input type="number" id="resultFirstCA" min="0" max="10" step="0.01"></div>
-            <div class="field" id="secondCaField"><label for="resultSecondCA">Second C.A (0 - 20)</label><input type="number" id="resultSecondCA" min="0" max="20" step="0.01"></div>
-            <div class="field locked-field"><label for="resultCA">C.A Total (0 - 30)</label><input type="number" id="resultCA" readonly></div>
+            <div class="field" id="firstCaField"><label for="resultFirstCA">1st Test (0 - 10)</label><input type="number" id="resultFirstCA" min="0" max="10" step="0.01"></div>
+            <div class="field" id="secondCaField"><label for="resultSecondCA">2nd Test (0 - 20)</label><input type="number" id="resultSecondCA" min="0" max="20" step="0.01"></div>
+            <div class="field locked-field"><label for="resultCA">Test Total (0 - 30)</label><input type="number" id="resultCA" readonly></div>
             <div class="field" id="examField"><label for="resultExam">Exam (0 - 70)</label><input type="number" id="resultExam" min="0" max="70" step="0.01"></div>
             <div class="field locked-field"><label for="resultTotal">Final Total</label><input type="number" id="resultTotal" readonly></div>
-            <div class="field locked-field"><label for="resultGrade">Grade / C.A Rating</label><input type="text" id="resultGrade" readonly></div>
+            <div class="field locked-field"><label for="resultGrade">Grade / Remark</label><input type="text" id="resultGrade" readonly></div>
           </div>
           <div class="actions"><button class="btn primary" id="submitResultBtn">Save Result</button></div>
           <p id="resultMessage" class="msg"></p>
@@ -58,13 +58,13 @@
           <div class="field"><label for="resultClassFilter">Class</label><select id="resultClassFilter"><option value="">All Classes</option></select></div>
           <div class="field"><label for="resultSubjectFilter">Subject</label><select id="resultSubjectFilter"><option value="">All Subjects</option></select></div>
           <div class="field"><label for="resultTermFilter">Term</label><select id="resultTermFilter"><option value="">All Terms</option><option>First Term</option><option>Second Term</option><option>Third Term</option></select></div>
-          <div class="field"><label for="resultStageFilter">Stage</label><select id="resultStageFilter"><option value="">All Stages</option><option value="ca">C.A</option><option value="exam">Exam</option></select></div>
+          <div class="field"><label for="resultStageFilter">Stage</label><select id="resultStageFilter"><option value="">All Stages</option><option value="ca">Mid-Term Test</option><option value="exam">Exam</option></select></div>
           <button class="btn light" id="clearResultFilters" type="button">Clear</button>
         </div>
 
         <div class="table-wrap" style="margin-top:18px">
           <table>
-            <thead><tr><th>Student</th><th>Class</th><th>Subject</th><th>First C.A</th><th>Second C.A</th><th>C.A /30</th><th>Exam /70</th><th>Total /100</th><th>Grade / Rating</th><th>Term</th><th>Stage</th><th>Action</th></tr></thead>
+            <thead><tr><th>Student</th><th>Class</th><th>Subject</th><th>1st Test</th><th>2nd Test</th><th>Test /30</th><th>Exam /70</th><th>Total /100</th><th>Grade / Remark</th><th>Term</th><th>Stage</th><th>Action</th></tr></thead>
             <tbody id="resultsTable"><tr><td colspan="12">Loading results...</td></tr></tbody>
           </table>
         </div>
