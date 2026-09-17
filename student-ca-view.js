@@ -7,7 +7,8 @@ function caPerformance(score) {
   if (n === 30) return 'Excellent';
   if (n >= 23) return 'Very Good';
   if (n >= 15) return 'Good';
-  return 'Fair';
+  if (n >= 10) return 'Fair';
+  return 'Poor';
 }
 
 async function loadStudentCAView() {
@@ -16,13 +17,13 @@ async function loadStudentCAView() {
 
   const { data, error } = await supabaseClient.rpc('pacsa_get_my_ca_results');
   if (error) {
-    body.innerHTML = `<tr><td colspan="6" class="empty-row">Could not load C.A results.</td></tr>`;
+    body.innerHTML = `<tr><td colspan="6" class="empty-row">Could not load Mid-Term results.</td></tr>`;
     return;
   }
 
   const rows = data || [];
   if (!rows.length) {
-    body.innerHTML = `<tr><td colspan="6" class="empty-row">No published Continuous Assessment result is available yet.</td></tr>`;
+    body.innerHTML = `<tr><td colspan="6" class="empty-row">No published Mid-Term result is available yet.</td></tr>`;
     return;
   }
 
@@ -72,9 +73,19 @@ async function syncPublishedRemarks() {
   if (legacy) legacy.closest('.remark-display')?.classList.add('hidden-legacy-remark');
 }
 
+function loadOfficialReportSheets(){
+  if(!document.querySelector('link[href="student-report-sheets.css"]')){
+    const link=document.createElement('link');link.rel='stylesheet';link.href='student-report-sheets.css';document.head.appendChild(link);
+  }
+  if(!document.querySelector('script[src="student-report-sheets.js"]')){
+    const script=document.createElement('script');script.src='student-report-sheets.js';document.body.appendChild(script);
+  }
+}
+
 document.addEventListener('DOMContentLoaded', () => {
   setTimeout(loadStudentCAView, 500);
   setTimeout(syncPublishedRemarks, 700);
+  setTimeout(loadOfficialReportSheets, 250);
 
   ['sessionFilter','classFilter','termFilter'].forEach(id => {
     CA$(id)?.addEventListener('change', () => setTimeout(syncPublishedRemarks, 350));
