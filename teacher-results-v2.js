@@ -5,15 +5,33 @@ let resultEditingId = null;
 
 const caRating = score => {
   const n = Number(score) || 0;
-  if (n === 30) return 'Excellent';
-  if (n >= 23) return 'Very Good';
-  if (n >= 15) return 'Good';
-  return 'Fair';
+  if (n === 30) return 'A — Excellent';
+  if (n >= 23) return 'B — Very Good';
+  if (n >= 15) return 'C — Good';
+  if (n >= 10) return 'D — Fair';
+  return 'F — Poor';
+};
+
+const caGrade = score => {
+  const n = Number(score) || 0;
+  if (n === 30) return 'A';
+  if (n >= 23) return 'B';
+  if (n >= 15) return 'C';
+  if (n >= 10) return 'D';
+  return 'F';
 };
 
 const finalGrade = score => {
   const n = Number(score) || 0;
-  return n >= 70 ? 'A' : n >= 60 ? 'B' : n >= 50 ? 'C' : n >= 45 ? 'D' : n >= 40 ? 'E' : 'F';
+  if (n >= 80) return 'A1';
+  if (n >= 75) return 'B2';
+  if (n >= 70) return 'B3';
+  if (n >= 65) return 'C4';
+  if (n >= 60) return 'C5';
+  if (n >= 50) return 'C6';
+  if (n >= 45) return 'D7';
+  if (n >= 40) return 'E8';
+  return 'F9';
 };
 
 function waitForTeacherState() {
@@ -71,15 +89,15 @@ function updateStageUI() {
   const submit = R$('submitResultBtn');
 
   if (stage === 'ca') {
-    banner.textContent = `Continuous Assessment is open — ${assessmentControl.session}, ${assessmentControl.term}. Enter First C.A /10 and Second C.A /20.`;
-    R$('entryTitle').textContent = 'Enter Continuous Assessment';
-    R$('entryHelp').textContent = 'C.A Total /30 and the C.A performance rating are calculated automatically. Saved C.A results become available to the student.';
+    banner.textContent = `Mid-Term Test is open — ${assessmentControl.session}, ${assessmentControl.term}. Enter 1st Test /10 and 2nd Test /20.`;
+    R$('entryTitle').textContent = 'Enter Mid-Term Test';
+    R$('entryHelp').textContent = 'Total /30, grade and remark are calculated automatically. Saved mid-term results become available to the student.';
     first.disabled = false; second.disabled = false; exam.disabled = true; exam.value = '';
-    submit.disabled = false; submit.textContent = 'Save C.A Result';
+    submit.disabled = false; submit.textContent = 'Save Mid-Term Result';
   } else if (stage === 'exam') {
-    banner.textContent = `Examination is open — ${assessmentControl.session}, ${assessmentControl.term}. Existing C.A totals are carried forward automatically.`;
+    banner.textContent = `Examination is open — ${assessmentControl.session}, ${assessmentControl.term}. Existing Test /30 totals are carried forward automatically.`;
     R$('entryTitle').textContent = 'Enter Examination Result';
-    R$('entryHelp').textContent = 'First C.A, Second C.A and C.A Total are locked from the C.A stage. Enter only the Examination score /70.';
+    R$('entryHelp').textContent = '1st Test, 2nd Test and Test Total are locked from the mid-term stage. Enter only the Examination score /70.';
     first.disabled = true; second.disabled = true; exam.disabled = false;
     submit.disabled = false; submit.textContent = 'Save Examination Result';
   } else {
@@ -136,7 +154,7 @@ async function loadExistingForSelection() {
   R$('resultExam').value = data?.exam ?? '';
 
   if (assessmentControl.current_stage === 'exam' && (!data || data.ca === null || data.ca === undefined)) {
-    showResultMessage('No C.A result exists for this student and subject yet. Examination score cannot be entered until C.A is completed.', true);
+    showResultMessage('No Mid-Term Test result exists for this student and subject yet. Examination score cannot be entered until the Test /30 is completed.', true);
     R$('resultExam').disabled = true;
     R$('submitResultBtn').disabled = true;
   } else {
@@ -180,25 +198,26 @@ async function saveTeacherResultV2() {
   const first = Number(R$('resultFirstCA').value);
   const second = Number(R$('resultSecondCA').value);
   const exam = Number(R$('resultExam').value);
+  const teacherId = pageState.teacher?.teacher_id || null;
 
   let payload;
   if (stage === 'ca') {
-    if (!Number.isFinite(first) || first < 0 || first > 10) return showResultMessage('First C.A must be between 0 and 10.', true);
-    if (!Number.isFinite(second) || second < 0 || second > 20) return showResultMessage('Second C.A must be between 0 and 20.', true);
+    if (!Number.isFinite(first) || first < 0 || first > 10) return showResultMessage('1st Test must be between 0 and 10.', true);
+    if (!Number.isFinite(second) || second < 0 || second > 20) return showResultMessage('2nd Test must be between 0 and 20.', true);
     const ca = first + second;
     payload = {
       student_id: student, subject: a.subject, class: a.class, term, session: pageState.session,
       first_ca: first, second_ca: second, ca, assessment_stage: 'ca',
       ca_status: 'published', ca_published_at: new Date().toISOString(),
-      total: ca, grade: caRating(ca)
+      total: ca, grade: caGrade(ca), teacher_id: teacherId
     };
   } else {
-    if (!resultEditingId) return showResultMessage('C.A must be entered before Examination.', true);
+    if (!resultEditingId) return showResultMessage('Mid-Term Test must be entered before Examination.', true);
     if (!Number.isFinite(exam) || exam < 0 || exam > 70) return showResultMessage('Examination score must be between 0 and 70.', true);
     const ca = (Number(R$('resultFirstCA').value)||0) + (Number(R$('resultSecondCA').value)||0);
     const total = ca + exam;
     payload = {
-      exam, ca, total, grade: finalGrade(total), assessment_stage: 'exam', status: 'pending'
+      exam, ca, total, grade: finalGrade(total), assessment_stage: 'exam', status: 'pending', teacher_id: teacherId
     };
   }
 
@@ -213,7 +232,7 @@ async function saveTeacherResultV2() {
       await supabaseClient.from('student_reports').update({ status: 'draft', published_at: null, principal_remark: null, principal_teacher_id: null, principal_reviewed_at: null })
         .eq('student_id',student).eq('class',a.class).eq('term',term).eq('session',pageState.session);
     }
-    showResultMessage(stage === 'ca' ? 'C.A result saved and is now available in the student C.A result view.' : 'Examination score saved. The complete report will go through Class Teacher and Principal review.');
+    showResultMessage(stage === 'ca' ? 'Mid-Term Test result saved and is now available on the student Mid-Term Performance Report Sheet.' : 'Examination score saved. The complete report will go through Class Teacher and Principal review.');
     await loadTeacherResultsV2();
   } catch(e) { showResultMessage(e?.message || 'Could not save result.', true); }
   finally { button.disabled = false; button.textContent = old; updateStageUI(); }
@@ -246,7 +265,7 @@ function renderTeacherResultsV2() {
   R$('resultsTable').innerHTML = rows.length ? rows.map(r => {
     const ca = Number(r.ca ?? 0); const total = r.assessment_stage === 'exam' ? Number(r.total ?? ca+(Number(r.exam)||0)) : ca;
     const label = r.assessment_stage === 'exam' ? (r.grade || finalGrade(total)) : caRating(ca);
-    return `<tr><td>${tEsc(r.student_id)}<br><small>${tEsc(r.studentName)}</small></td><td>${tEsc(r.class)}</td><td>${tEsc(r.subject)}</td><td>${r.first_ca ?? '-'}</td><td>${r.second_ca ?? '-'}</td><td><strong>${ca}</strong></td><td>${r.assessment_stage==='exam' ? (r.exam ?? '-') : '-'}</td><td>${r.assessment_stage==='exam' ? `<strong>${total}</strong>` : '-'}</td><td>${tEsc(label)}</td><td>${tEsc(r.term)}</td><td>${r.assessment_stage==='exam'?'Exam':'C.A'}</td><td><button class="btn light" type="button" onclick="editResultV2(${Number(r.id)})">Open</button></td></tr>`;
+    return `<tr><td>${tEsc(r.student_id)}<br><small>${tEsc(r.studentName)}</small></td><td>${tEsc(r.class)}</td><td>${tEsc(r.subject)}</td><td>${r.first_ca ?? '-'}</td><td>${r.second_ca ?? '-'}</td><td><strong>${ca}</strong></td><td>${r.assessment_stage==='exam' ? (r.exam ?? '-') : '-'}</td><td>${r.assessment_stage==='exam' ? `<strong>${total}</strong>` : '-'}</td><td>${tEsc(label)}</td><td>${tEsc(r.term)}</td><td>${r.assessment_stage==='exam'?'Exam':'Mid-Term'}</td><td><button class="btn light" type="button" onclick="editResultV2(${Number(r.id)})">Open</button></td></tr>`;
   }).join('') : '<tr><td colspan="12">No result matches this filter.</td></tr>';
 }
 
