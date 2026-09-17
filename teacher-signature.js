@@ -1,6 +1,7 @@
 const SIG_BUCKET='teacher-signatures';
 const SIG_MAX=2*1024*1024;
 const SIG_TYPES=['image/jpeg','image/png','image/webp'];
+let currentSignaturePath='';
 
 function sigExt(file){return file.type==='image/png'?'png':file.type==='image/webp'?'webp':'jpg';}
 function sigMsg(text,bad=false){const el=document.getElementById('signatureMsg');if(!el)return;el.textContent=text;el.className=`msg ${bad?'bad':'ok'}`;}
@@ -13,12 +14,22 @@ async function waitForTeacherProfile(){
   throw new Error('Teacher profile could not be loaded.');
 }
 
+async function fetchSignaturePath(){
+  const {data,error}=await supabaseClient
+    .from('Teachers')
+    .select('signature_path')
+    .eq('auth_user_id',pageState.user.id)
+    .maybeSingle();
+  if(error)throw error;
+  currentSignaturePath=data?.signature_path||'';
+}
+
 async function showTeacherSignature(){
   const img=document.getElementById('signaturePreview');
   if(!img)return;
-  const path=pageState.teacher?.signature_path;
-  if(!path){img.removeAttribute('src');img.classList.add('empty');return;}
-  const {data,error}=await supabaseClient.storage.from(SIG_BUCKET).createSignedUrl(path,3600);
+  await fetchSignaturePath();
+  if(!currentSignaturePath){img.removeAttribute('src');img.classList.add('empty');return;}
+  const {data,error}=await supabaseClient.storage.from(SIG_BUCKET).createSignedUrl(currentSignaturePath,3600);
   if(error){sigMsg('Could not load saved signature.',true);return;}
   img.src=data?.signedUrl||'';img.classList.remove('empty');
 }
@@ -37,7 +48,7 @@ async function uploadTeacherSignature(file){
     const {data:updated,error:updateError}=await supabaseClient.rpc('pacsa_update_my_teacher_signature',{p_path:path});
     if(updateError)throw updateError;
     if(!updated)throw new Error('Could not save the signature to your teacher profile.');
-    pageState.teacher.signature_path=path;
+    currentSignaturePath=path;
     sigMsg('Signature saved. PACSA will place it automatically on results you enter.');
     await showTeacherSignature();
   }catch(error){sigMsg(error?.message||'Could not upload signature.',true);}
