@@ -134,6 +134,7 @@ async function loadSessions() {
                 term,
                 start_date,
                 end_date,
+                next_term_begins,
                 status,
                 is_current,
                 created_at
@@ -260,6 +261,13 @@ function renderSessions() {
                             <td>
                                 ${formatDate(
                                     item.end_date
+                                )}
+                            </td>
+
+
+                            <td>
+                                ${formatDate(
+                                    item.next_term_begins
                                 )}
                             </td>
 
@@ -657,6 +665,10 @@ function openSessionModal(
         item?.end_date || "";
 
 
+    $("nextTermBegins").value =
+        item?.next_term_begins || "";
+
+
     $("sessionStatus").value =
         item?.status ||
         "upcoming";
@@ -715,6 +727,11 @@ async function saveSession(
         end_date:
             $("endDate")
                 ?.value || "",
+
+        next_term_begins:
+            $("nextTermBegins")
+                ?.value ||
+            null,
 
         status:
             $("sessionStatus")
