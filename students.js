@@ -364,6 +364,7 @@ async function loadPageData() {
                         student_id,
                         email,
                         phone,
+                        date_of_birth,
                         class,
                         gender,
                         status
@@ -1204,6 +1205,17 @@ function openStudentModal(
 
 
     if (
+        $("studentDateOfBirth")
+    ) {
+
+        $("studentDateOfBirth")
+            .value =
+            student?.date_of_birth ||
+            "";
+    }
+
+
+    if (
         $("studentClass")
     ) {
 
@@ -1304,6 +1316,11 @@ async function saveStudent(
                 .trim() ||
             "",
 
+        date_of_birth:
+            $("studentDateOfBirth")
+                ?.value ||
+            null,
+
         class:
             $("studentClass")
                 ?.value ||
@@ -1334,11 +1351,15 @@ async function saveStudent(
 
         ||
 
+        !studentData.date_of_birth
+
+        ||
+
         !studentData.class
     ) {
 
         alert(
-            "Please enter First Name, Last Name, Student ID and Class."
+            "Please enter First Name, Last Name, Student ID, Date of Birth and Class."
         );
 
         return;
