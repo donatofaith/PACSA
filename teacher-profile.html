@@ -44,10 +44,23 @@
     <button id="uploadSignatureBtn" type="button" class="btn primary">Choose Signature Photo</button>
     <span class="signature-help">JPG, PNG or WebP. Maximum 2 MB.</span>
   </div>
-  <div class="signature-clean-note">For best results, sign with dark ink on plain light paper. PACSA will automatically remove most light background, crop empty space and save a transparent PNG.</div>
+  <div class="signature-clean-note">PACSA extracts the dark ink and makes the paper fully transparent. Use the removal strength control if any paper, shadow or notebook lines remain.</div>
+
+  <div id="cleanedUploadArea" class="hidden-signature-method" style="margin-top:14px">
+    <label for="signatureCleanupStrength" style="display:block;font-weight:800;font-size:13px;margin-bottom:7px">Background removal strength</label>
+    <input id="signatureCleanupStrength" type="range" min="35" max="95" value="72" style="width:min(430px,100%)">
+    <p class="signature-help">Move right for stronger removal. Stop before parts of the signature disappear.</p>
+    <div class="signature-preview-box" style="margin-top:10px">
+      <img id="cleanedSignaturePreview" class="empty" alt="Cleaned signature preview">
+    </div>
+    <div class="signature-actions">
+      <button id="saveCleanedSignatureBtn" type="button" class="btn primary">Save Cleaned Signature</button>
+      <button id="cancelCleanedSignatureBtn" type="button" class="btn secondary">Cancel</button>
+    </div>
+  </div>
 </div>
 
 <p class="signature-help" style="margin-top:18px"><strong>Saved signature preview</strong></p>
 <div class="signature-preview-box"><img id="signaturePreview" class="empty" alt="Teacher signature"></div>
 <p id="signatureMsg" class="msg"></p>
-</div></section></main></div><script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script><script src="supabase.js"></script><script src="temporary-password-guard.js"></script><script src="teacher-portal-page.js"></script><script src="teacher-signature.js?v=20260918-clean-signature"></script><script src="teacher-notifications.js"></script><script src="principal-role.js?v=20260918-principalfix"></script></body></html>
+</div></section></main></div><script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script><script src="supabase.js"></script><script src="temporary-password-guard.js"></script><script src="teacher-portal-page.js"></script><script src="teacher-signature.js?v=20260918-strong-cutout"></script><script src="teacher-notifications.js"></script><script src="principal-role.js?v=20260918-principalfix"></script></body></html>
