@@ -75,7 +75,9 @@ async function renderClassResult(){
   T$('classResultPercentage').textContent=`${percentage.toFixed(1)}%`;
 
   const {data}=await supabaseClient.from('student_reports').select('*').eq('student_id',pageState.selectedStudent.student_id).eq('class',pageState.selectedClass.class).eq('term',term).eq('session',pageState.selectedClass.session).maybeSingle();
-  T$('classTeacherRemark').value=data?.teacher_remark||data?.remark||'';
+  T$('classTeacherRemark').value=isExam
+    ? (data?.exam_teacher_remark||'')
+    : (data?.midterm_teacher_remark||data?.teacher_remark||data?.remark||'');
   T$('remarkMessage').textContent=data?`Report status: ${data.status||'draft'}`:'';
 }
 async function saveReport(status){
@@ -108,16 +110,33 @@ async function saveReport(status){
     return;
   }
 
-  const {error}=await supabaseClient.from('student_reports').upsert({
+  const {data:period}=await supabaseClient
+    .from('assessment_periods')
+    .select('current_stage')
+    .eq('session',pageState.selectedClass.session)
+    .eq('term',term)
+    .maybeSingle();
+
+  const stage=tNorm(period?.current_stage)==='exam'?'exam':'ca';
+  const payload={
     student_id:pageState.selectedStudent.student_id,
     class:pageState.selectedClass.class,
     term,
     session:pageState.selectedClass.session,
-    remark,
-    teacher_remark:remark,
     status:'draft',
     published_at:null
-  },{onConflict:'student_id,class,term,session'});
+  };
+
+  if(stage==='exam'){
+    payload.exam_teacher_remark=remark;
+  }else{
+    payload.midterm_teacher_remark=remark;
+  }
+
+  const {error}=await supabaseClient.from('student_reports').upsert(
+    payload,
+    {onConflict:'student_id,class,term,session'}
+  );
 
   msg.textContent=error?`Could not save: ${error.message}`:'Teacher remark saved as draft.';
 }
