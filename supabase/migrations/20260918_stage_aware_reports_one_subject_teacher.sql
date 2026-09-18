@@ -1,44 +1,7 @@
--- PACSA stage-aware report submission + one-subject-per-teacher guard
+-- PACSA stage-aware report submission
 -- Run once in Supabase SQL Editor.
 
 begin;
-
--- =========================================================
--- ONE TEACHER = ONE SUBJECT
--- The same subject may still be assigned across many classes.
--- =========================================================
-
-create or replace function public.pacsa_enforce_one_subject_per_teacher()
-returns trigger
-language plpgsql
-set search_path = public
-as $$
-begin
-  if exists (
-    select 1
-    from public.teacher_assignments a
-    where a.teacher_id = new.teacher_id
-      and lower(trim(coalesce(a.subject,''))) <> lower(trim(coalesce(new.subject,'')))
-      and (
-        tg_op = 'INSERT'
-        or a.id is distinct from new.id
-      )
-  ) then
-    raise exception
-      'A teacher can only be assigned one subject. The same subject may be assigned across multiple classes.';
-  end if;
-
-  return new;
-end;
-$$;
-
-drop trigger if exists pacsa_one_subject_per_teacher on public.teacher_assignments;
-create trigger pacsa_one_subject_per_teacher
-before insert or update of teacher_id, subject
-on public.teacher_assignments
-for each row
-execute function public.pacsa_enforce_one_subject_per_teacher();
-
 
 -- =========================================================
 -- CLASS TEACHER SUBMISSION
