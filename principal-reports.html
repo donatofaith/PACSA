@@ -23,6 +23,7 @@
     <div class="table-wrap" style="margin-top:18px"><table><thead><tr><th>Student</th><th>Class</th><th>Term</th><th>Session</th><th>Teacher Remark</th><th>Status</th><th>Action</th></tr></thead><tbody id="principalReportsTable"><tr><td colspan="7">Loading reports...</td></tr></tbody></table></div>
 
     <div id="principalReviewPanel" class="review-panel hidden">
+      <div id="principalReviewStatus" class="teacher-remark" style="margin-bottom:14px;display:none"></div>
       <div class="page-head"><div><span class="label">COMPLETE REPORT</span><h2 id="reviewStudent">Student</h2><p id="reviewMeta">--</p></div><button class="btn light" id="closeReviewBtn">Close</button></div>
       <div class="table-wrap"><table><thead id="principalResultHead"><tr><th>Subject</th><th>1st Test /10</th><th>2nd Test /20</th><th>Total /30</th><th>Grade / Remark</th></tr></thead><tbody id="principalResultBody"></tbody></table></div>
       <div class="remark-box"><h3>Remark (Teacher)</h3><div class="teacher-remark" id="teacherRemark">--</div></div>
@@ -32,5 +33,5 @@
     </div>
   </section>
 </main></div>
-<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script><script src="supabase.js"></script><script src="temporary-password-guard.js"></script><script src="teacher-portal-page.js"></script><script src="principal-role.js"></script><script src="principal-reports.js?v=20260918-principal-stage-fix2"></script>
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script><script src="supabase.js"></script><script src="temporary-password-guard.js"></script><script src="teacher-portal-page.js"></script><script src="principal-role.js"></script><script src="principal-reports.js?v=20260918-review-status"></script>
 </body></html>
