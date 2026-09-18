@@ -199,6 +199,7 @@ Deno.serve(async (req) => {
 
     if (authUserId) {
       const { error: resetError } = await adminClient.auth.admin.updateUserById(authUserId, {
+        email,
         password: temporaryPassword,
         email_confirm: true,
         user_metadata: metadata,
@@ -216,10 +217,11 @@ Deno.serve(async (req) => {
     }
 
     if (authUserId) {
-      await adminClient
+      const { error: linkError } = await adminClient
         .from(config.table)
         .update({ auth_user_id: authUserId, portal_status: "active" })
         .eq(config.idColumn, recordId);
+      if (linkError) return fail(`Portal login was created, but PACSA could not link it to the ${role} record: ${linkError.message}`, 500);
     }
 
     const name = `${clean(record.first_name)} ${clean(record.last_name)}`.trim() || role;
