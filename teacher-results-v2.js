@@ -88,22 +88,44 @@ function updateStageUI() {
   const exam = R$('resultExam');
   const submit = R$('submitResultBtn');
 
+  const show = (id, visible) => { const el = R$(id); if (el) el.style.display = visible ? '' : 'none'; };
+
   if (stage === 'ca') {
     banner.textContent = `Mid-Term Test is open — ${assessmentControl.session}, ${assessmentControl.term}. Enter 1st Test /10 and 2nd Test /20.`;
     R$('entryTitle').textContent = 'Enter Mid-Term Test';
-    R$('entryHelp').textContent = 'Total /30, grade and remark are calculated automatically. Saved mid-term results become available to the student.';
+    R$('entryHelp').textContent = 'Total /30 and Mid-Term grade/remark are calculated automatically. No examination fields are shown during Mid-Term entry.';
     first.disabled = false; second.disabled = false; exam.disabled = true; exam.value = '';
+    show('firstCaField', true);
+    show('secondCaField', true);
+    show('caTotalField', true);
+    show('examField', false);
+    show('finalTotalField', false);
+    show('gradeField', true);
+    if (R$('resultGradeLabel')) R$('resultGradeLabel').textContent = 'Mid-Term Grade / Remark';
     submit.disabled = false; submit.textContent = 'Save Mid-Term Result';
   } else if (stage === 'exam') {
     banner.textContent = `Examination is open — ${assessmentControl.session}, ${assessmentControl.term}. Existing Test /30 totals are carried forward automatically.`;
     R$('entryTitle').textContent = 'Enter Examination Result';
-    R$('entryHelp').textContent = '1st Test, 2nd Test and Test Total are locked from the mid-term stage. Enter only the Examination score /70.';
+    R$('entryHelp').textContent = 'Mid-Term scores are locked and carried forward. Enter only the Examination score /70.';
     first.disabled = true; second.disabled = true; exam.disabled = false;
+    show('firstCaField', true);
+    show('secondCaField', true);
+    show('caTotalField', true);
+    show('examField', true);
+    show('finalTotalField', true);
+    show('gradeField', true);
+    if (R$('resultGradeLabel')) R$('resultGradeLabel').textContent = 'Final Grade / Remark';
     submit.disabled = false; submit.textContent = 'Save Examination Result';
   } else {
     banner.textContent = 'Result entry is currently closed by the school administrator.';
     R$('entryHelp').textContent = 'You can review existing results, but no new score can be entered until an assessment stage is opened.';
     first.disabled = true; second.disabled = true; exam.disabled = true; submit.disabled = true;
+    show('firstCaField', true);
+    show('secondCaField', true);
+    show('caTotalField', true);
+    show('examField', false);
+    show('finalTotalField', false);
+    show('gradeField', true);
   }
   calculateResultPreview();
 }
@@ -176,7 +198,7 @@ function calculateResultPreview() {
     R$('resultTotal').value = total;
     R$('resultGrade').value = finalGrade(total);
   } else {
-    R$('resultTotal').value = ca;
+    R$('resultTotal').value = '';
     R$('resultGrade').value = caRating(ca);
   }
 }
