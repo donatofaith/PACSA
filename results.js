@@ -305,6 +305,11 @@ function buildReports() {
 
                         reportRecord,
 
+                        report_stage:
+                            matchingResults.some(result => normalize(result.assessment_stage) === "exam")
+                                ? "exam"
+                                : "ca",
+
                         results:
                             matchingResults,
 
@@ -870,93 +875,60 @@ function openReport(key) {
         );
 
 
-    $("reviewResultBody")
-        .innerHTML =
+    const isExam = normalize(currentReport.report_stage) === "exam";
+    const head = $("adminResultHead");
 
-        currentReport.results
-            .map(
-                result => {
+    if (head) {
+        head.innerHTML = isExam
+            ? "<tr><th>Subject</th><th>Test /30</th><th>Exam /70</th><th>Total /100</th><th>Grade / Remark</th></tr>"
+            : "<tr><th>Subject</th><th>1st Test /10</th><th>2nd Test /20</th><th>Total /30</th><th>Grade / Remark</th></tr>";
+    }
 
-                    const total =
-                        getResultTotal(
-                            result
-                        );
+    let marksObtained = 0;
 
+    $("reviewResultBody").innerHTML =
+        currentReport.results.map(result => {
+            const ca = Number(result.ca) || 0;
 
-                    return `
+            if (!isExam) {
+                marksObtained += ca;
+                const label = ca === 30 ? "A — Excellent"
+                    : ca >= 23 ? "B — Very Good"
+                    : ca >= 15 ? "C — Good"
+                    : ca >= 10 ? "D — Fair"
+                    : "F — Poor";
 
-                        <tr>
+                return `
+                    <tr>
+                        <td>${escapeHtml(result.subject || "--")}</td>
+                        <td>${escapeHtml(result.first_ca ?? "-")}</td>
+                        <td>${escapeHtml(result.second_ca ?? "-")}</td>
+                        <td><strong>${ca}</strong></td>
+                        <td>${escapeHtml(label)}</td>
+                    </tr>
+                `;
+            }
 
-                            <td>
-                                ${escapeHtml(
-                                    result.subject ||
-                                    "--"
-                                )}
-                            </td>
+            const total = Number(result.total) || (ca + (Number(result.exam) || 0));
+            marksObtained += total;
+            return `
+                <tr>
+                    <td>${escapeHtml(result.subject || "--")}</td>
+                    <td>${ca}</td>
+                    <td>${escapeHtml(result.exam ?? "-")}</td>
+                    <td><strong>${total}</strong></td>
+                    <td>${escapeHtml(result.grade || getGrade(total))}</td>
+                </tr>
+            `;
+        }).join("");
 
+    const obtainable = currentReport.results.length * (isExam ? 100 : 30);
+    const percent = obtainable ? (marksObtained / obtainable) * 100 : 0;
 
-                            <td>
-                                ${Number(
-                                    result.ca
-                                ) || 0}
-                            </td>
-
-
-                            <td>
-                                ${Number(
-                                    result.exam
-                                ) || 0}
-                            </td>
-
-
-                            <td>
-
-                                <strong>
-                                    ${total}
-                                </strong>
-
-                            </td>
-
-
-                            <td>
-
-                                <strong>
-                                    ${escapeHtml(
-                                        result.grade
-                                        ||
-                                        getGrade(
-                                            total
-                                        )
-                                    )}
-                                </strong>
-
-                            </td>
-
-                        </tr>
-                    `;
-                }
-            )
-            .join("");
-
-
-    $("reviewSubjects")
-        .textContent =
-        currentReport.results.length;
-
-
-    $("reviewAverage")
-        .textContent =
-        `${currentReport.average.toFixed(1)}%`;
-
-
-    $("reviewPassed")
-        .textContent =
-        currentReport.passed;
-
-
-    $("reviewFailed")
-        .textContent =
-        currentReport.failed;
+    $("reviewSubjects").textContent = currentReport.results.length;
+    $("reviewAverage").textContent = obtainable;
+    $("reviewPassed").textContent = Number(marksObtained.toFixed(2));
+    $("reviewFailed").textContent = `${percent.toFixed(1)}%`;
 
 
     if (
@@ -1707,6 +1679,8 @@ async function loadData() {
                         id,
                         student_id,
                         subject,
+                        first_ca,
+                        second_ca,
                         ca,
                         exam,
                         total,
@@ -1714,7 +1688,8 @@ async function loadData() {
                         term,
                         session,
                         class,
-                        status
+                        status,
+                        assessment_stage
                     `)
                     .order(
                         "id",
