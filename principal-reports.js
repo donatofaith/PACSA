@@ -77,7 +77,13 @@ window.openPrincipalReport = async index => {
   });
   if(error){P$('principalMessage').textContent=error.message;return;}
   const resultRows=data||[];
-  const isExam=resultRows.length>0&&resultRows.every(r=>r.exam!==null&&r.exam!==undefined);
+  const {data:period}=await supabaseClient
+    .from('assessment_periods')
+    .select('current_stage')
+    .eq('session',report.session)
+    .eq('term',report.term)
+    .maybeSingle();
+  const isExam=pNorm(period?.current_stage)==='exam';
   const head=P$('principalResultHead');
   if(head){
     head.innerHTML=isExam
