@@ -341,20 +341,7 @@ async function loadPublishedReports() {
     hideMessage();
 
     const { data, error } = await supabaseClient
-        .from("student_reports")
-        .select(`
-            id,
-            student_id,
-            class,
-            term,
-            session,
-            remark,
-            status,
-            published_at
-        `)
-        .eq("student_id", student.student_id)
-        .eq("status", "published")
-        .order("published_at", { ascending: false });
+        .rpc("pacsa_get_my_published_reports");
 
     if (error) {
         console.error("Published reports error:", error);
@@ -458,32 +445,20 @@ async function selectReport(report) {
     setText("reportSession", report.session || "--");
     setText("reportTerm", report.term || "--");
     setText("reportStudentClass", report.class || "--");
-    setText("reportRemark", report.remark || "No remark provided.");
+    setText("reportRemark", report.teacher_remark || report.remark || "No remark provided.");
+    setText("reportTeacherRemark", report.teacher_remark || report.remark || "No Class Teacher remark provided.");
+    setText("reportPrincipalRemark", report.principal_remark || "No Principal remark provided.");
 
     await loadResultsForReport(report);
 }
 
 async function loadResultsForReport(report) {
     const { data, error } = await supabaseClient
-        .from("results")
-        .select(`
-            id,
-            student_id,
-            subject,
-            ca,
-            exam,
-            total,
-            grade,
-            term,
-            session,
-            class,
-            status
-        `)
-        .eq("student_id", student.student_id)
-        .eq("class", report.class)
-        .eq("term", report.term)
-        .eq("session", report.session)
-        .order("subject", { ascending: true });
+        .rpc("pacsa_get_my_published_report_results", {
+            p_class: report.class,
+            p_term: report.term,
+            p_session: report.session
+        });
 
     if (error) {
         console.error("Student result error:", error);
