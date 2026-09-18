@@ -1746,6 +1746,8 @@ async function loadData() {
                         term,
                         session,
                         remark,
+                        teacher_remark,
+                        principal_remark,
                         status,
                         published_at,
                         created_at
