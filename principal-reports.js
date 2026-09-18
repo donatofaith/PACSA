@@ -96,9 +96,36 @@ window.openPrincipalReport = async index => {
         : `<tr><td>${pEsc(r.subject)}</td><td>${r.first_ca??'-'}</td><td>${r.second_ca??'-'}</td><td><strong>${r.ca??'-'}</strong></td><td>${pEsc(r.grade||'-')}</td></tr>`
       ).join('')
     : '<tr><td colspan="5">No results found.</td></tr>';
-  const pending=pNorm(report.status)==='pending';
+  const status=pNorm(report.status);
+  const pending=status==='pending';
+  const published=status==='published';
+  const rejected=status==='rejected';
   P$('publishReportBtn').style.display=pending?'inline-flex':'none';
   P$('returnReportBtn').style.display=pending?'inline-flex':'none';
+
+  const reviewStatus=P$('principalReviewStatus');
+  if(reviewStatus){
+    reviewStatus.style.display='block';
+    if(pending){
+      reviewStatus.textContent='Pending Principal review — add your remark, then choose Approve & Publish or Return to Class Teacher.';
+      reviewStatus.style.background='#f5f3ff';
+      reviewStatus.style.color='#5b21b6';
+    }else if(published){
+      reviewStatus.textContent='This report has already been published. Approval actions are locked.';
+      reviewStatus.style.background='#ecfdf5';
+      reviewStatus.style.color='#166534';
+    }else if(rejected){
+      reviewStatus.textContent='This report was returned to the Class Teacher. It must be resubmitted before it can be approved.';
+      reviewStatus.style.background='#fff7ed';
+      reviewStatus.style.color='#9a3412';
+    }else{
+      reviewStatus.textContent=`Report status: ${report.status||'unknown'}`;
+      reviewStatus.style.background='#f9fafb';
+      reviewStatus.style.color='#374151';
+    }
+  }
+
+  P$('principalRemark').readOnly=!pending;
   P$('principalReviewPanel').scrollIntoView({behavior:'smooth',block:'start'});
 };
 
