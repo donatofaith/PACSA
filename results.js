@@ -132,18 +132,16 @@ function getReportKey(
 ========================================= */
 
 function getGrade(total) {
-
-    if (total >= 70) return "A";
-
-    if (total >= 60) return "B";
-
-    if (total >= 50) return "C";
-
-    if (total >= 45) return "D";
-
-    if (total >= 40) return "E";
-
-    return "F";
+    const score = Number(total) || 0;
+    if (score >= 80) return "A1 — Excellent";
+    if (score >= 75) return "B2 — Very Good";
+    if (score >= 70) return "B3 — Good";
+    if (score >= 65) return "C4 — Credit";
+    if (score >= 60) return "C5 — Credit";
+    if (score >= 50) return "C6 — Credit";
+    if (score >= 45) return "D7 — Pass";
+    if (score >= 40) return "E8 — Pass";
+    return "F9 — Fail";
 }
 
 
