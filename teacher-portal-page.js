@@ -78,7 +78,49 @@ async function renderClassResult(){
   T$('classTeacherRemark').value=data?.teacher_remark||data?.remark||'';
   T$('remarkMessage').textContent=data?`Report status: ${data.status||'draft'}`:'';
 }
-async function saveReport(status){const term=T$('classResultTerm')?.value,remark=T$('classTeacherRemark')?.value.trim();const msg=T$('remarkMessage');if(!pageState.selectedStudent||!pageState.selectedClass||!term){msg.textContent='Select student and term.';return}if(!remark){msg.textContent='Enter a class teacher remark.';return}const {error}=await supabaseClient.from('student_reports').upsert({student_id:pageState.selectedStudent.student_id,class:pageState.selectedClass.class,term,session:pageState.selectedClass.session,remark,teacher_remark:remark,status,published_at:null},{onConflict:'student_id,class,term,session'});msg.textContent=error?`Could not save: ${error.message}`:status==='pending'?'Complete report submitted to Principal.':'Teacher remark saved as draft.'}
+async function saveReport(status){
+  const term=T$('classResultTerm')?.value;
+  const remark=T$('classTeacherRemark')?.value.trim();
+  const msg=T$('remarkMessage');
+
+  if(!pageState.selectedStudent||!pageState.selectedClass||!term){
+    msg.textContent='Select student and term.';
+    return;
+  }
+  if(!remark){
+    msg.textContent='Enter a class teacher remark.';
+    return;
+  }
+
+  if(status==='pending'){
+    const {data,error}=await supabaseClient.rpc('pacsa_class_teacher_submit_report',{
+      p_student_id:pageState.selectedStudent.student_id,
+      p_class:pageState.selectedClass.class,
+      p_term:term,
+      p_session:pageState.selectedClass.session,
+      p_teacher_remark:remark
+    });
+    if(error||!data){
+      msg.textContent=`Could not submit: ${error?.message||'The complete report is not ready.'}`;
+      return;
+    }
+    msg.textContent='Complete report submitted to Principal.';
+    return;
+  }
+
+  const {error}=await supabaseClient.from('student_reports').upsert({
+    student_id:pageState.selectedStudent.student_id,
+    class:pageState.selectedClass.class,
+    term,
+    session:pageState.selectedClass.session,
+    remark,
+    teacher_remark:remark,
+    status:'draft',
+    published_at:null
+  },{onConflict:'student_id,class,term,session'});
+
+  msg.textContent=error?`Could not save: ${error.message}`:'Teacher remark saved as draft.';
+}
 async function loadResults(){const {data}=await supabaseClient.from('results').select('*').order('id',{ascending:false});pageState.results=(data||[]).filter(r=>hasAssignment(r.class,r.subject)).map(r=>({...r,studentName:tName(pageState.students.find(s=>String(s.student_id)===String(r.student_id)))||r.student_id}));return pageState.results}
 function uniqueValues(rows,key){return [...new Set(rows.map(r=>r[key]).filter(Boolean))].sort((a,b)=>String(a).localeCompare(String(b)))}
 function setupResultFilters(){const classFilter=T$('resultClassFilter'),subjectFilter=T$('resultSubjectFilter');if(classFilter){classFilter.innerHTML='<option value="">All Classes</option>'+uniqueValues(pageState.results,'class').map(v=>`<option value="${tEsc(v)}">${tEsc(v)}</option>`).join('')}if(subjectFilter){subjectFilter.innerHTML='<option value="">All Subjects</option>'+uniqueValues(pageState.results,'subject').map(v=>`<option value="${tEsc(v)}">${tEsc(v)}</option>`).join('')}['resultSearch','resultClassFilter','resultSubjectFilter','resultTermFilter','resultStatusFilter'].forEach(id=>T$(id)?.addEventListener('input',renderResultsTable));T$('clearResultFilters')?.addEventListener('click',()=>{['resultSearch','resultClassFilter','resultSubjectFilter','resultTermFilter','resultStatusFilter'].forEach(id=>{if(T$(id))T$(id).value=''});renderResultsTable()})}
