@@ -81,6 +81,32 @@ function getGradeClass(grade) {
     return "grade-f";
 }
 
+function midTermGrade(score) {
+    const n = Number(score) || 0;
+    if (n === 30) return "A — Excellent";
+    if (n >= 23) return "B — Very Good";
+    if (n >= 15) return "C — Good";
+    if (n >= 10) return "D — Fair";
+    return "F — Poor";
+}
+
+function finalGrade(score) {
+    const n = Number(score) || 0;
+    if (n >= 80) return "A1 — Excellent";
+    if (n >= 75) return "B2 — Very Good";
+    if (n >= 70) return "B3 — Good";
+    if (n >= 65) return "C4 — Credit";
+    if (n >= 60) return "C5 — Credit";
+    if (n >= 50) return "C6 — Credit";
+    if (n >= 45) return "D7 — Pass";
+    if (n >= 40) return "E8 — Pass";
+    return "F9 — Fail";
+}
+
+function isExamReport() {
+    return normalize(currentReport?.report_stage) === "exam";
+}
+
 function getResultTotal(result) {
     const stored = Number(result.total);
     if (Number.isFinite(stored)) return stored;
@@ -449,6 +475,19 @@ async function selectReport(report) {
     setText("reportTeacherRemark", report.teacher_remark || report.remark || "No Class Teacher remark provided.");
     setText("reportPrincipalRemark", report.principal_remark || "No Principal remark provided.");
 
+    const examReport = normalize(report.report_stage) === "exam";
+    setText("studentReportHeading", examReport ? "Final Examination Report" : "Mid-Term Performance Report");
+    setText("studentReportHelp", examReport
+        ? "Test /30 is carried forward automatically, Examination is /70, and the final total is /100."
+        : "Mid-Term shows 1st Test /10, 2nd Test /20, and Total /30.");
+
+    const head = $("studentReportTableHead");
+    if (head) {
+        head.innerHTML = examReport
+            ? "<tr><th>Subject</th><th>Test /30</th><th>Exam /70</th><th>Total /100</th><th>Grade / Remark</th></tr>"
+            : "<tr><th>Subject</th><th>1st Test /10</th><th>2nd Test /20</th><th>Total /30</th><th>Grade / Remark</th></tr>";
+    }
+
     await loadResultsForReport(report);
 }
 
@@ -476,35 +515,37 @@ async function loadResultsForReport(report) {
 
 function resultRowsHtml() {
     if (!filteredResults.length) {
-        return `
-            <tr>
-                <td colspan="5" class="empty-row">
-                    No published result found.
-                </td>
-            </tr>
-        `;
+        return '<tr><td colspan="5" class="empty-row">No published result found.</td></tr>';
     }
 
-    return filteredResults
-        .map(result => {
-            const total = getResultTotal(result);
-            const grade = result.grade || "-";
+    const examReport = isExamReport();
 
+    return filteredResults.map(result => {
+        const ca = Number(result.ca) || 0;
+
+        if (!examReport) {
             return `
                 <tr>
                     <td>${escapeHtml(result.subject || "-")}</td>
-                    <td>${escapeHtml(result.ca ?? "-")}</td>
-                    <td>${escapeHtml(result.exam ?? "-")}</td>
-                    <td><strong>${escapeHtml(total)}</strong></td>
-                    <td>
-                        <span class="grade-badge ${getGradeClass(grade)}">
-                            ${escapeHtml(grade)}
-                        </span>
-                    </td>
+                    <td>${escapeHtml(result.first_ca ?? "-")}</td>
+                    <td>${escapeHtml(result.second_ca ?? "-")}</td>
+                    <td><strong>${escapeHtml(ca)}</strong></td>
+                    <td>${escapeHtml(midTermGrade(ca))}</td>
                 </tr>
             `;
-        })
-        .join("");
+        }
+
+        const total = Number(result.total) || (ca + (Number(result.exam) || 0));
+        return `
+            <tr>
+                <td>${escapeHtml(result.subject || "-")}</td>
+                <td>${escapeHtml(ca)}</td>
+                <td>${escapeHtml(result.exam ?? "-")}</td>
+                <td><strong>${escapeHtml(total)}</strong></td>
+                <td>${escapeHtml(result.grade || finalGrade(total))}</td>
+            </tr>
+        `;
+    }).join("");
 }
 
 function renderResults() {
@@ -514,20 +555,31 @@ function renderResults() {
 
 function renderSummary(positionText = "N/A") {
     const count = allResults.length;
-    const average = calculateAverage(allResults);
-    const averageText = count ? `${average.toFixed(1)}%` : "0%";
+    const examReport = isExamReport();
+    const maxPerSubject = examReport ? 100 : 30;
+    const marks = allResults.reduce((sum, result) => {
+        const value = examReport
+            ? (Number(result.total) || ((Number(result.ca)||0) + (Number(result.exam)||0)))
+            : (Number(result.ca) || 0);
+        return sum + value;
+    }, 0);
+    const obtainable = count * maxPerSubject;
+    const percentage = obtainable ? (marks / obtainable) * 100 : 0;
 
-    const passed = allResults.filter(
-        result => getResultTotal(result) >= 40
-    ).length;
+    const passed = allResults.filter(result => {
+        const value = examReport
+            ? (Number(result.total) || ((Number(result.ca)||0) + (Number(result.exam)||0)))
+            : (Number(result.ca) || 0);
+        return examReport ? value >= 40 : value >= 10;
+    }).length;
 
     setText("subjects", count);
-    setText("average", averageText);
+    setText("average", count ? `${percentage.toFixed(1)}%` : "0%");
     setText("passedSubjects", passed);
     setText("position", positionText);
 
     setText("reportSubjects", count);
-    setText("reportAverage", averageText);
+    setText("reportAverage", count ? `${percentage.toFixed(1)}%` : "0%");
     setText("reportPassed", passed);
     setText("reportPosition", positionText);
 }
