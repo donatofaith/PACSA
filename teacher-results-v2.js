@@ -285,7 +285,25 @@ async function initResultV2() {
   R$('resultAssignment').addEventListener('change',()=>{fillStudents();resultEditingId=null;});
   R$('resultStudent').addEventListener('change',loadExistingForSelection);
   R$('resultTerm').addEventListener('change',loadExistingForSelection);
-  ['resultFirstCA','resultSecondCA','resultExam'].forEach(id=>R$(id).addEventListener('input',calculateResultPreview));
+  const scoreLimits={resultFirstCA:10,resultSecondCA:20,resultExam:70};
+  Object.entries(scoreLimits).forEach(([id,max])=>{
+    const input=R$(id);
+    input?.addEventListener('input',()=>{
+      if(input.value==='')return calculateResultPreview();
+      let value=Number(input.value);
+      if(!Number.isFinite(value))value=0;
+      value=Math.max(0,Math.min(max,value));
+      if(Number(input.value)!==value)input.value=String(value);
+      calculateResultPreview();
+    });
+    input?.addEventListener('blur',()=>{
+      if(input.value==='')return;
+      let value=Number(input.value);
+      if(!Number.isFinite(value))value=0;
+      input.value=String(Math.max(0,Math.min(max,value)));
+      calculateResultPreview();
+    });
+  });
   R$('submitResultBtn').addEventListener('click',saveTeacherResultV2);
   ['resultSearch','resultClassFilter','resultSubjectFilter','resultTermFilter','resultStageFilter'].forEach(id=>R$(id).addEventListener('input',renderTeacherResultsV2));
   R$('clearResultFilters').addEventListener('click',()=>{['resultSearch','resultClassFilter','resultSubjectFilter','resultTermFilter','resultStageFilter'].forEach(id=>R$(id).value='');renderTeacherResultsV2();});
