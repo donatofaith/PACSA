@@ -291,25 +291,10 @@ function renderTeacherResultsV2() {
     const published = tNorm(r.status) === 'published';
     const actionHtml = published
       ? '<span style="font-size:12px;color:#6b7280;font-weight:700;">Published</span>'
-      : `<div style="display:flex;gap:6px;flex-wrap:wrap;position:relative;z-index:2;"><button class="btn light result-edit-btn" type="button" data-result-id="${Number(r.id)}" style="cursor:pointer;pointer-events:auto;">Edit</button><button class="btn light result-delete-btn" type="button" data-result-id="${Number(r.id)}" style="color:#b91c1c;border-color:#fecaca;cursor:pointer;pointer-events:auto;">Delete</button></div>`;
+      : `<div style="display:flex;gap:6px;flex-wrap:wrap;position:relative;z-index:2;"><a class="btn light" href="teacher-results.html?action=edit&id=${Number(r.id)}#resultEntryPanel" style="cursor:pointer;">Edit</a><a class="btn light" href="teacher-results.html?action=delete&id=${Number(r.id)}#resultsTable" style="color:#b91c1c;border-color:#fecaca;cursor:pointer;">Delete</a></div>`;
     return `<tr><td>${tEsc(r.student_id)}<br><small>${tEsc(r.studentName)}</small></td><td>${tEsc(r.class)}</td><td>${tEsc(r.subject)}</td><td>${r.first_ca ?? '-'}</td><td>${r.second_ca ?? '-'}</td><td><strong>${ca}</strong></td><td>${r.assessment_stage==='exam' ? (r.exam ?? '-') : '-'}</td><td>${r.assessment_stage==='exam' ? `<strong>${total}</strong>` : '-'}</td><td>${tEsc(label)}</td><td>${tEsc(r.term)}</td><td>${r.assessment_stage==='exam'?'Exam':'Mid-Term'}</td><td>${actionHtml}</td></tr>`;
   }).join('') : '<tr><td colspan="12">No result matches this filter.</td></tr>';
 
-  table.querySelectorAll('.result-edit-btn').forEach(button=>{
-    button.addEventListener('click', async event=>{
-      event.preventDefault();
-      event.stopPropagation();
-      await window.editResultV2(Number(button.dataset.resultId));
-    });
-  });
-
-  table.querySelectorAll('.result-delete-btn').forEach(button=>{
-    button.addEventListener('click', async event=>{
-      event.preventDefault();
-      event.stopPropagation();
-      await window.deleteResultV2(Number(button.dataset.resultId));
-    });
-  });
 }
 
 window.editResultV2 = async id => {
@@ -346,6 +331,23 @@ window.deleteResultV2 = async id => {
   }
 };
 
+async function handleResultActionFromUrl() {
+  const params = new URLSearchParams(window.location.search);
+  const action = params.get('action');
+  const id = Number(params.get('id'));
+  if (!action || !Number.isFinite(id)) return;
+
+  history.replaceState({}, '', 'teacher-results.html');
+
+  if (action === 'edit') {
+    await window.editResultV2(id);
+    return;
+  }
+  if (action === 'delete') {
+    await window.deleteResultV2(id);
+  }
+}
+
 async function initResultV2() {
   await waitForTeacherState();
   await getCurrentPeriodAndStage();
@@ -377,6 +379,7 @@ async function initResultV2() {
   ['resultSearch','resultClassFilter','resultSubjectFilter','resultTermFilter','resultStageFilter'].forEach(id=>R$(id).addEventListener('input',renderTeacherResultsV2));
   R$('clearResultFilters').addEventListener('click',()=>{['resultSearch','resultClassFilter','resultSubjectFilter','resultTermFilter','resultStageFilter'].forEach(id=>R$(id).value='');renderTeacherResultsV2();});
   await loadTeacherResultsV2();
+  await handleResultActionFromUrl();
 }
 
 initResultV2().catch(e=>{console.error(e);showResultMessage(e?.message||'Could not load result entry.',true);});
