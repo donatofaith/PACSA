@@ -287,16 +287,46 @@ function renderTeacherResultsV2() {
   R$('resultsTable').innerHTML = rows.length ? rows.map(r => {
     const ca = Number(r.ca ?? 0); const total = r.assessment_stage === 'exam' ? Number(r.total ?? ca+(Number(r.exam)||0)) : ca;
     const label = r.assessment_stage === 'exam' ? (r.grade || finalGrade(total)) : caRating(ca);
-    return `<tr><td>${tEsc(r.student_id)}<br><small>${tEsc(r.studentName)}</small></td><td>${tEsc(r.class)}</td><td>${tEsc(r.subject)}</td><td>${r.first_ca ?? '-'}</td><td>${r.second_ca ?? '-'}</td><td><strong>${ca}</strong></td><td>${r.assessment_stage==='exam' ? (r.exam ?? '-') : '-'}</td><td>${r.assessment_stage==='exam' ? `<strong>${total}</strong>` : '-'}</td><td>${tEsc(label)}</td><td>${tEsc(r.term)}</td><td>${r.assessment_stage==='exam'?'Exam':'Mid-Term'}</td><td><button class="btn light" type="button" onclick="editResultV2(${Number(r.id)})">Open</button></td></tr>`;
+    const published = tNorm(r.status) === 'published';
+    const actionHtml = published
+      ? '<span style="font-size:12px;color:#6b7280;font-weight:700;">Published</span>'
+      : `<div style="display:flex;gap:6px;flex-wrap:wrap;"><button class="btn light" type="button" onclick="editResultV2(${Number(r.id)})">Edit</button><button class="btn light" type="button" style="color:#b91c1c;border-color:#fecaca;" onclick="deleteResultV2(${Number(r.id)})">Delete</button></div>`;
+    return `<tr><td>${tEsc(r.student_id)}<br><small>${tEsc(r.studentName)}</small></td><td>${tEsc(r.class)}</td><td>${tEsc(r.subject)}</td><td>${r.first_ca ?? '-'}</td><td>${r.second_ca ?? '-'}</td><td><strong>${ca}</strong></td><td>${r.assessment_stage==='exam' ? (r.exam ?? '-') : '-'}</td><td>${r.assessment_stage==='exam' ? `<strong>${total}</strong>` : '-'}</td><td>${tEsc(label)}</td><td>${tEsc(r.term)}</td><td>${r.assessment_stage==='exam'?'Exam':'Mid-Term'}</td><td>${actionHtml}</td></tr>`;
   }).join('') : '<tr><td colspan="12">No result matches this filter.</td></tr>';
 }
 
 window.editResultV2 = async id => {
   const r=teacherResults.find(x=>Number(x.id)===Number(id)); if(!r)return;
+  if(tNorm(r.status)==='published'){showResultMessage('This final result has already been published by the Principal and can no longer be edited.',true);return;}
   R$('resultEntryPanel').classList.remove('hidden');
   const idx=pageState.assignments.findIndex(a=>tNorm(a.class)===tNorm(r.class)&&tNorm(a.subject)===tNorm(r.subject));
   R$('resultAssignment').value=idx; fillStudents(); R$('resultStudent').value=r.student_id; R$('resultTerm').value=r.term;
   await loadExistingForSelection(); R$('resultEntryPanel').scrollIntoView({behavior:'smooth',block:'start'});
+};
+
+window.deleteResultV2 = async id => {
+  const r=teacherResults.find(x=>Number(x.id)===Number(id));
+  if(!r)return;
+  if(tNorm(r.status)==='published'){
+    showResultMessage('Published results cannot be deleted.',true);
+    return;
+  }
+  const label=r.assessment_stage==='exam'?'Examination result':'Mid-Term result';
+  if(!confirm(`Delete ${label} for ${r.studentName} — ${r.subject}?\n\nThis cannot be undone.`))return;
+  try{
+    const {data,error}=await supabaseClient.rpc('pacsa_teacher_delete_result',{p_result_id:Number(id)});
+    if(error)throw error;
+    if(data!==true)throw new Error('PACSA could not delete this result.');
+    if(resultEditingId===Number(id)){
+      resultEditingId=null;
+      R$('resultEntryPanel')?.classList.add('hidden');
+    }
+    showResultMessage('Result deleted successfully.');
+    await loadTeacherResultsV2();
+  }catch(error){
+    console.error('Delete result:',error);
+    showResultMessage(error?.message||'Could not delete result.',true);
+  }
 };
 
 async function initResultV2() {
