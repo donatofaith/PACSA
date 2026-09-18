@@ -76,7 +76,20 @@ window.openPrincipalReport = async index => {
     p_student_id:report.student_id,p_class:report.class,p_term:report.term,p_session:report.session
   });
   if(error){P$('principalMessage').textContent=error.message;return;}
-  P$('principalResultBody').innerHTML=(data||[]).map(r=>`<tr><td>${pEsc(r.subject)}</td><td>${r.first_ca??'-'}</td><td>${r.second_ca??'-'}</td><td>${r.ca??'-'}</td><td>${r.exam??'-'}</td><td><strong>${r.total??'-'}</strong></td><td>${pEsc(r.grade||'-')}</td></tr>`).join('')||'<tr><td colspan="7">No examination results found.</td></tr>';
+  const resultRows=data||[];
+  const isExam=resultRows.length>0&&resultRows.every(r=>r.exam!==null&&r.exam!==undefined);
+  const head=P$('principalResultHead');
+  if(head){
+    head.innerHTML=isExam
+      ? '<tr><th>Subject</th><th>Test /30</th><th>Exam /70</th><th>Total /100</th><th>Grade / Remark</th></tr>'
+      : '<tr><th>Subject</th><th>1st Test /10</th><th>2nd Test /20</th><th>Total /30</th><th>Grade / Remark</th></tr>';
+  }
+  P$('principalResultBody').innerHTML=resultRows.length
+    ? resultRows.map(r=>isExam
+        ? `<tr><td>${pEsc(r.subject)}</td><td>${r.ca??'-'}</td><td>${r.exam??'-'}</td><td><strong>${r.total??'-'}</strong></td><td>${pEsc(r.grade||'-')}</td></tr>`
+        : `<tr><td>${pEsc(r.subject)}</td><td>${r.first_ca??'-'}</td><td>${r.second_ca??'-'}</td><td><strong>${r.ca??'-'}</strong></td><td>${pEsc(r.grade||'-')}</td></tr>`
+      ).join('')
+    : '<tr><td colspan="5">No results found.</td></tr>';
   const pending=pNorm(report.status)==='pending';
   P$('publishReportBtn').style.display=pending?'inline-flex':'none';
   P$('returnReportBtn').style.display=pending?'inline-flex':'none';
