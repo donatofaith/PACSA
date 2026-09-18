@@ -22,7 +22,62 @@ function renderClassPage(){const wrap=T$('classTeacherArea');if(!wrap)return;if(
 function renderClassStudents(){const a=pageState.classAssignments[Number(T$('classSelect')?.value||0)];pageState.selectedClass=a;if(!a)return;const rows=classStudents(a.class);T$('classStudentCount')&&(T$('classStudentCount').textContent=`${rows.length} students`);T$('classStudentsTable').innerHTML=rows.length?rows.map(s=>`<tr><td>${tEsc(s.student_id)}</td><td>${tEsc(tName(s))}</td><td>${tEsc(s.class)}</td><td>${tEsc(s.status||'Active')}</td><td><button class="btn light" onclick="openClassResult('${encodeURIComponent(s.student_id)}')">View Result</button></td></tr>`).join(''):'<tr><td colspan="5">No student found in this class.</td></tr>'}
 window.openClassResult=async id=>{const student=pageState.students.find(s=>String(s.student_id)===decodeURIComponent(id));if(!student||!pageState.selectedClass)return;pageState.selectedStudent=student;T$('classResultPanel')?.classList.remove('hidden');T$('classResultStudentName').textContent=tName(student);T$('classResultStudentInfo').textContent=`${student.student_id} • ${student.class}`;await loadClassResults();};
 async function loadClassResults(){const s=pageState.selectedStudent,a=pageState.selectedClass;if(!s||!a)return;const {data}=await supabaseClient.from('results').select('*').eq('student_id',s.student_id).eq('class',a.class).eq('session',a.session).order('subject');pageState.classResults=data||[];const terms=[...new Set(pageState.classResults.map(r=>r.term).filter(Boolean))];T$('classResultTerm').innerHTML='<option value="">Select Term</option>'+terms.map(t=>`<option>${tEsc(t)}</option>`).join('');T$('classResultTerm').onchange=renderClassResult;if(terms[0]){T$('classResultTerm').value=terms[0];renderClassResult()}else{T$('classFullResultTable').innerHTML='<tr><td colspan="5">No result entered yet.</td></tr>'}}
-async function renderClassResult(){const term=T$('classResultTerm').value;const rows=pageState.classResults.filter(r=>tNorm(r.term)===tNorm(term));let sum=0,pass=0;T$('classFullResultTable').innerHTML=rows.length?rows.map(r=>{const ca=Number(r.ca??0),ex=Number(r.exam??0),total=Number(r.total)||ca+ex;sum+=total;if(total>=40)pass++;return `<tr><td>${tEsc(r.subject)}</td><td>${ca}</td><td>${r.assessment_stage==='exam'?ex:'-'}</td><td><strong>${r.assessment_stage==='exam'?total:'-'}</strong></td><td>${r.assessment_stage==='exam'?tEsc(r.grade||tGrade(total)):'C.A only'}</td></tr>`}).join(''):'<tr><td colspan="5">No result for selected term.</td></tr>';T$('classResultSubjectCount').textContent=rows.length;T$('classResultAverage').textContent=rows.length?`${(sum/rows.length).toFixed(1)}%`:'0%';T$('classResultPassed').textContent=pass;T$('classResultFailed').textContent=Math.max(0,rows.length-pass);const {data}=await supabaseClient.from('student_reports').select('*').eq('student_id',pageState.selectedStudent.student_id).eq('class',pageState.selectedClass.class).eq('term',term).eq('session',pageState.selectedClass.session).maybeSingle();T$('classTeacherRemark').value=data?.teacher_remark||data?.remark||'';T$('remarkMessage').textContent=data?`Report status: ${data.status||'draft'}`:''}
+const midTermRemark=n=>{const v=Number(n)||0;if(v===30)return'A — Excellent';if(v>=23)return'B — Very Good';if(v>=15)return'C — Good';if(v>=10)return'D — Fair';return'F — Poor'};
+const finalReportGrade=n=>{const v=Number(n)||0;if(v>=80)return'A1 — Excellent';if(v>=75)return'B2 — Very Good';if(v>=70)return'B3 — Good';if(v>=65)return'C4 — Credit';if(v>=60)return'C5 — Credit';if(v>=50)return'C6 — Credit';if(v>=45)return'D7 — Pass';if(v>=40)return'E8 — Pass';return'F9 — Fail'};
+
+async function renderClassResult(){
+  const term=T$('classResultTerm').value;
+  const rows=pageState.classResults.filter(r=>tNorm(r.term)===tNorm(term));
+
+  const {data:control}=await supabaseClient
+    .from('assessment_periods')
+    .select('current_stage')
+    .eq('session',pageState.selectedClass.session)
+    .eq('term',term)
+    .maybeSingle();
+
+  const isExam=tNorm(control?.current_stage)==='exam'||rows.some(r=>tNorm(r.assessment_stage)==='exam');
+
+  if(T$('classResultSheetLabel')){
+    T$('classResultSheetLabel').textContent=isExam?'PERFORMANCE REPORT PREVIEW':'MID-TERM PERFORMANCE REPORT PREVIEW';
+  }
+
+  if(T$('classResultTableHead')){
+    T$('classResultTableHead').innerHTML=isExam
+      ? '<tr><th>Subject</th><th>Test /30</th><th>Exam /70</th><th>Total /100</th><th>Grade / Remark</th></tr>'
+      : '<tr><th>Subject</th><th>1st Test /10</th><th>2nd Test /20</th><th>Total /30</th><th>Grade / Remark</th></tr>';
+  }
+
+  let marksObtained=0;
+  const marksPerSubject=isExam?100:30;
+
+  T$('classFullResultTable').innerHTML=rows.length?rows.map(r=>{
+    const first=Number(r.first_ca??0);
+    const second=Number(r.second_ca??0);
+    const ca=Number(r.ca??(first+second));
+    const exam=Number(r.exam??0);
+    const total=isExam?Number(r.total??(ca+exam)):ca;
+    marksObtained+=total;
+
+    if(isExam){
+      return `<tr><td>${tEsc(r.subject)}</td><td>${ca}</td><td>${r.assessment_stage==='exam'?(r.exam??0):'-'}</td><td><strong>${r.assessment_stage==='exam'?total:'-'}</strong></td><td>${r.assessment_stage==='exam'?tEsc(r.grade||finalReportGrade(total)):'Awaiting Exam'}</td></tr>`;
+    }
+
+    return `<tr><td>${tEsc(r.subject)}</td><td>${r.first_ca??'-'}</td><td>${r.second_ca??'-'}</td><td><strong>${ca}</strong></td><td>${tEsc(midTermRemark(ca))}</td></tr>`;
+  }).join(''):'<tr><td colspan="5">No result for selected term.</td></tr>';
+
+  const obtainable=rows.length*marksPerSubject;
+  const percentage=obtainable?((marksObtained/obtainable)*100):0;
+
+  T$('classResultSubjectCount').textContent=rows.length;
+  T$('classResultObtainable').textContent=obtainable;
+  T$('classResultObtained').textContent=Number(marksObtained.toFixed(2));
+  T$('classResultPercentage').textContent=`${percentage.toFixed(1)}%`;
+
+  const {data}=await supabaseClient.from('student_reports').select('*').eq('student_id',pageState.selectedStudent.student_id).eq('class',pageState.selectedClass.class).eq('term',term).eq('session',pageState.selectedClass.session).maybeSingle();
+  T$('classTeacherRemark').value=data?.teacher_remark||data?.remark||'';
+  T$('remarkMessage').textContent=data?`Report status: ${data.status||'draft'}`:'';
+}
 async function saveReport(status){const term=T$('classResultTerm')?.value,remark=T$('classTeacherRemark')?.value.trim();const msg=T$('remarkMessage');if(!pageState.selectedStudent||!pageState.selectedClass||!term){msg.textContent='Select student and term.';return}if(!remark){msg.textContent='Enter a class teacher remark.';return}const {error}=await supabaseClient.from('student_reports').upsert({student_id:pageState.selectedStudent.student_id,class:pageState.selectedClass.class,term,session:pageState.selectedClass.session,remark,teacher_remark:remark,status,published_at:null},{onConflict:'student_id,class,term,session'});msg.textContent=error?`Could not save: ${error.message}`:status==='pending'?'Complete report submitted to Principal.':'Teacher remark saved as draft.'}
 async function loadResults(){const {data}=await supabaseClient.from('results').select('*').order('id',{ascending:false});pageState.results=(data||[]).filter(r=>hasAssignment(r.class,r.subject)).map(r=>({...r,studentName:tName(pageState.students.find(s=>String(s.student_id)===String(r.student_id)))||r.student_id}));return pageState.results}
 function uniqueValues(rows,key){return [...new Set(rows.map(r=>r[key]).filter(Boolean))].sort((a,b)=>String(a).localeCompare(String(b)))}
