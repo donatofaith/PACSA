@@ -27,8 +27,13 @@
 
         <form id="applicationForm">
             <div class="form-group">
-                <label for="fullName">Applicant Full Name</label>
-                <input type="text" id="fullName" required>
+                <label for="firstName">First Name</label>
+                <input type="text" id="firstName" autocomplete="given-name" required>
+            </div>
+
+            <div class="form-group">
+                <label for="lastName">Last Name</label>
+                <input type="text" id="lastName" autocomplete="family-name" required>
             </div>
 
             <div class="form-group">
@@ -233,8 +238,14 @@ form.addEventListener("submit", async event => {
     submitBtn.disabled = true;
     submitBtn.textContent = "Submitting...";
 
+    const firstName = document.getElementById("firstName").value.trim();
+    const lastName = document.getElementById("lastName").value.trim();
+    const fullName = [firstName, lastName].filter(Boolean).join(" ");
+
     const application = {
-        full_name: document.getElementById("fullName").value.trim(),
+        first_name: firstName,
+        last_name: lastName,
+        full_name: fullName,
         date_of_birth: dateOfBirth,
         gender: document.getElementById("gender").value,
         class: document.getElementById("classApplying").value,
@@ -252,7 +263,7 @@ form.addEventListener("submit", async event => {
         const { data, error } = await supabaseClient
             .from("applications")
             .insert([application])
-            .select("id, full_name, email, class, parent_name, phone, status, created_at")
+            .select("id, first_name, last_name, full_name, email, class, parent_name, phone, status, created_at")
             .single();
 
         if (error) throw error;
