@@ -291,14 +291,14 @@ function renderTeacherResultsV2() {
     const published = tNorm(r.status) === 'published';
     const actionHtml = published
       ? '<span style="font-size:12px;color:#6b7280;font-weight:700;">Published</span>'
-      : `<div style="display:flex;gap:6px;flex-wrap:wrap;position:relative;z-index:2;"><a class="btn light" href="teacher-results.html?action=edit&id=${Number(r.id)}#resultEntryPanel" style="cursor:pointer;">Edit</a><a class="btn light" href="teacher-results.html?action=delete&id=${Number(r.id)}#resultsTable" style="color:#b91c1c;border-color:#fecaca;cursor:pointer;">Delete</a></div>`;
+      : `<div style="display:flex;gap:6px;flex-wrap:wrap;position:relative;z-index:2;"><a class="btn light" href="teacher-results.html?action=edit&id=${String(r.id)}#resultEntryPanel" style="cursor:pointer;">Edit</a><a class="btn light" href="teacher-results.html?action=delete&id=${String(r.id)}#resultsTable" style="color:#b91c1c;border-color:#fecaca;cursor:pointer;">Delete</a></div>`;
     return `<tr><td>${tEsc(r.student_id)}<br><small>${tEsc(r.studentName)}</small></td><td>${tEsc(r.class)}</td><td>${tEsc(r.subject)}</td><td>${r.first_ca ?? '-'}</td><td>${r.second_ca ?? '-'}</td><td><strong>${ca}</strong></td><td>${r.assessment_stage==='exam' ? (r.exam ?? '-') : '-'}</td><td>${r.assessment_stage==='exam' ? `<strong>${total}</strong>` : '-'}</td><td>${tEsc(label)}</td><td>${tEsc(r.term)}</td><td>${r.assessment_stage==='exam'?'Exam':'Mid-Term'}</td><td>${actionHtml}</td></tr>`;
   }).join('') : '<tr><td colspan="12">No result matches this filter.</td></tr>';
 
 }
 
 window.editResultV2 = async id => {
-  const r=teacherResults.find(x=>Number(x.id)===Number(id)); if(!r)return;
+  const r=teacherResults.find(x=>String(x.id)===String(id)); if(!r)return;
   if(tNorm(r.status)==='published'){showResultMessage('This final result has already been published by the Principal and can no longer be edited.',true);return;}
   R$('resultEntryPanel').classList.remove('hidden');
   const idx=pageState.assignments.findIndex(a=>tNorm(a.class)===tNorm(r.class)&&tNorm(a.subject)===tNorm(r.subject));
@@ -307,7 +307,7 @@ window.editResultV2 = async id => {
 };
 
 window.deleteResultV2 = async id => {
-  const r=teacherResults.find(x=>Number(x.id)===Number(id));
+  const r=teacherResults.find(x=>String(x.id)===String(id));
   if(!r)return;
   if(tNorm(r.status)==='published'){
     showResultMessage('Published results cannot be deleted.',true);
@@ -316,10 +316,10 @@ window.deleteResultV2 = async id => {
   const label=r.assessment_stage==='exam'?'Examination result':'Mid-Term result';
   if(!confirm(`Delete ${label} for ${r.studentName} — ${r.subject}?\n\nThis cannot be undone.`))return;
   try{
-    const {data,error}=await supabaseClient.rpc('pacsa_teacher_delete_result',{p_result_id:Number(id)});
+    const {data,error}=await supabaseClient.rpc('pacsa_teacher_delete_result',{p_result_id:String(id)});
     if(error)throw error;
     if(data!==true)throw new Error('PACSA could not delete this result.');
-    if(resultEditingId===Number(id)){
+    if(resultEditingId===String(id)){
       resultEditingId=null;
       R$('resultEntryPanel')?.classList.add('hidden');
     }
@@ -334,8 +334,8 @@ window.deleteResultV2 = async id => {
 async function handleResultActionFromUrl() {
   const params = new URLSearchParams(window.location.search);
   const action = params.get('action');
-  const id = Number(params.get('id'));
-  if (!action || !Number.isFinite(id)) return;
+  const id = String(params.get('id') || '').trim();
+  if (!action || !id) return;
 
   history.replaceState({}, '', 'teacher-results.html');
 
