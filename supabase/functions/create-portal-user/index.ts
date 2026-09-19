@@ -238,15 +238,14 @@ Deno.serve(async (req) => {
     return json({
       ok: true,
       temporary_password_created: true,
-      temporary_password: temporaryPassword,
       temporary_password_expires_at: expiresAt,
-      auth_user_id: authUserId || null,
       portal_status: "active",
       login_url: loginUrl,
       email_sent: emailResult.sent,
       email_warning: emailResult.sent ? null : emailResult.reason,
-      message:
-        `${role.toUpperCase()} Portal access created.\n\nID: ${recordId}\nEMAIL: ${email}\nTEMPORARY PASSWORD: ${temporaryPassword}\nEXPIRES: ${new Date(expiresAt).toLocaleString()}\nLOGIN: ${loginUrl}\n\n${emailResult.sent ? "The details were also sent by email." : "Email could not be sent, so copy these details manually."}`,
+      message: emailResult.sent
+        ? `${role.toUpperCase()} Portal access created. Login details were sent securely by email.`
+        : `${role.toUpperCase()} Portal access created, but the credential email could not be sent. Use the portal's Forgot Password flow for ${email}.`,
     });
   } catch (error) {
     console.error("create-portal-user error:", error);
