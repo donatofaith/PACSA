@@ -1,0 +1,19 @@
+# Secrets and local environment files
+.env
+.env.*
+!.env.example
+*.pem
+*.key
+*.p12
+*.pfx
+
+# Vercel local project metadata
+.vercel/
+
+# Supabase local state
+.supabase/
+supabase/.temp/
+
+# Common local/editor artifacts
+.DS_Store
+Thumbs.db
