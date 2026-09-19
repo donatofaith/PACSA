@@ -89,7 +89,7 @@ Deno.serve(async req => {
     if (insertError) { await adminClient.auth.admin.deleteUser(created.user.id); return fail(insertError.message || "Could not create Admin record.", "ADMIN_ROW_CREATE_FAILED"); }
     const emailSent = await sendEmail({ name: fullname, email, password, expiresAt });
     await adminClient.from("audit_logs").insert({ actor_user_id: caller.user.id, actor_role: actorRole, action: "create_admin", entity_type: "admins", entity_id: String(inserted?.id ?? ""), details: { fullname, email, email_sent: emailSent } });
-    return json({ ok: true, temporary_password: password, temporary_password_expires_at: expiresAt, email_sent: emailSent, message: emailSent ? "Administrator created and login details were emailed." : "Administrator created. Email could not be sent, so copy the temporary password manually." });
+    return json({ ok: true, temporary_password_expires_at: expiresAt, email_sent: emailSent, message: emailSent ? "Administrator created and login details were emailed securely." : "Administrator created, but the credential email could not be sent. Use Forgot Password on the Admin login page for this email." });
   } catch (error) {
     console.error("create-admin-user:", error);
     return fail(error instanceof Error ? error.message : "Unexpected server error.", "UNEXPECTED_ERROR");
