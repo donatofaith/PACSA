@@ -151,16 +151,14 @@ async function checkStudent(
         error
     } =
         await supabaseClient
-            .functions
-            .invoke(
-                "activate-portal-user",
+            .rpc(
+                "pacsa_student_activation_check",
                 {
-                    body: {
-                        action: "check",
-                        role: "student",
-                        record_id: studentId,
+                    p_student_id:
+                        studentId,
+
+                    p_email:
                         email
-                    }
                 }
             );
 
@@ -168,18 +166,10 @@ async function checkStudent(
     if (error)
         throw error;
 
-    if (!data?.ok)
-        throw new Error(
-            data?.error ||
-            "Could not verify this Student record."
-        );
 
-
-    return {
-        student_id: data.record_id,
-        portal_status: data.portal_status,
-        student_status: "active"
-    };
+    return Array.isArray(data)
+        ? data[0]
+        : data;
 }
 
 
@@ -477,29 +467,31 @@ $("studentRegisterForm")
                     error
                 } =
                     await supabaseClient
-                        .functions
-                        .invoke(
-                            "activate-portal-user",
-                            {
-                                body: {
-                                    action: "signup",
-                                    role: "student",
-                                    record_id: student.student_id,
-                                    email,
-                                    password
+                        .auth
+                        .signUp({
+
+                            email,
+                            password,
+
+                            options: {
+
+                                emailRedirectTo:
+                                    loginUrl(),
+
+                                data: {
+
+                                    student_id:
+                                        student.student_id,
+
+                                    role:
+                                        "student"
                                 }
                             }
-                        );
+                        });
 
 
                 if (error)
                     throw error;
-
-                if (!data?.ok)
-                    throw new Error(
-                        data?.error ||
-                        "Could not activate the Student Portal account."
-                    );
 
 
                 $("password").value =
@@ -509,16 +501,24 @@ $("studentRegisterForm")
                     "";
 
 
+                if (data?.session) {
+
+                    showMessage(
+                        "Student account created and active. You can now login.",
+                        "success"
+                    );
+
+                    return;
+                }
+
+
                 showMessage(
-                    data?.message ||
                     "Account created successfully. Check your email and verify your account before logging in.",
                     "success"
                 );
 
 
-                if (data?.email_verification_required) {
-                    showResend();
-                }
+                showResend();
 
 
             } catch (error) {
