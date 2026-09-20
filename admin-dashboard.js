@@ -170,14 +170,6 @@ async function verifyAdminSession() {
             actual security check.
         */
 
-        localStorage.setItem(
-            "admin",
-            JSON.stringify(
-                admin
-            )
-        );
-
-
         displayAdminProfile();
 
 
