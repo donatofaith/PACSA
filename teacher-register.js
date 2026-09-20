@@ -151,16 +151,14 @@ async function checkTeacher(
         error
     } =
         await supabaseClient
-            .functions
-            .invoke(
-                "activate-portal-user",
+            .rpc(
+                "pacsa_teacher_activation_check",
                 {
-                    body: {
-                        action: "check",
-                        role: "teacher",
-                        record_id: teacherId,
+                    p_teacher_id:
+                        teacherId,
+
+                    p_email:
                         email
-                    }
                 }
             );
 
@@ -168,17 +166,10 @@ async function checkTeacher(
     if (error)
         throw error;
 
-    if (!data?.ok)
-        throw new Error(
-            data?.error ||
-            "Could not verify this Teacher record."
-        );
 
-
-    return {
-        teacher_id: data.record_id,
-        portal_status: data.portal_status
-    };
+    return Array.isArray(data)
+        ? data[0]
+        : data;
 }
 
 
@@ -461,29 +452,31 @@ $("teacherRegisterForm")
                     error
                 } =
                     await supabaseClient
-                        .functions
-                        .invoke(
-                            "activate-portal-user",
-                            {
-                                body: {
-                                    action: "signup",
-                                    role: "teacher",
-                                    record_id: teacher.teacher_id,
-                                    email,
-                                    password
+                        .auth
+                        .signUp({
+
+                            email,
+                            password,
+
+                            options: {
+
+                                emailRedirectTo:
+                                    loginUrl(),
+
+                                data: {
+
+                                    teacher_id:
+                                        teacher.teacher_id,
+
+                                    role:
+                                        "teacher"
                                 }
                             }
-                        );
+                        });
 
 
                 if (error)
                     throw error;
-
-                if (!data?.ok)
-                    throw new Error(
-                        data?.error ||
-                        "Could not activate the Teacher Portal account."
-                    );
 
 
                 $("password").value =
@@ -493,16 +486,24 @@ $("teacherRegisterForm")
                     "";
 
 
+                if (data?.session) {
+
+                    showMessage(
+                        "Teacher account created and active. You can now login.",
+                        "success"
+                    );
+
+                    return;
+                }
+
+
                 showMessage(
-                    data?.message ||
                     "Account created successfully. Check your email and verify your account before logging in.",
                     "success"
                 );
 
 
-                if (data?.email_verification_required) {
-                    showResend();
-                }
+                showResend();
 
 
             } catch (error) {
