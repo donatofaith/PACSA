@@ -210,14 +210,6 @@ $("loginForm")
                 );
 
 
-                localStorage.setItem(
-                    "admin",
-                    JSON.stringify(
-                        admin
-                    )
-                );
-
-
                 window.location.replace(
                     getAdminDashboardUrl()
                 );
