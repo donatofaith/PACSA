@@ -246,7 +246,9 @@ async function saveTeacherResultV2() {
   const button = R$('submitResultBtn'); button.disabled = true; const old = button.textContent; button.textContent = 'Saving...';
   try {
     let response;
-    if (resultEditingId) response = await supabaseClient.from('results').update(payload).eq('id', resultEditingId);
+    if (resultEditingId) response = await supabaseClient.from('results').update(payload)
+      .eq('id', resultEditingId)
+      .eq('teacher_id', teacherId);
     else response = await supabaseClient.from('results').insert(payload);
     if (response.error) throw response.error;
 

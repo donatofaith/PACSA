@@ -584,68 +584,18 @@ function renderSummary(positionText = "N/A") {
 
 async function calculatePositionForReport(report) {
     try {
-        const { data: classReports, error: reportsError } = await supabaseClient
-            .from("student_reports")
-            .select("student_id")
-            .eq("class", report.class)
-            .eq("term", report.term)
-            .eq("session", report.session)
-            .eq("status", "published");
-
-        if (reportsError) throw reportsError;
-
-        const studentIds = uniqueValues(
-            (classReports || []).map(item => item.student_id)
+        const { data, error } = await supabaseClient.rpc(
+            "pacsa_get_my_report_meta",
+            {
+                p_session: report.session,
+                p_term: report.term,
+                p_class: report.class
+            }
         );
 
-        if (!studentIds.length) return "N/A";
-
-        const { data: classResults, error: resultsError } = await supabaseClient
-            .from("results")
-            .select("student_id, ca, exam, total")
-            .eq("class", report.class)
-            .eq("term", report.term)
-            .eq("session", report.session)
-            .in("student_id", studentIds);
-
-        if (resultsError) throw resultsError;
-
-        const averages = studentIds
-            .map(studentId => {
-                const results = (classResults || []).filter(
-                    result => normalize(result.student_id) === normalize(studentId)
-                );
-
-                return {
-                    studentId,
-                    average: calculateAverage(results)
-                };
-            })
-            .filter(item => Number.isFinite(item.average));
-
-        averages.sort((a, b) => b.average - a.average);
-
-        let previousAverage = null;
-        let previousPosition = 0;
-
-        for (let index = 0; index < averages.length; index += 1) {
-            const item = averages[index];
-            const sameAverage = previousAverage !== null &&
-                Number(item.average.toFixed(2)) === Number(previousAverage.toFixed(2));
-
-            const position = sameAverage
-                ? previousPosition
-                : index + 1;
-
-            if (normalize(item.studentId) === normalize(student.student_id)) {
-                return ordinal(position);
-            }
-
-            previousAverage = item.average;
-            previousPosition = position;
-        }
-
-        return "N/A";
+        if (error) throw error;
+        const meta = Array.isArray(data) ? data[0] : data;
+        return meta?.class_position ? ordinal(meta.class_position) : "N/A";
 
     } catch (error) {
         console.error("Position calculation error:", error);

@@ -1821,7 +1821,10 @@ async function submitResult() {
                     grade(total),
 
                 status:
-                    "pending"
+                    "pending",
+
+                teacher_id:
+                    state.teacher.teacher_id
             });
 
 
@@ -2472,6 +2475,10 @@ async function saveEditedResult() {
             .eq(
                 "id",
                 result.id
+            )
+            .eq(
+                "teacher_id",
+                state.teacher.teacher_id
             );
 
 
@@ -2513,13 +2520,10 @@ async function deleteResult(result) {
 
 
     const { error } =
-        await supabaseClient
-            .from("results")
-            .delete()
-            .eq(
-                "id",
-                result.id
-            );
+        await supabaseClient.rpc(
+            "pacsa_teacher_delete_result",
+            { p_result_id: result.id }
+        );
 
 
     if (error) {
