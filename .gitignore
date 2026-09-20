@@ -2,15 +2,30 @@
 .env
 .env.*
 !.env.example
+.envrc
+.direnv/
 *.pem
 *.key
 *.p12
 *.pfx
 *.jks
 *.keystore
-.envrc
+*.crt
+*.cer
+*.der
+id_rsa
+id_rsa.*
+id_ed25519
+id_ed25519.*
 credentials*.json
 service-account*.json
+firebase-adminsdk*.json
+secrets*.json
+*.secret
+*.secrets
+.npmrc
+.pypirc
+.netrc
 
 # Vercel local project metadata
 .vercel/
