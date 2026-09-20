@@ -45,7 +45,7 @@ window.adminAuthReady=(async function(){
     if(!admin){await supabaseClient.auth.signOut();clearAdminStorage();window.location.replace(PACSA_ADMIN_LOGIN);return null}
     if(adminNorm(admin.status||'active')!=='active'){await supabaseClient.auth.signOut();clearAdminStorage();window.location.replace(PACSA_ADMIN_LOGIN);return null}
 
-    window.currentAdmin=admin;localStorage.setItem('admin',JSON.stringify(admin));document.querySelectorAll('.admin-info strong,.admin-name').forEach(el=>el.textContent=admin.fullname||'Administrator');scopeAdminNotifications();
+    window.currentAdmin=admin;document.querySelectorAll('.admin-info strong,.admin-name').forEach(el=>el.textContent=admin.fullname||'Administrator');scopeAdminNotifications();
     hideAdminAccessLoader();
 
     try{await loadTempPasswordGuard();const allowed=await window.PACSA_TEMP_PASSWORD?.ensure(user,{role:'Admin'});if(allowed===false){clearAdminStorage();window.location.replace(PACSA_ADMIN_LOGIN);return null}}catch(error){console.warn('Temporary password guard:',error)}
