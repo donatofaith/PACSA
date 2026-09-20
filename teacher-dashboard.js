@@ -263,23 +263,7 @@ async function loadTeacherData() {
     }
 
 
-    localStorage.setItem(
-        "teacher",
-        JSON.stringify(state.teacher)
-    );
-
-    localStorage.setItem(
-        "teacherAssignments",
-        JSON.stringify(state.assignments)
-    );
-
-    localStorage.setItem(
-        "classTeacherAssignments",
-        JSON.stringify(state.classAssignments)
-    );
-
-
-    await loadCurrentSession();
+await loadCurrentSession();
     await loadStudentSubjects();
 
     renderProfile();
