@@ -212,7 +212,6 @@ async function verifyStudentSession() {
         }
 
         student = studentData;
-        localStorage.setItem("student", JSON.stringify(studentData));
         return true;
 
     } catch (error) {
@@ -345,7 +344,6 @@ async function uploadStudentProfilePhoto(file) {
         if (!updated) throw new Error("Could not update the student profile record.");
 
         student.profile_photo_path = newPath;
-        localStorage.setItem("student", JSON.stringify(student));
 
         await removeOldProfilePhoto(oldPath, newPath);
         await loadStudentProfilePhoto();
