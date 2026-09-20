@@ -46,6 +46,11 @@ function pacsaNormalizeEmail(value) {
   return pacsaClean(value).toLowerCase();
 }
 
+function pacsaMaskNin(value) {
+  const digits = pacsaClean(value).replace(/\D/g, "");
+  return digits.length === 11 ? "*******" + digits.slice(-4) : (digits ? "Protected" : "—");
+}
+
 function pacsaSafeFilePart(value) {
   return pacsaClean(value)
     .toLowerCase()
@@ -449,7 +454,7 @@ async function pacsaFillStudentDocumentFields() {
   }
 
   if (pacsaDoc$("viewStudentNin")) {
-    pacsaDoc$("viewStudentNin").textContent = info.nin || "—";
+    pacsaDoc$("viewStudentNin").textContent = pacsaMaskNin(info.nin);
   }
 
   if (pacsaDoc$("viewStudentDocuments")) {
