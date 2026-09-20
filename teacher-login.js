@@ -456,64 +456,9 @@ $("forgotPasswordLink")
 
             try {
 
-                /*
-                    Safe pre-login activation check.
-
-                    This checks ID + email without
-                    exposing the Teachers table.
-                */
-
-                const {
-                    data,
-                    error
-                } =
-                    await supabaseClient
-                        .rpc(
-                            "pacsa_teacher_activation_check",
-                            {
-                                p_teacher_id:
-                                    teacherId,
-
-                                p_email:
-                                    email
-                            }
-                        );
-
-
-                if (error)
-                    throw error;
-
-
-                const teacher =
-                    Array.isArray(data)
-                        ? data[0]
-                        : data;
-
-
-                if (!teacher) {
-
-                    showMessage(
-                        "Teacher ID and registered email do not match."
-                    );
-
-                    return;
-                }
-
-
-                if (
-                    norm(
-                        teacher.portal_status
-                    )
-                    !== "active"
-                ) {
-
-                    showMessage(
-                        "This Teacher Portal account is not active yet."
-                    );
-
-                    return;
-                }
-
+                // Do not trust a client-supplied Teacher ID as proof of identity.
+                // Password reset delivery is handled by Supabase Auth and the
+                // response remains generic to avoid account enumeration.
 
                 const {
                     error: resetError
@@ -534,7 +479,7 @@ $("forgotPasswordLink")
 
 
                 showMessage(
-                    "Password reset link sent. Check your email.",
+                    "If this email belongs to an active Teacher Portal account, a password reset email will be sent.",
                     "success"
                 );
 
