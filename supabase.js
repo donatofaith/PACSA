@@ -7,7 +7,17 @@ const SUPABASE_ANON_KEY =
 const supabaseClient =
 supabase.createClient(
   SUPABASE_URL,
-  SUPABASE_ANON_KEY
+  SUPABASE_ANON_KEY,
+  {
+    auth: {
+      // Keep auth sessions scoped to the current browser session instead of
+      // persisting long-lived tokens in localStorage.
+      storage: window.sessionStorage,
+      persistSession: true,
+      autoRefreshToken: true,
+      detectSessionInUrl: true
+    }
+  }
 );
 
 
