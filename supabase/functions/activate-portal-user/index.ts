@@ -1,5 +1,15 @@
 import { createClient } from "https://esm.sh/@supabase/supabase-js@2";
-import { enforceRateLimit, rateLimitResponse } from "../_shared/security.ts";
+
+async function enforceRateLimit(client: any, req: Request, rule: { route: string; limit: number; windowSeconds: number; subject?: string }) {
+  const identity = rule.subject || req.headers.get("x-forwarded-for")?.split(",")[0]?.trim() || req.headers.get("cf-connecting-ip")?.trim() || "unknown";
+  const digest = new Uint8Array(await crypto.subtle.digest("SHA-256", new TextEncoder().encode(`${rule.route}:${identity}`)));
+  const keyHash = Array.from(digest, byte => byte.toString(16).padStart(2, "0")).join("");
+  const { data, error } = await client.rpc("pacsa_check_rate_limit", { p_key_hash: keyHash, p_route: rule.route, p_limit: rule.limit, p_window_seconds: rule.windowSeconds });
+  if (error) throw new Error("Rate limit verification failed.");
+  const row = Array.isArray(data) ? data[0] : data;
+  return { allowed: Boolean(row?.allowed), retryAfter: Math.max(1, Number(row?.retry_after || 1)) };
+}
+const rateLimitResponse = (headers: Record<string, string>, retryAfter: number) => new Response(JSON.stringify({ ok: false, error: "Too many requests. Please try again later." }), { status: 429, headers: { ...headers, "Content-Type": "application/json", "Retry-After": String(retryAfter), "Cache-Control": "no-store" } });
 
 const allowedOrigin = (Deno.env.get("PACSA_SITE_URL") || "https://pacsa.vercel.app").replace(/\/$/, "");
 const corsHeaders = {
