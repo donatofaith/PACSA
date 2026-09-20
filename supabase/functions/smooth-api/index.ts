@@ -19,19 +19,24 @@ function escapeHtml(value: unknown) {
   return clean(value).replace(/&/g, "&amp;").replace(/</g, "&lt;").replace(/>/g, "&gt;").replace(/\"/g, "&quot;").replace(/'/g, "&#039;");
 }
 
-async function verifyAdmin(req: Request) {
+function getServerClient() {
   const supabaseUrl = Deno.env.get("SUPABASE_URL");
   const serviceRoleKey = Deno.env.get("SUPABASE_SERVICE_ROLE_KEY");
-  if (!supabaseUrl || !serviceRoleKey) return { ok: false, response: fail("Server configuration is incomplete.", 500) };
+  if (!supabaseUrl || !serviceRoleKey) return null;
+  return createClient(supabaseUrl, serviceRoleKey, { auth: { autoRefreshToken: false, persistSession: false } });
+}
+
+async function verifyAdmin(req: Request) {
+  const adminClient = getServerClient();
+  if (!adminClient) return { ok: false, response: fail("Server configuration is incomplete.", 500) };
   const token = (req.headers.get("Authorization") || "").replace(/^Bearer\s+/i, "").trim();
   if (!token) return { ok: false, response: fail("Authentication is required.", 401) };
-  const adminClient = createClient(supabaseUrl, serviceRoleKey, { auth: { autoRefreshToken: false, persistSession: false } });
   const { data: callerData, error: callerError } = await adminClient.auth.getUser(token);
   if (callerError || !callerData?.user) return { ok: false, response: fail("Invalid or expired Admin session.", 401) };
   const { data: admin, error: adminError } = await adminClient.from("admins").select("id,status,auth_user_id").eq("auth_user_id", callerData.user.id).maybeSingle();
   if (adminError) return { ok: false, response: fail("Could not verify Admin access.", 500) };
   if (!admin || norm(admin.status || "active") !== "active") return { ok: false, response: fail("Admin access is required.", 403) };
-  return { ok: true };
+  return { ok: true, adminClient, caller: callerData.user };
 }
 
 async function sendBrevoEmail(args: {
@@ -106,37 +111,104 @@ Deno.serve(async (req) => {
     if (type === "new_application") {
       const adminEmail = clean(Deno.env.get("PACSA_ADMIN_EMAIL")) || clean(Deno.env.get("PACSA_EMAIL_FROM"));
       if (!isValidEmail(adminEmail)) return fail("PACSA admin notification email is not configured correctly.", 500);
+
       const applicationId = clean(body?.application_id);
       if (!applicationId) return fail("Application ID is required.", 400);
+
+      const serverClient = getServerClient();
+      if (!serverClient) return fail("Server configuration is incomplete.", 500);
+
+      // Never trust applicant identity/profile fields supplied by the browser.
+      // The application id is only a lookup key; notification content is loaded
+      // from the database using the server credential.
+      const { data: application, error: applicationError } = await serverClient
+        .from("applications")
+        .select("id,first_name,last_name,full_name,email,class,parent_name,phone,status")
+        .eq("id", applicationId)
+        .maybeSingle();
+
+      if (applicationError) return fail("Could not verify the submitted application.", 500);
+      if (!application) return fail("Application not found.", 404);
+
+      const applicantName =
+        clean(application.full_name) ||
+        [clean(application.first_name), clean(application.last_name)].filter(Boolean).join(" ") ||
+        "Applicant";
+
       const email = buildNewApplicationEmail({
-        fullName: clean(body?.full_name) || "Applicant",
-        applicantEmail: clean(body?.email),
-        className: clean(body?.class),
-        parentName: clean(body?.parent_name),
-        phone: clean(body?.phone),
+        fullName: applicantName,
+        applicantEmail: clean(application.email),
+        className: clean(application.class),
+        parentName: clean(application.parent_name),
+        phone: clean(application.phone),
         applicationsUrl: `${siteUrl}/applications.html`,
       });
-      const responseBody = await sendBrevoEmail({ to: [{ name: "PACSA Admin", email: adminEmail }], ...email, tags: ["application", "new-application", "admin-notice"], headers: { "X-PACSA-Application-ID": applicationId } });
+
+      const responseBody = await sendBrevoEmail({
+        to: [{ name: "PACSA Admin", email: adminEmail }],
+        ...email,
+        tags: ["application", "new-application", "admin-notice"],
+        headers: { "X-PACSA-Application-ID": applicationId },
+      });
+
       return json({ ok: true, sent: true, type, provider: "brevo", message_id: responseBody?.messageId || null, recipient: adminEmail });
     }
 
     const verification = await verifyAdmin(req);
     if (!verification.ok) return verification.response;
 
-    const applicantEmail = clean(body?.email);
     const applicationId = clean(body?.application_id);
-    if (!applicantEmail || !isValidEmail(applicantEmail)) return fail("A valid applicant email is required.", 400);
+    const studentId = clean(body?.student_id);
     if (!applicationId) return fail("Application ID is required.", 400);
+    if (!studentId) return fail("Student ID is required.", 400);
+
+    // The authenticated Admin chooses the action, but the server determines the
+    // target identity from PACSA records rather than trusting browser-supplied
+    // email/name/class values.
+    const { data: application, error: applicationError } = await verification.adminClient
+      .from("applications")
+      .select("id,first_name,last_name,full_name,email,class,status")
+      .eq("id", applicationId)
+      .maybeSingle();
+
+    if (applicationError) return fail("Could not verify the application.", 500);
+    if (!application) return fail("Application not found.", 404);
+
+    const { data: student, error: studentError } = await verification.adminClient
+      .from("students")
+      .select("student_id,first_name,last_name,email,class,status,portal_status")
+      .eq("student_id", studentId)
+      .maybeSingle();
+
+    if (studentError) return fail("Could not verify the student.", 500);
+    if (!student) return fail("Student not found.", 404);
+
+    const applicantEmail = norm(application.email);
+    if (!applicantEmail || !isValidEmail(applicantEmail)) return fail("The application does not have a valid email.", 400);
+    if (norm(student.email) !== applicantEmail) return fail("The student record does not match this application.", 409);
+
+    const applicantName =
+      clean(application.full_name) ||
+      [clean(application.first_name), clean(application.last_name)].filter(Boolean).join(" ") ||
+      [clean(student.first_name), clean(student.last_name)].filter(Boolean).join(" ") ||
+      "Applicant";
 
     const email = buildAdmissionEmail({
-      fullName: clean(body?.full_name) || "Applicant",
-      className: clean(body?.class),
-      studentId: clean(body?.student_id),
-      loginUrl: clean(body?.login_url) || `${siteUrl}/student-login.html`,
+      fullName: applicantName,
+      className: clean(student.class) || clean(application.class),
+      studentId: clean(student.student_id),
+      loginUrl: `${siteUrl}/student-login.html`,
       temporaryPassword: clean(body?.temporary_password),
       expiresAt: clean(body?.temporary_password_expires_at),
     });
-    const responseBody = await sendBrevoEmail({ to: [{ name: clean(body?.full_name) || "Applicant", email: applicantEmail }], ...email, tags: ["admission", "application-approved", "portal-access"], headers: { "X-PACSA-Application-ID": applicationId } });
+
+    const responseBody = await sendBrevoEmail({
+      to: [{ name: applicantName, email: applicantEmail }],
+      ...email,
+      tags: ["admission", "application-approved", "portal-access"],
+      headers: { "X-PACSA-Application-ID": applicationId },
+    });
+
     return json({ ok: true, sent: true, type, provider: "brevo", message_id: responseBody?.messageId || null, recipient: applicantEmail });
   } catch (error) {
     console.error("smooth-api error:", error);
