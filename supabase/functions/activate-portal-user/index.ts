@@ -1,4 +1,5 @@
 import { createClient } from "https://esm.sh/@supabase/supabase-js@2";
+import { enforceRateLimit, rateLimitResponse } from "../_shared/security.ts";
 
 const allowedOrigin = (Deno.env.get("PACSA_SITE_URL") || "https://pacsa.vercel.app").replace(/\/$/, "");
 const corsHeaders = {
@@ -52,6 +53,13 @@ Deno.serve(async (req) => {
 
     if (!["student", "teacher"].includes(role)) return fail("Role must be student or teacher.");
     if (!recordId || !isEmail(email)) return fail("A valid PACSA ID and registered email are required.");
+
+    const rate = await enforceRateLimit(clients.admin, req, {
+      route: action === "signup" ? "portal-signup" : "portal-activation-check",
+      limit: action === "signup" ? 5 : 10,
+      windowSeconds: 15 * 60,
+    });
+    if (!rate.allowed) return rateLimitResponse(corsHeaders, rate.retryAfter);
 
     const config = role === "student"
       ? {
@@ -138,7 +146,6 @@ Deno.serve(async (req) => {
 
     return json({
       ok: true,
-      account_created: Boolean(signUpData?.user),
       email_verification_required: !signUpData?.session,
       message: signUpData?.session
         ? "Portal account created. You can now log in."

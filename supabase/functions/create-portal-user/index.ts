@@ -1,4 +1,5 @@
 import { createClient } from "https://esm.sh/@supabase/supabase-js@2";
+import { enforceRateLimit, rateLimitResponse } from "../_shared/security.ts";
 
 const allowedOrigin = (Deno.env.get("PACSA_SITE_URL") || "https://pacsa.vercel.app").replace(/\/$/, "");
 
@@ -126,8 +127,8 @@ async function sendCredentialEmail(args: {
 
   const text = await response.text();
   if (!response.ok) {
-    console.error("Credential email failed:", text);
-    return { sent: false, reason: text || "Brevo rejected the email." };
+    console.error("Credential email delivery failed.");
+    return { sent: false, reason: "The email provider rejected the message." };
   }
 
   return { sent: true };
@@ -169,6 +170,14 @@ Deno.serve(async (req) => {
 
     if (!["student", "teacher"].includes(role)) return fail("Role must be student or teacher.", 400);
     if (!recordId || !email) return fail("Record ID and email are required.", 400);
+
+    const rate = await enforceRateLimit(adminClient, req, {
+      route: "create-portal-user",
+      limit: 10,
+      windowSeconds: 60 * 60,
+      subject: callerData.user.id,
+    });
+    if (!rate.allowed) return rateLimitResponse(corsHeaders, rate.retryAfter);
 
     const config = role === "student"
       ? { table: "students", idColumn: "student_id", metadataKey: "student_id", profileSelect: "student_id, first_name, last_name, email, auth_user_id, portal_status, status", loginPage: "student-login.html", hasStatusColumn: true }
@@ -240,15 +249,10 @@ Deno.serve(async (req) => {
 
     return json({
       ok: true,
-      temporary_password_created: true,
-      temporary_password_expires_at: expiresAt,
-      portal_status: "active",
-      login_url: loginUrl,
       email_sent: emailResult.sent,
-      email_warning: emailResult.sent ? null : emailResult.reason,
       message: emailResult.sent
         ? `${role.toUpperCase()} Portal access created. Login details were sent securely by email.`
-        : `${role.toUpperCase()} Portal access created, but the credential email could not be sent. Use the portal's Forgot Password flow for ${email}.`,
+        : `${role.toUpperCase()} Portal access created, but the credential email could not be sent. Use the portal's Forgot Password flow.`,
     });
   } catch (error) {
     console.error("create-portal-user error:", error);

@@ -1,4 +1,5 @@
 import { createClient } from "https://esm.sh/@supabase/supabase-js@2";
+import { enforceRateLimit, rateLimitResponse } from "../_shared/security.ts";
 
 const allowedOrigin = (Deno.env.get("PACSA_SITE_URL") || "https://pacsa.vercel.app").replace(/\/$/, "");
 const corsHeaders = {
@@ -123,11 +124,11 @@ async function submitApplication(body: any, adminClient: ReturnType<typeof creat
   const { data, error } = await adminClient
     .from("applications")
     .insert(payload)
-    .select("id,first_name,last_name,full_name,email,class,parent_name,phone,status,created_at,nin_last4")
+    .select("id,status")
     .single();
 
   if (error) return fail(error.message || "Could not submit application.", 400);
-  return json({ ok: true, application: data });
+  return json({ ok: true, application_id: data.id, status: data.status });
 }
 
 async function saveStudentNin(req: Request, body: any, adminClient: ReturnType<typeof createClient>) {
@@ -204,6 +205,13 @@ Deno.serve(async (req) => {
     const body = await req.json();
     const action = norm(body?.action || "submit_application");
     const adminClient = serverClient();
+
+    const rate = await enforceRateLimit(adminClient, req, {
+      route: `secure-pii-${action}`,
+      limit: action === "submit_application" ? 5 : 30,
+      windowSeconds: action === "submit_application" ? 60 * 60 : 60,
+    });
+    if (!rate.allowed) return rateLimitResponse(corsHeaders, rate.retryAfter);
 
     if (action === "submit_application") return await submitApplication(body, adminClient);
     if (action === "save_student_nin") return await saveStudentNin(req, body, adminClient);

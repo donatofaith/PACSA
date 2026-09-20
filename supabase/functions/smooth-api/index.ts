@@ -1,4 +1,5 @@
 import { createClient } from "https://esm.sh/@supabase/supabase-js@2";
+import { enforceRateLimit, rateLimitResponse } from "../_shared/security.ts";
 
 const allowedOrigin = (Deno.env.get("PACSA_SITE_URL") || "https://pacsa.vercel.app").replace(/\/$/, "");
 
@@ -69,27 +70,21 @@ function buildAdmissionEmail(params: {
   className: string;
   studentId: string;
   loginUrl: string;
-  temporaryPassword: string;
-  expiresAt: string;
 }) {
   const safeName = escapeHtml(params.fullName || "Applicant");
   const safeClass = escapeHtml(params.className || "--");
   const safeStudentId = escapeHtml(params.studentId || "--");
   const safeLoginUrl = escapeHtml(params.loginUrl);
-  const safePassword = escapeHtml(params.temporaryPassword || "Provided by Admin");
-  const safeExpiry = params.expiresAt ? escapeHtml(new Date(params.expiresAt).toLocaleString()) : "24 hours";
   const subject = "PACSA Admission Notice and Portal Access";
   const textContent =
     `Dear ${params.fullName || "Applicant"},\n\n` +
     `Congratulations. Your application to PACSA has been approved.\n\n` +
     `Admitted Class: ${params.className || "--"}\n` +
     `Student ID: ${params.studentId || "--"}\n` +
-    `Portal Login: ${params.loginUrl}\n` +
-    `Temporary Password: ${params.temporaryPassword || "Provided by Admin"}\n` +
-    `Expires: ${params.expiresAt ? new Date(params.expiresAt).toLocaleString() : "24 hours"}\n\n` +
-    `Use the temporary password to log in to the Student Portal, then change your password.\n\n` +
+    `Portal Login: ${params.loginUrl}\n\n` +
+    `Use the portal details sent in your separate account email to log in.\n\n` +
     `PACSA\nBecoming Leaders Through Righteousness`;
-  const htmlContent = `<!doctype html><html><body style="margin:0;padding:0;background:#f7f7fb;font-family:Arial,sans-serif;color:#1f2937;"><div style="max-width:640px;margin:0 auto;padding:24px;"><div style="background:#fff;border:1px solid #e5e7eb;border-radius:18px;overflow:hidden;"><div style="background:#5B21B6;color:#fff;text-align:center;padding:24px;"><h1 style="margin:0;font-size:23px;">PACSA Admission Notice</h1><p style="margin:8px 0 0;font-size:14px;">Becoming Leaders Through Righteousness</p></div><div style="padding:26px;line-height:1.6;"><p>Dear <strong>${safeName}</strong>,</p><p>Congratulations. Your application to <strong>PACSA</strong> has been approved.</p><div style="background:#f9fafb;border:1px solid #e5e7eb;border-radius:12px;padding:16px;margin:18px 0;"><p style="margin:0 0 8px;"><strong>Admitted Class:</strong> ${safeClass}</p><p style="margin:0 0 8px;"><strong>Student ID:</strong> ${safeStudentId}</p><p style="margin:0 0 8px;"><strong>Temporary Password:</strong> ${safePassword}</p><p style="margin:0;"><strong>Expires:</strong> ${safeExpiry}</p></div><p>Use this temporary password to log in to the Student Portal, then change your password.</p><p style="margin:22px 0;"><a href="${safeLoginUrl}" style="display:inline-block;background:#5B21B6;color:#fff;text-decoration:none;padding:12px 18px;border-radius:10px;font-weight:bold;">Open Student Portal</a></p><p>PACSA<br><strong>Becoming Leaders Through Righteousness</strong></p></div></div></div></body></html>`;
+  const htmlContent = `<!doctype html><html><body style="margin:0;padding:0;background:#f7f7fb;font-family:Arial,sans-serif;color:#1f2937;"><div style="max-width:640px;margin:0 auto;padding:24px;"><div style="background:#fff;border:1px solid #e5e7eb;border-radius:18px;overflow:hidden;"><div style="background:#5B21B6;color:#fff;text-align:center;padding:24px;"><h1 style="margin:0;font-size:23px;">PACSA Admission Notice</h1><p style="margin:8px 0 0;font-size:14px;">Becoming Leaders Through Righteousness</p></div><div style="padding:26px;line-height:1.6;"><p>Dear <strong>${safeName}</strong>,</p><p>Congratulations. Your application to <strong>PACSA</strong> has been approved.</p><div style="background:#f9fafb;border:1px solid #e5e7eb;border-radius:12px;padding:16px;margin:18px 0;"><p style="margin:0 0 8px;"><strong>Admitted Class:</strong> ${safeClass}</p><p style="margin:0;"><strong>Student ID:</strong> ${safeStudentId}</p></div><p>Use the portal details sent in your separate account email to log in.</p><p style="margin:22px 0;"><a href="${safeLoginUrl}" style="display:inline-block;background:#5B21B6;color:#fff;text-decoration:none;padding:12px 18px;border-radius:10px;font-weight:bold;">Open Student Portal</a></p><p>PACSA<br><strong>Becoming Leaders Through Righteousness</strong></p></div></div></div></body></html>`;
   return { subject, textContent, htmlContent };
 }
 
@@ -117,6 +112,12 @@ Deno.serve(async (req) => {
 
       const serverClient = getServerClient();
       if (!serverClient) return fail("Server configuration is incomplete.", 500);
+      const rate = await enforceRateLimit(serverClient, req, {
+        route: "email-new-application",
+        limit: 5,
+        windowSeconds: 60 * 60,
+      });
+      if (!rate.allowed) return rateLimitResponse(corsHeaders, rate.retryAfter);
 
       // Never trust applicant identity/profile fields supplied by the browser.
       // The application id is only a lookup key; notification content is loaded
@@ -144,18 +145,25 @@ Deno.serve(async (req) => {
         applicationsUrl: `${siteUrl}/applications.html`,
       });
 
-      const responseBody = await sendBrevoEmail({
+      await sendBrevoEmail({
         to: [{ name: "PACSA Admin", email: adminEmail }],
         ...email,
         tags: ["application", "new-application", "admin-notice"],
         headers: { "X-PACSA-Application-ID": applicationId },
       });
 
-      return json({ ok: true, sent: true, type, provider: "brevo", message_id: responseBody?.messageId || null, recipient: adminEmail });
+      return json({ ok: true, sent: true });
     }
 
     const verification = await verifyAdmin(req);
     if (!verification.ok) return verification.response;
+    const rate = await enforceRateLimit(verification.adminClient, req, {
+      route: "email-admission-approved",
+      limit: 10,
+      windowSeconds: 60 * 60,
+      subject: verification.caller.id,
+    });
+    if (!rate.allowed) return rateLimitResponse(corsHeaders, rate.retryAfter);
 
     const applicationId = clean(body?.application_id);
     const studentId = clean(body?.student_id);
@@ -198,18 +206,16 @@ Deno.serve(async (req) => {
       className: clean(student.class) || clean(application.class),
       studentId: clean(student.student_id),
       loginUrl: `${siteUrl}/student-login.html`,
-      temporaryPassword: clean(body?.temporary_password),
-      expiresAt: clean(body?.temporary_password_expires_at),
     });
 
-    const responseBody = await sendBrevoEmail({
+    await sendBrevoEmail({
       to: [{ name: applicantName, email: applicantEmail }],
       ...email,
       tags: ["admission", "application-approved", "portal-access"],
       headers: { "X-PACSA-Application-ID": applicationId },
     });
 
-    return json({ ok: true, sent: true, type, provider: "brevo", message_id: responseBody?.messageId || null, recipient: applicantEmail });
+    return json({ ok: true, sent: true });
   } catch (error) {
     console.error("smooth-api error:", error);
     return fail(error instanceof Error ? error.message : "Unexpected server error.", 500);

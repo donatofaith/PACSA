@@ -311,7 +311,7 @@ function pacsaInstallApplicationDocuments() {
         const { data, error } = await supabaseClient
           .from("applications")
           .insert([application])
-          .select("id, full_name, email, class, parent_name, phone, status, created_at")
+          .select("id, status")
           .single();
 
         if (error) throw error;
@@ -320,12 +320,7 @@ function pacsaInstallApplicationDocuments() {
           await supabaseClient.functions.invoke("smooth-api", {
             body: {
               type: "new_application",
-              application_id: data?.id,
-              full_name: data?.full_name || application.full_name,
-              email: data?.email || application.email,
-              class: data?.class || application.class,
-              parent_name: data?.parent_name || application.parent_name,
-              phone: data?.phone || application.phone
+              application_id: data?.id
             }
           });
         } catch (noticeError) {
