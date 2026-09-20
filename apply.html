@@ -260,18 +260,15 @@ form.addEventListener("submit", async event => {
     };
 
     try {
-        const { data, error } = await supabaseClient.functions.invoke("secure-pii", {
-            body: {
-                action: "submit_application",
-                application
-            }
-        });
+        const { data, error } = await supabaseClient
+            .from("applications")
+            .insert([application])
+            .select("id, first_name, last_name, full_name, email, class, parent_name, phone, status, created_at")
+            .single();
 
         if (error) throw error;
-        if (!data?.ok) throw new Error(data?.error || "Could not submit application.");
 
-        const savedApplication = data.application || application;
-        await notifyAdminAboutApplication(savedApplication);
+        await notifyAdminAboutApplication(data || application);
 
         showMessage(
             "Application submitted successfully. PACSA will review your details and contact you by email.",
