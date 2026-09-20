@@ -95,7 +95,6 @@ $("studentLoginForm")?.addEventListener("submit", async event => {
             throw new Error("Verify your email before logging in.");
         }
 
-        localStorage.setItem("student", JSON.stringify(student));
         window.location.replace(dashboardUrl());
 
     } catch (error) {
