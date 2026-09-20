@@ -407,7 +407,7 @@ async function pacsaLoadStudentDocumentInfo(studentId) {
 
   const { data, error } = await supabaseClient
     .from("students")
-    .select("student_id, nin_last4, birth_certificate_path, school_leaving_certificate_path")
+    .select("student_id, nin, birth_certificate_path, school_leaving_certificate_path")
     .eq("student_id", studentId)
     .maybeSingle();
 
@@ -430,10 +430,7 @@ async function pacsaFillStudentDocumentFields() {
   if (!info) return;
 
   if (pacsaDoc$("studentNin")) {
-    pacsaDoc$("studentNin").value = "";
-    pacsaDoc$("studentNin").placeholder = info.nin_last4
-      ? "Protected NIN ending " + info.nin_last4 + " — enter only to replace"
-      : "Enter 11-digit NIN";
+    pacsaDoc$("studentNin").value = info.nin || "";
   }
 
   if (pacsaDoc$("studentBirthCertificatePath")) {
@@ -457,7 +454,7 @@ async function pacsaFillStudentDocumentFields() {
   }
 
   if (pacsaDoc$("viewStudentNin")) {
-    pacsaDoc$("viewStudentNin").textContent = info.nin_last4 ? "*******" + info.nin_last4 : "—";
+    pacsaDoc$("viewStudentNin").textContent = pacsaMaskNin(info.nin);
   }
 
   if (pacsaDoc$("viewStudentDocuments")) {
@@ -497,6 +494,10 @@ async function pacsaSaveStudentWithDocuments() {
       "School leaving certificate",
       false
     );
+
+    if (nin) {
+      studentData.nin = nin;
+    }
 
     if (!studentData.first_name || !studentData.last_name || !studentData.student_id || !studentData.class) {
       alert("Please enter First Name, Last Name, Student ID and Class.");
@@ -567,19 +568,6 @@ async function pacsaSaveStudentWithDocuments() {
         .insert([studentData]);
 
       if (error) throw error;
-    }
-
-    if (nin) {
-      const { data: ninResult, error: ninError } = await supabaseClient.functions.invoke("secure-pii", {
-        body: {
-          action: "save_student_nin",
-          student_id: studentData.student_id,
-          nin
-        }
-      });
-
-      if (ninError) throw ninError;
-      if (!ninResult?.ok) throw new Error(ninResult?.error || "Could not protect student NIN.");
     }
 
     if (typeof closeStudentModal === "function") {
