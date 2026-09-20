@@ -351,31 +351,7 @@ $("teacherLoginForm")
                 }
 
 
-                localStorage.setItem(
-                    "teacher",
-                    JSON.stringify(
-                        teacher
-                    )
-                );
-
-
-                localStorage.setItem(
-                    "teacherAssignments",
-                    JSON.stringify(
-                        assignments
-                    )
-                );
-
-
-                localStorage.setItem(
-                    "classTeacherAssignments",
-                    JSON.stringify(
-                        classAssignments
-                    )
-                );
-
-
-                window.location.replace(
+window.location.replace(
                     dashboardUrl()
                 );
 
