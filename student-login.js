@@ -127,16 +127,8 @@ $("forgotPasswordLink")?.addEventListener("click", async event => {
     }
 
     try {
-        const { data: canReset, error: checkError } =
-            await supabaseClient.rpc("pacsa_student_reset_check", { p_email: email });
-
-        if (checkError) throw checkError;
-
-        if (!canReset) {
-            showMessage("An active Student Portal account was not found for this email.");
-            return;
-        }
-
+        // Do not expose a separate account-existence endpoint. Supabase Auth
+        // handles the reset request server-side and the UI stays generic.
         const { error } = await supabaseClient.auth.resetPasswordForEmail(
             email,
             { redirectTo: resetUrl() }
@@ -144,7 +136,7 @@ $("forgotPasswordLink")?.addEventListener("click", async event => {
 
         if (error) throw error;
 
-        showMessage("Password reset link sent. Check your email.", "success");
+        showMessage("If this email belongs to an active Student Portal account, a password reset email will be sent.", "success");
 
     } catch (error) {
         console.error("Student password reset:", error);
