@@ -69,14 +69,20 @@ function getStudentName() {
     return `${student.first_name || ""} ${student.last_name || ""}`.trim() || "Student";
 }
 
+function isSeniorClass(className) {
+    const value = normalize(className).replace(/[^a-z0-9]+/g, " ").trim();
+    if (/\b(jss|junior)\b/.test(value)) return false;
+    return /\b(ss|sss|senior)\b/.test(value);
+}
+
 function getGradeClass(grade) {
     const value = normalize(grade);
 
-    if (value === "a") return "grade-a";
-    if (value === "b") return "grade-b";
-    if (value === "c") return "grade-c";
-    if (value === "d") return "grade-d";
-    if (value === "e") return "grade-e";
+    if (value.startsWith("a")) return "grade-a";
+    if (value.startsWith("b")) return "grade-b";
+    if (value.startsWith("c")) return "grade-c";
+    if (value.startsWith("d")) return "grade-d";
+    if (value.startsWith("e")) return "grade-e";
 
     return "grade-f";
 }
@@ -90,8 +96,18 @@ function midTermGrade(score) {
     return "F — Poor";
 }
 
-function finalGrade(score) {
+function finalGrade(score, className = currentReport?.class || student?.class) {
     const n = Number(score) || 0;
+
+    if (!isSeniorClass(className)) {
+        if (n >= 70) return "A — Excellent";
+        if (n >= 60) return "B — Very Good";
+        if (n >= 50) return "C — Good";
+        if (n >= 45) return "D — Fair";
+        if (n >= 40) return "E — Pass";
+        return "F — Fail";
+    }
+
     if (n >= 80) return "A1 — Excellent";
     if (n >= 75) return "B2 — Very Good";
     if (n >= 70) return "B3 — Good";
@@ -540,7 +556,7 @@ function resultRowsHtml() {
                 <td>${escapeHtml(ca)}</td>
                 <td>${escapeHtml(result.exam ?? "-")}</td>
                 <td><strong>${escapeHtml(total)}</strong></td>
-                <td>${escapeHtml(result.grade || finalGrade(total))}</td>
+                <td>${escapeHtml(finalGrade(total, currentReport?.class || student?.class))}</td>
             </tr>
         `;
     }).join("");
