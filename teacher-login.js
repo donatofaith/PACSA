@@ -63,7 +63,9 @@ $("teacherLoginForm")?.addEventListener("submit", async event => {
             if (roleError) throw roleError;
             adminRole = norm(role);
         } catch (roleError) {
-            console.warn("Admin role check returned no Admin role:", roleError);
+            console.error("Staff role verification failed:", roleError);
+            await supabaseClient.auth.signOut();
+            throw new Error("Could not securely verify your PACSA role. Please try again.");
         }
 
         if (adminRole === "admin" || adminRole === "super_admin") {
