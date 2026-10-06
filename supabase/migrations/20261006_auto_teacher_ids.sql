@@ -12,6 +12,15 @@ as $$
 declare
   next_number integer;
 begin
+  if not exists (
+    select 1
+    from public.admins a
+    where a.auth_user_id = auth.uid()
+      and lower(coalesce(a.status,'active')) = 'active'
+  ) then
+    raise exception 'Active Admin access is required.';
+  end if;
+
   -- Prevent two admins creating teachers at the same time from receiving
   -- the same next Teacher ID.
   perform pg_advisory_xact_lock(hashtext('pacsa_teacher_id_sequence'));
