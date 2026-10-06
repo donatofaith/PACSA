@@ -31,7 +31,6 @@ $("teacherLoginForm")?.addEventListener("submit", async event => {
     event.preventDefault();
     clearMessage();
 
-    const teacherId = $("teacherId").value.trim().toUpperCase();
     const email = $("email").value.trim().toLowerCase();
     const password = $("password").value;
     const button = $("loginBtn");
@@ -94,14 +93,9 @@ $("teacherLoginForm")?.addEventListener("submit", async event => {
         }
 
         /*
-         * Not an Admin: now require the Teacher identity fields and
-         * resolve the authenticated user to exactly one PACSA Teacher.
+         * Not an Admin: resolve the authenticated user directly to the
+         * PACSA Teacher record. Email + password is the teacher login.
          */
-        if (!teacherId) {
-            await supabaseClient.auth.signOut();
-            throw new Error("Enter your Teacher ID to access the Teacher Portal.");
-        }
-
         const { data: teacherRows, error: teacherError } =
             await supabaseClient.rpc("pacsa_get_my_teacher");
 
@@ -112,13 +106,6 @@ $("teacherLoginForm")?.addEventListener("submit", async event => {
         if (!teacher) {
             await supabaseClient.auth.signOut();
             throw new Error("This account is not linked to a PACSA teacher.");
-        }
-
-        if (
-            String(teacher.teacher_id).trim().toUpperCase() !== teacherId
-        ) {
-            await supabaseClient.auth.signOut();
-            throw new Error("Teacher ID does not match this account.");
         }
 
         if (norm(teacher.email) !== norm(email)) {
