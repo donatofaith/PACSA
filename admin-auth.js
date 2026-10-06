@@ -1,5 +1,5 @@
 /* PACSA shared Admin authentication + portal access helpers */
-const PACSA_ADMIN_LOGIN=new URL('admin-login.html',window.location.href).href;
+const PACSA_ADMIN_LOGIN=new URL('teacher-login.html',window.location.href).href;
 const PACSA_ADMIN_SESSION_KEY='pacsa_admin_login_verified';
 const PACSA_ADMIN_MAX_SESSION_MS=4*60*60*1000;
 window.currentAdmin=null;
@@ -55,7 +55,7 @@ window.adminAuthReady=(async function(){
   }catch(error){console.error('Admin authorization error:',error);showAdminAccessError(error?.message||'PACSA could not verify your Admin session.');return null}
 })();
 
-supabaseClient.auth.onAuthStateChange((event,session)=>{if(event==='SIGNED_OUT'||!session){clearAdminStorage();if(!window.location.pathname.endsWith('admin-login.html'))window.location.replace(PACSA_ADMIN_LOGIN)}});
+supabaseClient.auth.onAuthStateChange((event,session)=>{if(event==='SIGNED_OUT'||!session){clearAdminStorage();if(!window.location.pathname.endsWith('teacher-login.html'))window.location.replace(PACSA_ADMIN_LOGIN)}});
 
 /* Portal access modal used on Students and Teachers management pages. */
 function ensurePortalAccessCard(){
