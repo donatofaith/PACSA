@@ -139,6 +139,25 @@ async function loadStudentSubjects() {
 
 async function loadTeacherData() {
 
+    /*
+     * Route guard: an Admin must never remain on the Teacher Dashboard,
+     * even if they manually type the URL.
+     */
+    try {
+        const { data: role, error: roleError } =
+            await supabaseClient.rpc("pacsa_get_my_admin_role");
+
+        if (!roleError) {
+            const adminRole = norm(role);
+            if (adminRole === "admin" || adminRole === "super_admin") {
+                window.location.replace("admin-dashboard.html");
+                return;
+            }
+        }
+    } catch (error) {
+        console.warn("Teacher route role check:", error);
+    }
+
     const { data, error } =
         await supabaseClient.auth.getSession();
 
