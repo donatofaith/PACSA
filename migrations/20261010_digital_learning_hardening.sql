@@ -89,3 +89,32 @@ revoke all on function public.learning_enforce_quiz_integrity() from public;
 revoke all on function public.learning_lock_published_questions() from public;
 revoke all on function public.learning_lock_answer_keys() from public;
 revoke all on function public.learning_enforce_owner() from public;
+
+-- Serialise graded submissions by quiz and student, preventing concurrent duplicate attempts.
+create or replace function public.learning_submit_attempt(p_quiz_id uuid,p_answers jsonb)
+returns jsonb language plpgsql security definer set search_path='' as $$
+declare q record; total_count integer; earned integer;
+begin
+ if auth.uid() is null then raise exception 'Authentication required'; end if;
+ if jsonb_typeof(p_answers) is distinct from 'object' or length(p_answers::text)>16000 then raise exception 'Invalid answers'; end if;
+ select * into q from public.learning_quizzes where id=p_quiz_id and status='published';
+ if not found or not public.learning_student_in_class(q.class_name) then raise exception 'Quiz unavailable'; end if;
+ if q.kind='graded' then
+  perform pg_advisory_xact_lock(hashtext(p_quiz_id::text),hashtext(auth.uid()::text));
+  if exists(select 1 from public.learning_attempts where quiz_id=p_quiz_id and student_user_id=auth.uid()) then
+   raise exception 'Graded quiz already submitted';
+  end if;
+ end if;
+ select count(*),count(*) filter(where p_answers->>x.id::text=k.correct_index::text)
+ into total_count,earned
+ from public.learning_questions x join public.learning_answer_keys k on k.question_id=x.id
+ where x.quiz_id=p_quiz_id;
+ if total_count=0 then raise exception 'Quiz has no questions'; end if;
+ insert into public.learning_attempts(quiz_id,student_user_id,answers,score,total)
+ values(p_quiz_id,auth.uid(),p_answers,earned,total_count);
+ return jsonb_build_object('score',earned,'total',total_count);
+end;$$;
+revoke all on function public.learning_submit_attempt(uuid,jsonb) from public;
+grant execute on function public.learning_submit_attempt(uuid,jsonb) to authenticated;
+-- Avoid exposing direct insert/update/delete access to assessment answer keys
+-- beyond teacher draft authoring, which is controlled by RLS.
