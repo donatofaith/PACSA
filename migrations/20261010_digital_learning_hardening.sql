@@ -1,10 +1,8 @@
 -- Apply AFTER 20261010_digital_learning.sql; review in PACSA staging process.
 -- These changes touch ONLY learning_* objects.
-create unique index if not exists learning_graded_one_attempt_idx
- on public.learning_attempts(quiz_id,student_user_id);
--- Graded attempts are immutable. Practice attempts can be repeated through RPC,
--- so the unique index above is intentionally NOT valid for practice quizzes.
-drop index if exists public.learning_graded_one_attempt_idx;
+-- Graded attempts must be unique, while practice attempts may repeat.
+-- The submission RPC checks existing graded attempts; a later migration should
+-- also enforce uniqueness atomically under concurrent requests.
 create or replace function public.learning_enforce_quiz_integrity()
 returns trigger language plpgsql security definer set search_path='' as $$
 declare count_active integer;
